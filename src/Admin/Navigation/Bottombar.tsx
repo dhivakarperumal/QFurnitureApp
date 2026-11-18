@@ -1,5 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
+  Dimensions,
+  LayoutChangeEvent,
   Pressable,
   StyleProp,
   StyleSheet,
@@ -7,15 +9,19 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
-import {
-  ChartNoAxesCombined,
-  House,
-  ShoppingBag,
-  UserRound,
-} from 'lucide-react-native';
-import Svg, { Circle, Defs, LinearGradient, Path, Stop } from 'react-native-svg';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors } from '../../theme/colors';
+import Svg, {
+  Circle,
+  Defs,
+  LinearGradient,
+  Path,
+  Rect,
+  Stop,
+} from 'react-native-svg';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+/* -------------------------------------------------------------------------- */
+/*                                   TYPES                                    */
+/* -------------------------------------------------------------------------- */
 
 export type BottomBarItem = 'Home' | 'Products' | 'Orders' | 'More';
 
@@ -44,34 +50,113 @@ const rightNavigationItems: ReadonlyArray<NavigationItem> = [
 ];
 
 /* -------------------------------------------------------------------------- */
-/*                                ICON DESIGNS                                */
+/*                         CUSTOM VECTOR ICONS (1:1)                          */
 /* -------------------------------------------------------------------------- */
 
-function NavigationIcon({
-  label,
+function HomeIcon({ active }: { active: boolean }) {
+  const color = active ? '#FF6A00' : '#404B5A';
+
+  if (active) {
+    return (
+      <Svg width={25} height={25} viewBox="0 0 28 28" fill="none">
+        <Path
+          d="M12.4 3.2C13.3 2.3 14.7 2.3 15.6 3.2L24.2 11.2C25.1 12 25.4 13.2 24.8 14.2C24.3 15.1 23.2 15.6 22.1 15.6H22V23C22 24.1 21.1 25 20 25H16.5C15.7 25 15 24.3 15 23.5V17.5C15 16.9 14.6 16.5 14 16.5C13.4 16.5 13 16.9 13 17.5V23.5C13 24.3 12.3 25 11.5 25H8C6.9 25 6 24.1 6 23V15.6H5.9C4.8 15.6 3.7 15.1 3.2 14.2C2.6 13.2 2.9 12 3.8 11.2L12.4 3.2Z"
+          fill={color}
+        />
+      </Svg>
+    );
+  }
+
+  return (
+    <Svg width={25} height={25} viewBox="0 0 28 28" fill="none">
+      <Path
+        d="M12.4 3.2C13.3 2.3 14.7 2.3 15.6 3.2L24.2 11.2C25.1 12 25.4 13.2 24.8 14.2C24.3 15.1 23.2 15.6 22.1 15.6H22V23C22 24.1 21.1 25 20 25H16.5C15.7 25 15 24.3 15 23.5V17.5C15 16.9 14.6 16.5 14 16.5C13.4 16.5 13 16.9 13 17.5V23.5C13 24.3 12.3 25 11.5 25H8C6.9 25 6 24.1 6 23V15.6H5.9C4.8 15.6 3.7 15.1 3.2 14.2C2.6 13.2 2.9 12 3.8 11.2L12.4 3.2Z"
+        stroke={color}
+        strokeWidth={2.3}
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+function ProductsIcon({ active }: { active: boolean }) {
+  const color = active ? '#FF6A00' : '#404B5A';
+
+  return (
+    <Svg width={25} height={25} viewBox="0 0 28 28" fill="none">
+      <Path
+        d="M10 9.5V7C10 4.8 11.8 3 14 3C16.2 3 18 4.8 18 7V9.5"
+        stroke={color}
+        strokeWidth={2.4}
+        strokeLinecap="round"
+      />
+      <Path
+        d="M5.5 10.5C5.2 10.5 5 10.8 5.1 11.1L6.8 22.6C7 23.9 8.1 25 9.5 25H18.5C19.9 25 21 23.9 21.2 22.6L22.9 11.1C23 10.8 22.8 10.5 22.5 10.5H5.5Z"
+        stroke={color}
+        strokeWidth={2.4}
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+function ReportsIcon({ active }: { active: boolean }) {
+  const color = active ? '#FF6A00' : '#404B5A';
+
+  return (
+    <Svg width={25} height={25} viewBox="0 0 28 28" fill="none">
+      <Rect x="4" y="16" width="4.5" height="9" rx="1.5" fill={color} />
+      <Rect x="11.5" y="11" width="4.5" height="14" rx="1.5" fill={color} />
+      <Rect x="19" y="6" width="4.5" height="19" rx="1.5" fill={color} />
+      <Path
+        d="M5 14C8 12 13 8 22 3.5"
+        stroke={color}
+        strokeWidth={2.4}
+        strokeLinecap="round"
+      />
+      <Path
+        d="M17 3.5H22V8.5"
+        stroke={color}
+        strokeWidth={2.4}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+function ProfileIcon({ active }: { active: boolean }) {
+  const color = active ? '#FF6A00' : '#404B5A';
+
+  return (
+    <Svg width={25} height={25} viewBox="0 0 28 28" fill="none">
+      <Circle cx="14" cy="8" r="5" stroke={color} strokeWidth={2.4} />
+      <Path
+        d="M5 23.5C5 18.5 9 15.5 14 15.5C19 15.5 23 18.5 23 23.5"
+        stroke={color}
+        strokeWidth={2.4}
+        strokeLinecap="round"
+      />
+    </Svg>
+  );
+}
+
+function TabIcon({
+  destination,
   active,
 }: {
-  label: BottomBarItem;
+  destination: BottomBarItem;
   active: boolean;
 }) {
-  const color = active ? colors.primary : '#4B5563';
-
-  switch (label) {
+  switch (destination) {
     case 'Home':
-      return (
-        <House
-          color={color}
-          fill={active ? color : 'transparent'}
-          size={24}
-          strokeWidth={2.2}
-        />
-      );
+      return <HomeIcon active={active} />;
     case 'Products':
-      return <ShoppingBag color={color} size={24} strokeWidth={2.2} />;
+      return <ProductsIcon active={active} />;
     case 'Orders':
-      return <ChartNoAxesCombined color={color} size={24} strokeWidth={2.2} />;
+      return <ReportsIcon active={active} />;
     case 'More':
-      return <UserRound color={color} size={24} strokeWidth={2.2} />;
+      return <ProfileIcon active={active} />;
     default:
       return null;
   }
@@ -90,10 +175,53 @@ export default function Bottombar({
   style,
 }: BottomBarProps) {
   const insets = useSafeAreaInsets();
+  const screenWidth = Dimensions.get('window').width;
+  const initialWidth = Math.min(screenWidth - 24, 460);
+  const [barWidth, setBarWidth] = useState(initialWidth);
+
+  const barHeight = 74;
+  const cornerRadius = 32;
+  const cx = barWidth / 2;
+  const scoopWidth = 52;
+  const scoopDepth = 40;
+
+  // Exact white pill path with center scoop cutout
+  const barPath = `M ${cornerRadius} 0
+    H ${cx - scoopWidth}
+    C ${cx - 28} 0, ${cx - 20} ${scoopDepth}, ${cx} ${scoopDepth}
+    C ${cx + 20} ${scoopDepth}, ${cx + 28} 0, ${cx + scoopWidth} 0
+    H ${barWidth - cornerRadius}
+    A ${cornerRadius} ${cornerRadius} 0 0 1 ${barWidth} ${cornerRadius}
+    V ${barHeight - cornerRadius}
+    A ${cornerRadius} ${cornerRadius} 0 0 1 ${barWidth - cornerRadius} ${barHeight}
+    H ${cornerRadius}
+    A ${cornerRadius} ${cornerRadius} 0 0 1 0 ${barHeight - cornerRadius}
+    V ${cornerRadius}
+    A ${cornerRadius} ${cornerRadius} 0 0 1 ${cornerRadius} 0
+    Z`;
+
+  // Exact top orange contour line path
+  const contourPath = `M 0 ${cornerRadius}
+    A ${cornerRadius} ${cornerRadius} 0 0 1 ${cornerRadius} 0
+    H ${cx - scoopWidth}
+    C ${cx - 28} 0, ${cx - 20} ${scoopDepth}, ${cx} ${scoopDepth}
+    C ${cx + 20} ${scoopDepth}, ${cx + 28} 0, ${cx + scoopWidth} 0
+    H ${barWidth - cornerRadius}
+    A ${cornerRadius} ${cornerRadius} 0 0 1 ${barWidth} ${cornerRadius}`;
+
+  const isTabActive = (dest: BottomBarItem) => {
+    return activeItem === dest;
+  };
+
+  const handleLayout = (e: LayoutChangeEvent) => {
+    const w = e.nativeEvent.layout.width;
+    if (w > 0 && Math.abs(w - barWidth) > 1) {
+      setBarWidth(w);
+    }
+  };
 
   const renderTab = ({ destination, label }: NavigationItem) => {
-    const isActive = activeItem === destination;
-    const color = isActive ? colors.primary : '#4B5563';
+    const isActive = isTabActive(destination);
 
     return (
       <Pressable
@@ -104,24 +232,20 @@ export default function Bottombar({
         onPress={() => onItemPress?.(destination)}
         style={({ pressed }) => [
           styles.tabButton,
-          pressed && { opacity: 0.65 },
+          pressed && { opacity: 0.7 },
         ]}>
-        <View
-          style={[
-            styles.tabContent,
-            isActive && styles.activeTabContent,
-          ]}>
+        <View style={[styles.tabContent, isActive && styles.activeTabContent]}>
           <View style={styles.iconWrapper}>
-            <NavigationIcon label={destination} active={isActive} />
+            <TabIcon destination={destination} active={isActive} />
 
-            {/* Optional Notification Badge (e.g. for Orders) */}
+            {/* Notification Badge */}
             {destination === 'Orders' && badgeCount > 0 && (
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>
-                  {badgeCount > 9 ? '9+' : badgeCount}
-                </Text>
-              </View>
-            )}
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>
+                    {badgeCount > 9 ? '9+' : badgeCount}
+                  </Text>
+                </View>
+              )}
           </View>
 
           <Text
@@ -129,113 +253,124 @@ export default function Bottombar({
             style={[
               styles.tabLabel,
               {
-                color,
-                fontWeight: isActive ? '700' : '500',
+                color: isActive ? '#FF6A00' : '#404B5A',
+                fontWeight: isActive ? '700' : '600',
               },
             ]}>
             {label}
           </Text>
         </View>
-
       </Pressable>
     );
   };
 
+  // Safe bottom spacing for home indicator & navigation bar
   const safeBottom = Math.max(insets.bottom, 12);
 
   return (
-    <SafeAreaView
-      edges={['bottom']}
+    <View
       pointerEvents="box-none"
       style={[
         styles.outerContainer,
+        {
+          paddingBottom: safeBottom,
+        },
         style,
       ]}
       className={className}>
-      {/* Dock Bar */}
-      <View style={styles.dockBar}>
-        <Svg
-          pointerEvents="none"
-          style={styles.centerWave}
-          viewBox="0 0 400 48"
-          preserveAspectRatio="none">
-          <Path
-            d="M0 1 H140 C164 1 172 4 184 19 C192 29 194 43 200 43 C206 43 208 29 216 19 C228 4 236 1 260 1 H400"
-            fill="none"
-            stroke="#FDBA74"
-            strokeWidth={2}
-          />
-        </Svg>
-        {/* Left Tabs: Home, Products */}
-        <View style={styles.tabsGroup}>
-          {leftNavigationItems.map(renderTab)}
-        </View>
-
-        {/* Center Slot Spacer (reserves width and displays aligned Add label) */}
-        <View style={styles.centerSlot} />
-
-        {/* Right Tabs: Orders, More */}
-        <View style={styles.tabsGroup}>
-          {rightNavigationItems.map(renderTab)}
-        </View>
-      </View>
-
-      {/* Floating Center Plus Action Button (Rendered outside dockBar to avoid Android outline clipping) */}
       <View
-        pointerEvents="box-none"
-        style={[
-          styles.floatingFabWrapper,
-          {
-            bottom: safeBottom + 26,
-          },
-        ]}>
-        {/* Ambient Pulse Ring */}
-        <View style={styles.pulseRing} />
+        style={[styles.barContainer, { width: barWidth }]}
+        onLayout={handleLayout}>
+        {/* SVG Background, Center Wave Cutout & Orange Contour Glow */}
+        <Svg
+          width={barWidth}
+          height={barHeight}
+          pointerEvents="none"
+          style={StyleSheet.absoluteFill}>
+          {/* Ambient Glow Paths */}
+          <Path
+            d={contourPath}
+            stroke="#FF9533"
+            strokeWidth={7}
+            strokeOpacity={0.22}
+            fill="none"
+          />
+          <Path
+            d={contourPath}
+            stroke="#FFB366"
+            strokeWidth={3.5}
+            strokeOpacity={0.35}
+            fill="none"
+          />
 
-        {/* Main Floating Action Button */}
+          {/* Solid White Body with Scoop Cutout */}
+          <Path d={barPath} fill="#FFFFFF" />
+
+          {/* Sharp Orange Contour Stroke */}
+          <Path d={contourPath} stroke="#FF7A00" strokeWidth={2} fill="none" />
+        </Svg>
+
+        {/* Tab Items Row */}
+        <View style={styles.tabsRow}>
+          {/* Left Navigation: Home, Products */}
+          <View style={styles.tabsGroup}>
+            {leftNavigationItems.map(renderTab)}
+          </View>
+
+          {/* Center Gap for FAB */}
+          <View style={styles.centerGap} pointerEvents="none" />
+
+          {/* Right Navigation: Reports, Profile */}
+          <View style={styles.tabsGroup}>
+            {rightNavigationItems.map(renderTab)}
+          </View>
+        </View>
+
+        {/* Center Floating Action Button (Elevated inside the scoop) */}
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Add Product or Order"
+          accessibilityLabel="Add Action"
           onPress={onAddPress}
           style={({ pressed }) => [
             styles.fabButton,
             pressed && styles.fabPressed,
           ]}>
           <Svg
+            width={66}
+            height={66}
+            viewBox="0 0 66 66"
             pointerEvents="none"
-            style={styles.fabSvg}
-            viewBox="0 0 72 72">
+            style={StyleSheet.absoluteFill}>
             <Defs>
-              <LinearGradient id="centerFabGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                <Stop offset="0%" stopColor="#FF7900" />
-                <Stop offset="100%" stopColor="#EF3B0C" />
+              <LinearGradient
+                id="centerFabGrad"
+                x1="0%"
+                y1="0%"
+                x2="0%"
+                y2="100%">
+                <Stop offset="0%" stopColor="#FFA033" />
+                <Stop offset="25%" stopColor="#FF7A00" />
+                <Stop offset="100%" stopColor="#EE3505" />
               </LinearGradient>
             </Defs>
             <Circle
-              cx="36"
-              cy="36"
-              r="35"
-              fill="none"
-              stroke="#FDBA74"
-              strokeWidth="2"
-            />
-            <Circle
-              cx="36"
-              cy="36"
-              r="32"
-              fill="url(#centerFabGradient)"
+              cx="33"
+              cy="33"
+              r="31"
+              fill="url(#centerFabGrad)"
               stroke="#FFFFFF"
               strokeWidth="3.5"
             />
           </Svg>
-          {/* Precision Symmetrical Plus Icon */}
+
+          {/* Symmetrical White Plus Icon */}
           <View style={styles.plusContainer}>
             <View style={styles.plusHorizontal} />
             <View style={styles.plusVertical} />
           </View>
         </Pressable>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -251,32 +386,29 @@ const styles = StyleSheet.create({
     bottom: 0,
     width: '100%',
     alignItems: 'center',
-    paddingHorizontal: 0,
-    backgroundColor: '#FFFFFF',
-    zIndex: 99,
+    zIndex: 100,
   },
-  dockBar: {
-    width: '100%',
-    height: 82,
-    backgroundColor: '#FFFFFF',
-    borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
+  barContainer: {
+    height: 74,
+    alignSelf: 'center',
+    position: 'relative',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.1,
+    shadowRadius: 18,
+    elevation: 10,
+  },
+  tabsRow: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 8,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.12,
-    shadowRadius: 14,
-    elevation: 8,
-  },
-  centerWave: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    width: '100%',
-    height: 48,
+    zIndex: 5,
   },
   tabsGroup: {
     flex: 1,
@@ -287,113 +419,93 @@ const styles = StyleSheet.create({
   },
   tabButton: {
     flex: 1,
-    height: 72,
+    height: '100%',
     alignItems: 'center',
     justifyContent: 'center',
   },
   tabContent: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 7,
+    paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: 20,
+    minWidth: 66,
   },
   activeTabContent: {
-    backgroundColor: '#FFF1E6',
+    backgroundColor: '#FEEFE6',
   },
   iconWrapper: {
-    width: 24,
-    height: 24,
+    width: 26,
+    height: 26,
     alignItems: 'center',
     justifyContent: 'center',
   },
   tabLabel: {
     marginTop: 3,
-    fontSize: 14,
-    letterSpacing: 0.2,
+    fontSize: 13,
+    letterSpacing: -0.2,
   },
   badge: {
     position: 'absolute',
-    top: -3,
-    right: -6,
-    minWidth: 15,
-    height: 15,
-    borderRadius: 7.5,
+    top: -4,
+    right: -8,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
     backgroundColor: '#EF4444',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 2,
+    paddingHorizontal: 3,
     borderWidth: 1.5,
     borderColor: '#FFFFFF',
   },
   badgeText: {
-    fontSize: 8,
+    fontSize: 8.5,
     fontWeight: '800',
     color: '#FFFFFF',
   },
-  centerSlot: {
-    width: 88,
+  centerGap: {
+    width: 66,
     height: '100%',
   },
-  floatingFabWrapper: {
-    position: 'absolute',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: 88,
-    height: 88,
-    zIndex: 101,
-  },
-  pulseRing: {
-    position: 'absolute',
-    width: 88,
-    height: 88,
-    borderRadius: 44,
-    borderWidth: 2,
-    borderColor: '#FED7AA',
-    backgroundColor: 'rgba(249, 115, 22, 0.12)',
-  },
   fabButton: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: 'transparent',
+    position: 'absolute',
+    top: -26,
+    left: '50%',
+    marginLeft: -33,
+    width: 66,
+    height: 66,
+    borderRadius: 33,
     alignItems: 'center',
     justifyContent: 'center',
-    overflow: 'visible',
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.5,
-    shadowRadius: 10,
-    elevation: 10,
-  },
-  fabSvg: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
+    shadowColor: '#FF6A00',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.45,
+    shadowRadius: 14,
+    elevation: 12,
+    zIndex: 20,
   },
   fabPressed: {
-    transform: [{ scale: 0.92 }],
-    opacity: 0.92,
+    transform: [{ scale: 0.94 }],
+    opacity: 0.94,
   },
   plusContainer: {
-    width: 28,
-    height: 28,
+    width: 24,
+    height: 24,
     alignItems: 'center',
     justifyContent: 'center',
   },
   plusHorizontal: {
-    width: 28,
-    height: 4,
-    borderRadius: 2,
+    width: 24,
+    height: 4.2,
+    borderRadius: 2.1,
     backgroundColor: '#FFFFFF',
   },
   plusVertical: {
     position: 'absolute',
-    width: 4,
-    height: 28,
-    borderRadius: 2,
+    width: 4.2,
+    height: 24,
+    borderRadius: 2.1,
     backgroundColor: '#FFFFFF',
   },
 });
