@@ -186,7 +186,7 @@ function NavigationIcon({
   label: BottomBarItem;
   active: boolean;
 }) {
-  const color = active ? colors.primary : '#9CA3AF';
+  const color = active ? colors.primary : '#4B5563';
 
   switch (label) {
     case 'Home':
@@ -258,7 +258,7 @@ export default function Bottombar({
 
   const renderTab = ({ label }: { label: BottomBarItem }) => {
     const isActive = activeItem === label;
-    const color = isActive ? colors.primary : '#9CA3AF';
+    const color = isActive ? colors.primary : '#4B5563';
 
     return (
       <Pressable
@@ -302,8 +302,6 @@ export default function Bottombar({
           </Text>
         </View>
 
-        {/* Micro Indicator Dot */}
-        {isActive && <View style={styles.activeDot} />}
       </Pressable>
     );
   };
@@ -327,9 +325,7 @@ export default function Bottombar({
         </View>
 
         {/* Center Slot Spacer (reserves width and displays aligned Add label) */}
-        <View style={styles.centerSlot}>
-          <Text style={styles.fabLabel}>Add</Text>
-        </View>
+        <View style={styles.centerSlot} />
 
         {/* Right Tabs: Orders, More */}
         <View style={styles.tabsGroup}>
@@ -389,25 +385,26 @@ const styles = StyleSheet.create({
     bottom: 0,
     width: '100%',
     alignItems: 'center',
-    paddingHorizontal: 0,
+    paddingHorizontal: 4,
     backgroundColor: '#FFFFFF',
-    borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
     zIndex: 99,
   },
   dockBar: {
-    width: '100%',
-    height: 68,
+    width: '98%',
+    height: 82,
     backgroundColor: '#FFFFFF',
+    borderRadius: 41,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 6,
+    paddingHorizontal: 8,
     shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 14,
+    elevation: 8,
   },
   tabsGroup: {
     flex: 1,
@@ -418,19 +415,19 @@ const styles = StyleSheet.create({
   },
   tabButton: {
     flex: 1,
-    height: 60,
+    height: 72,
     alignItems: 'center',
     justifyContent: 'center',
   },
   tabContent: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-    borderRadius: 16,
+    paddingVertical: 7,
+    paddingHorizontal: 12,
+    borderRadius: 20,
   },
   activeTabContent: {
-    backgroundColor: 'rgba(249, 115, 22, 0.12)',
+    backgroundColor: '#FFF1E6',
   },
   iconWrapper: {
     width: 24,
@@ -442,14 +439,6 @@ const styles = StyleSheet.create({
     marginTop: 3,
     fontSize: 11,
     letterSpacing: 0.2,
-  },
-  activeDot: {
-    position: 'absolute',
-    bottom: 2,
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: colors.primary,
   },
   badge: {
     position: 'absolute',
@@ -471,31 +460,30 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   centerSlot: {
-    width: 68,
+    width: 82,
     height: '100%',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    paddingBottom: 10,
   },
   floatingFabWrapper: {
     position: 'absolute',
     alignItems: 'center',
     justifyContent: 'center',
-    width: 68,
-    height: 68,
+    width: 86,
+    height: 86,
     zIndex: 101,
   },
   pulseRing: {
     position: 'absolute',
-    width: 54,
-    height: 54,
-    borderRadius: 27,
-    backgroundColor: colors.primary,
+    width: 86,
+    height: 86,
+    borderRadius: 43,
+    borderWidth: 2,
+    borderColor: '#FED7AA',
+    backgroundColor: 'rgba(249, 115, 22, 0.12)',
   },
   fabButton: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
+    width: 68,
+    height: 68,
+    borderRadius: 34,
     backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
@@ -529,12 +517,6 @@ const styles = StyleSheet.create({
     height: 18,
     borderRadius: 1.5,
     backgroundColor: '#FFFFFF',
-  },
-  fabLabel: {
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 0.3,
-    color: colors.primary,
   },
 });
 
