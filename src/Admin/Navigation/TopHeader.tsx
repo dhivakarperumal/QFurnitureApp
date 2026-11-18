@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
+  ImageBackground,
   Modal,
   Pressable,
   ScrollView,
@@ -204,10 +205,17 @@ export default function TopHeader({
     : notificationCount;
 
   return (
-    <View
+    <ImageBackground
+      source={require('../../Assert/images/topheader.png')}
+      resizeMode="stretch"
+      blurRadius={3}
       style={[styles.header, { paddingTop: insets.top }]}
       className="absolute left-0 right-0 top-0 z-10">
-      <View className="h-[72px] flex-row items-center px-2">
+      <View
+        pointerEvents="none"
+        className="absolute inset-0 bg-black/20"
+      />
+      <View className="h-[64px] flex-row items-center px-2">
         <Pressable
           accessibilityLabel="Open menu"
           accessibilityRole="button"
@@ -423,7 +431,7 @@ export default function TopHeader({
           </View>
         </View>
       </Modal>
-    </View>
+    </ImageBackground>
   );
 }
 

@@ -243,9 +243,9 @@ export default function Bottombar({
         onPress={() => onItemPress?.(destination)}
         style={({ pressed }) => [
           styles.tabButton,
-          pressed && { opacity: 0.7 },
+          pressed && { opacity: 0.65 },
         ]}>
-        <View style={[styles.tabContent, isActive && styles.activeTabContent]}>
+        <View style={styles.tabContent}>
           <View style={styles.iconWrapper}>
             <TabIcon destination={destination} active={isActive} />
 
@@ -264,12 +264,20 @@ export default function Bottombar({
             style={[
               styles.tabLabel,
               {
-                color: isActive ? '#FF6A00' : '#404B5A',
-                fontWeight: isActive ? '700' : '600',
+                color: isActive ? '#FF6A00' : '#64748B',
+                fontWeight: isActive ? '700' : '500',
               },
             ]}>
             {label}
           </Text>
+
+          {/* Clean Accent Dot Indicator */}
+          <View
+            style={[
+              styles.activeDot,
+              { backgroundColor: isActive ? '#FF6A00' : 'transparent' },
+            ]}
+          />
         </View>
       </Pressable>
     );
@@ -447,14 +455,14 @@ const styles = StyleSheet.create({
   tabContent: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 18,
-    minWidth: 64,
-    overflow: 'hidden',
+    paddingVertical: 3,
+    paddingHorizontal: 8,
   },
-  activeTabContent: {
-    backgroundColor: '#FEEFE6',
+  activeDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    marginTop: 2.5,
   },
   iconWrapper: {
     width: 26,
