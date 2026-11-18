@@ -1,16 +1,20 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  ActivityIndicator,
+  Image,
   Modal,
   Pressable,
   ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import api, { API_BASE_URL } from '../../api';
 
 type Product = {
-  id: number;
+  id: number | string;
   name: string;
   sku: string;
   category: string;
@@ -18,32 +22,163 @@ type Product = {
   mrp?: number;
   stock: number;
   status: 'Active' | 'Low Stock' | 'Out of Stock';
+  imageUri?: string;
+};
+
+type ApiProduct = {
+  id?: number | string;
+  name?: string;
+  product_code?: string;
+  category?: string;
+  selling_price?: number | string | null;
+  offer_price?: number | string | null;
+  mrp?: number | string | null;
+  available_stock?: number | string | null;
+  total_stock?: number | string | null;
+  stock?: number | string | null;
+  minimum_stock?: number | string | null;
+  status?: string;
+  inventory_status?: string;
+  images?: string[] | null;
+  main_image_index?: number | string | null;
+  variants?: Array<{ image?: string | null }>;
+};
+
+type ProductsResponse = {
+  products: ApiProduct[];
+  pagination?: {
+    totalPages?: number | string;
+  };
 };
 
 type ProductsProps = {
   onActionPress?: (label: string) => void;
 };
 
-const initialProducts: Product[] = [
-  { id: 1, name: 'Royal Lounge Chair', sku: 'QF0001', category: 'Chair', price: 18499, mrp: 22999, stock: 2, status: 'Low Stock' },
-  { id: 2, name: 'Oak Dining Table', sku: 'QF0002', category: 'Table', price: 32999, mrp: 38999, stock: 4, status: 'Low Stock' },
-  { id: 3, name: 'Modern Wardrobe', sku: 'QF0003', category: 'Wardrobe', price: 24600, stock: 18, status: 'Active' },
-  { id: 4, name: 'Velvet Sofa Set', sku: 'QF0004', category: 'Sofa', price: 45999, mrp: 52999, stock: 12, status: 'Active' },
-  { id: 5, name: 'Teak Bed Frame', sku: 'QF0005', category: 'Bed', price: 28450, stock: 0, status: 'Out of Stock' },
-  { id: 6, name: 'Office Study Desk', sku: 'QF0006', category: 'Desk', price: 12990, stock: 23, status: 'Active' },
-];
-
 const formatRupees = (value: number) =>
   `₹${value.toLocaleString('en-IN')}`;
+
+const styles = StyleSheet.create({
+  productImage: {
+    width: '100%',
+    aspectRatio: 0.87,
+  },
+});
+
+const toNumber = (value: number | string | null | undefined, fallback = 0) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const resolveImageUri = (path?: string | null) => {
+  if (!path?.trim()) return undefined;
+  if (/^https?:\/\//i.test(path)) return path;
+
+  const apiOrigin = API_BASE_URL.replace(/\/api\/?$/, '');
+  return `${apiOrigin}${path.startsWith('/') ? '' : '/'}${path}`;
+};
+
+const mapApiProduct = (item: ApiProduct): Product => {
+  const stock = toNumber(item.available_stock ?? item.total_stock ?? item.stock);
+  const minimumStock = toNumber(item.minimum_stock, 10);
+  const inventoryStatus = `${item.status ?? ''} ${item.inventory_status ?? ''}`.toLowerCase();
+  const status: Product['status'] =
+    stock <= 0 || inventoryStatus.includes('out of stock')
+      ? 'Out of Stock'
+      : inventoryStatus.includes('low stock') || stock <= minimumStock
+        ? 'Low Stock'
+        : 'Active';
+
+  const images = item.images ?? [];
+  const requestedImageIndex = toNumber(item.main_image_index);
+  const mainImageIndex =
+    Number.isInteger(requestedImageIndex) &&
+    requestedImageIndex >= 0 &&
+    requestedImageIndex < images.length
+      ? requestedImageIndex
+      : 0;
+  const imagePath =
+    images[mainImageIndex] ?? images[0] ?? item.variants?.find(variant => variant.image)?.image;
+  const price = toNumber(item.selling_price ?? item.offer_price ?? item.mrp);
+  const mrp = toNumber(item.mrp);
+
+  return {
+    id: item.id ?? item.product_code ?? item.name ?? 'unknown-product',
+    name: item.name ?? 'Unnamed product',
+    sku: item.product_code ?? '',
+    category: item.category ?? 'Uncategorized',
+    price,
+    mrp: mrp > price ? mrp : undefined,
+    stock,
+    status,
+    imageUri: resolveImageUri(imagePath),
+  };
+};
 
 export default function Products({ onActionPress }: ProductsProps) {
   const insets = useSafeAreaInsets();
   const [searchTerm, setSearchTerm] = useState('');
   const [status, setStatus] = useState<'All' | Product['status']>('All');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [products, setProducts] = useState(initialProducts);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [stockProduct, setStockProduct] = useState<Product | null>(null);
   const [stockValue, setStockValue] = useState('');
+
+  const fetchProducts = useCallback(async () => {
+    setLoading(true);
+    setLoadError(null);
+
+    try {
+      const params = {
+        limit: 10,
+        search: '',
+        status: 'All',
+        exclude_combo_products: true,
+      };
+      const firstResponse = await api.get<ProductsResponse>('/products', {
+        params: { ...params, page: 1 },
+      });
+
+      if (!Array.isArray(firstResponse.data?.products)) {
+        throw new Error('The products response did not contain a product list.');
+      }
+
+      const allProducts = [...firstResponse.data.products];
+      const totalPages = Math.max(
+        1,
+        toNumber(firstResponse.data.pagination?.totalPages, 1),
+      );
+
+      for (let page = 2; page <= totalPages; page += 1) {
+        const pageResponse = await api.get<ProductsResponse>('/products', {
+          params: { ...params, page },
+        });
+        if (!Array.isArray(pageResponse.data?.products)) {
+          throw new Error(`The products response for page ${page} was invalid.`);
+        }
+        allProducts.push(...pageResponse.data.products);
+      }
+
+      setProducts(allProducts.map(mapApiProduct));
+    } catch (error: unknown) {
+      const message =
+        typeof error === 'object' &&
+        error !== null &&
+        'message' in error &&
+        typeof error.message === 'string'
+          ? error.message
+          : 'Unable to load products. Please try again.';
+      setLoadError(message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchProducts();
+  }, [fetchProducts]);
 
   const filteredProducts = useMemo(() => {
     const search = searchTerm.trim().toLowerCase();
@@ -99,8 +234,8 @@ export default function Products({ onActionPress }: ProductsProps) {
     <View className="flex-1 bg-[#F7F8FA]">
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerClassName="px-4 pb-[126px]"
-        style={{ paddingTop: insets.top + 170 }}>
+        contentContainerClassName="px-4 pb-[255px]"
+        style={{ paddingTop: insets.top + 84 }}>
         <View className="mb-4 flex-row items-end justify-between">
           <View>
             <Text className="text-[12px] font-bold uppercase tracking-[2px] text-[#F59E0B]">
@@ -175,7 +310,7 @@ export default function Products({ onActionPress }: ProductsProps) {
 
           <View className="flex-row items-center justify-between">
             <Text className="text-[11px] font-semibold text-[#94A3B8]">
-              {filteredProducts.length} products
+              {loading ? 'Loading products...' : `${filteredProducts.length} products`}
             </Text>
             <View className="flex-row rounded-[12px] bg-[#EDF1F3] p-1">
               <Pressable
@@ -200,7 +335,22 @@ export default function Products({ onActionPress }: ProductsProps) {
           </View>
         </View>
 
-        {filteredProducts.length === 0 ? (
+        {loading ? (
+          <View className="items-center rounded-[18px] border border-[#ECE8DF] bg-white py-12">
+            <ActivityIndicator size="large" color="#F97316" />
+            <Text className="mt-3 text-[12px] text-[#64748B]">Loading products...</Text>
+          </View>
+        ) : loadError ? (
+          <View className="items-center rounded-[18px] border border-[#ECE8DF] bg-white px-5 py-12">
+            <Text className="text-center text-[13px] text-[#64748B]">{loadError}</Text>
+            <Pressable
+              accessibilityRole="button"
+              onPress={fetchProducts}
+              className="mt-4 rounded-[12px] bg-[#F97316] px-5 py-3">
+              <Text className="text-[12px] font-bold text-white">Retry</Text>
+            </Pressable>
+          </View>
+        ) : filteredProducts.length === 0 ? (
           <View className="items-center rounded-[18px] border border-[#ECE8DF] bg-white py-16">
             <Text className="text-[38px]">▣</Text>
             <Text className="mt-3 text-[14px] font-bold text-[#64748B]">
@@ -216,8 +366,17 @@ export default function Products({ onActionPress }: ProductsProps) {
               <View
                 key={product.id}
                 className="mb-4 w-[48%] overflow-hidden rounded-[18px] border border-[#ECE8DF] bg-white shadow-sm elevation-[2]">
-                <View className="h-[145px] items-center justify-center bg-[#FFF6E8]">
-                  <Text className="text-[58px] text-[#DDA62A]">▣</Text>
+                <View className="w-full overflow-hidden bg-[#FFF6E8]">
+                  <Image
+                    source={
+                      product.imageUri
+                        ? { uri: product.imageUri }
+                        : require('../../Assert/images/Cozy Mustard Armchair Living Room.png')
+                    }
+                    accessibilityLabel={`${product.name} image`}
+                    resizeMode="cover"
+                    style={styles.productImage}
+                  />
                   <View
                     className="absolute left-3 top-3 rounded-full px-2.5 py-1"
                     style={{ backgroundColor: statusStyles[product.status].background }}>
@@ -264,9 +423,16 @@ export default function Products({ onActionPress }: ProductsProps) {
                 key={product.id}
                 onPress={() => onActionPress?.(product.name)}
                 className="mb-3 flex-row items-center rounded-[16px] border border-[#ECE8DF] bg-white p-3 shadow-sm elevation-[1]">
-                <View className="mr-3 h-[68px] w-[68px] items-center justify-center rounded-[13px] bg-[#FFF6E8]">
-                  <Text className="text-[32px] text-[#DDA62A]">▣</Text>
-                </View>
+                <Image
+                  source={
+                    product.imageUri
+                      ? { uri: product.imageUri }
+                      : require('../../Assert/images/Cozy Mustard Armchair Living Room.png')
+                  }
+                  accessibilityLabel={`${product.name} image`}
+                  resizeMode="cover"
+                  className="mr-3 h-[68px] w-[68px] rounded-[13px]"
+                />
                 <View className="flex-1">
                   <Text className="text-[9px] font-bold uppercase text-[#F59E0B]">
                     {product.category}
