@@ -1,37 +1,25 @@
 
 export const colors = {
-  // Primary – Deep Teal
-  primary: '#004D4A',
-  primaryDark: '#002F2D',
-  primaryLight: '#007A73',
-
-  // Accent – Luxury Gold
-  accent: '#FFB800',
-  accentDark: '#E59A00',
-  accentLight: '#FFE477',
-
-  // Background
-  background: '#FFF8ED',
+  primary: '#FF7900',
+  primaryLight: '#FF9D00',
+  primaryDark: '#E85D04',
+  background: '#F8F9FA',
   surface: '#FFFFFF',
-  border: '#E8DCC8',
-
-  // Text
-  text: '#202B2B',
-  textSecondary: '#718080',
+  border: '#E5E7EB',
+  textPrimary: '#17191C',
+  textSecondary: '#6B7280',
+  success: '#16A34A',
+  error: '#DC2626',
+  white: '#FFFFFF',
+  black: '#000000',
+  text: '#17191C',
   textOnPrimary: '#FFFFFF',
-
-  // Status
-  success: '#2E7D32',
-  warning: '#ED6C02',
-  error: '#D32F2F',
-  disabled: '#A0A0A0',
-
-  navBackground: '#073E56',
-  navBorder: '#E9A91A',
-  navAccent: '#F7A40A',
-  navAccentDark: '#C87808',
-  navAccentLight: '#FFD95A',
-  navTextDark: '#071F2B',
+  navBackground: '#17191C',
+  navBorder: '#E5E7EB',
+  navAccent: '#FF7900',
+  navAccentDark: '#E85D04',
+  navAccentLight: '#FF9D00',
+  navTextDark: '#17191C',
 } as const;
 
 export type AppColor = keyof typeof colors;

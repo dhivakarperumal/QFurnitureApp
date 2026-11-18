@@ -57,7 +57,7 @@ export default function Home({ onActionPress }: HomeProps) {
       showsVerticalScrollIndicator={false}
       contentContainerClassName="px-4 pb-[126px]"
       style={{ paddingTop: insets.top + 170 }}>
-      <View className="mb-4 min-h-[118px] justify-center overflow-hidden rounded-[22px] bg-[#073E56] px-5 py-5">
+      <View className="mb-4 min-h-[118px] justify-center overflow-hidden rounded-[22px] bg-[#17191C] px-5 py-5">
         <View className="absolute -right-10 -top-14 h-[130px] w-[130px] rounded-full bg-white/10" />
         <View className="absolute -bottom-14 right-16 h-[110px] w-[110px] rounded-full bg-[#F59E0B]/20" />
         <Text className="text-[12px] font-bold uppercase tracking-[2px] text-[#FFD45A]">
@@ -84,14 +84,14 @@ export default function Home({ onActionPress }: HomeProps) {
             <Text className="text-[12px] font-bold text-[#718080]">
               {stat.label}
             </Text>
-            <Text className="mt-1 text-[24px] font-black text-[#073E56]">
+            <Text className="mt-1 text-[24px] font-black text-[#17191C]">
               {stat.value}
             </Text>
           </View>
         ))}
       </View>
 
-      <View className="mb-4 rounded-[18px] border border-[#F4D89A] bg-[#FFF7E6] px-4 py-3">
+      <View className="mb-4 rounded-[18px] border border-[#F4D89A] bg-[#F8F9FA] px-4 py-3">
         <Pressable
           accessibilityRole="button"
           onPress={() => onActionPress?.('Low Stock')}
@@ -108,10 +108,10 @@ export default function Home({ onActionPress }: HomeProps) {
 
       <View className="mb-4 rounded-[18px] border border-[#ECE8DF] bg-white p-4">
         <View className="mb-4 flex-row items-center justify-between">
-          <Text className="text-[17px] font-black text-[#073E56]">
+          <Text className="text-[17px] font-black text-[#17191C]">
             Sales Overview
           </Text>
-          <View className="rounded-full bg-[#FFF7E6] px-3 py-1.5">
+          <View className="rounded-full bg-[#F8F9FA] px-3 py-1.5">
             <Text className="text-[11px] font-bold text-[#A16207]">
               This Week
             </Text>
@@ -133,7 +133,7 @@ export default function Home({ onActionPress }: HomeProps) {
       </View>
 
       <View className="mb-4 rounded-[18px] border border-[#ECE8DF] bg-white p-4">
-        <Text className="mb-4 text-[17px] font-black text-[#073E56]">
+        <Text className="mb-4 text-[17px] font-black text-[#17191C]">
           Orders Overview
         </Text>
         {statusOverview.map(item => (
@@ -142,7 +142,7 @@ export default function Home({ onActionPress }: HomeProps) {
               <Text className="text-[12px] font-semibold text-[#64748B]">
                 {item.label}
               </Text>
-              <Text className="text-[12px] font-black text-[#073E56]">
+              <Text className="text-[12px] font-black text-[#17191C]">
                 {item.count}
               </Text>
             </View>
@@ -161,7 +161,7 @@ export default function Home({ onActionPress }: HomeProps) {
 
       <View className="mb-4 rounded-[18px] border border-[#ECE8DF] bg-white p-4">
         <View className="mb-4 flex-row items-center justify-between">
-          <Text className="text-[17px] font-black text-[#073E56]">
+          <Text className="text-[17px] font-black text-[#17191C]">
             Quick Actions
           </Text>
           <Text className="text-[11px] font-bold text-[#A16207]">
@@ -185,7 +185,7 @@ export default function Home({ onActionPress }: HomeProps) {
               </View>
               <Text
                 numberOfLines={1}
-                className="px-1 text-[10px] font-bold text-[#073E56]">
+                className="px-1 text-[10px] font-bold text-[#17191C]">
                 {action.label}
               </Text>
             </Pressable>
@@ -195,7 +195,7 @@ export default function Home({ onActionPress }: HomeProps) {
 
       <View className="mb-4 rounded-[18px] border border-[#ECE8DF] bg-white p-4">
         <View className="mb-4 flex-row items-center justify-between">
-          <Text className="text-[17px] font-black text-[#073E56]">
+          <Text className="text-[17px] font-black text-[#17191C]">
             Low Stock Alert
           </Text>
           <Pressable onPress={() => onActionPress?.('View Stock')}>
@@ -212,7 +212,7 @@ export default function Home({ onActionPress }: HomeProps) {
               <Text className="text-[18px]">▣</Text>
             </View>
             <View className="flex-1">
-              <Text numberOfLines={1} className="text-[13px] font-bold text-[#073E56]">
+              <Text numberOfLines={1} className="text-[13px] font-bold text-[#17191C]">
                 {item.name}
               </Text>
               <Text className="mt-1 text-[11px] text-[#94A3B8]">
@@ -230,7 +230,7 @@ export default function Home({ onActionPress }: HomeProps) {
 
       <View className="rounded-[18px] border border-[#ECE8DF] bg-white p-4">
         <View className="mb-4 flex-row items-center justify-between">
-          <Text className="text-[17px] font-black text-[#073E56]">
+          <Text className="text-[17px] font-black text-[#17191C]">
             Recent Orders
           </Text>
           <Pressable onPress={() => onActionPress?.('View Orders')}>
@@ -250,7 +250,7 @@ export default function Home({ onActionPress }: HomeProps) {
               </Text>
             </View>
             <View className="flex-1">
-              <Text className="text-[13px] font-black text-[#073E56]">
+              <Text className="text-[13px] font-black text-[#17191C]">
                 {order.id}
               </Text>
               <Text className="mt-0.5 text-[11px] text-[#94A3B8]">
@@ -258,7 +258,7 @@ export default function Home({ onActionPress }: HomeProps) {
               </Text>
             </View>
             <View className="items-end">
-              <Text className="text-[12px] font-black text-[#073E56]">
+              <Text className="text-[12px] font-black text-[#17191C]">
                 {order.amount}
               </Text>
               <Text

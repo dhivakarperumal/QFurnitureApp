@@ -35,12 +35,21 @@ function AppContent() {
     <View className="flex-1 bg-white">
       <TopHeader
         onMenuPress={() => console.log('Menu')}
-        onSearchPress={() => console.log('Search')}
         onNotificationPress={() => console.log('Notifications')}
         onProfilePress={() => console.log('Profile')}
+        onLogoutPress={() => console.log('Logout')}
+        onDrawerItemPress={item => setActiveItem(item)}
       />
       {activeItem === 'Home' ? (
-        <Home onActionPress={action => console.log(action)} />
+        <Home
+          onActionPress={action => {
+            if (action === 'Add Product' || action === 'Categories' || action === 'Stock') {
+              setActiveItem('Products');
+            } else if (action === 'New Order') {
+              setActiveItem('Orders');
+            }
+          }}
+        />
       ) : activeItem === 'Products' ? (
         <Products onActionPress={action => console.log(action)} />
       ) : activeItem === 'Orders' ? (
@@ -57,7 +66,8 @@ function AppContent() {
       <Bottombar
         activeItem={activeItem}
         onItemPress={item => setActiveItem(item)}
-        onAddPress={() => console.log('Add')}
+        onAddPress={() => setActiveItem('Products')}
+        badgeCount={5}
       />
     </View>
   );
