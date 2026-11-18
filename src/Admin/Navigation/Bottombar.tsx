@@ -9,7 +9,7 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../theme/colors';
 
 export type BottomBarItem = 'Home' | 'Products' | 'Orders' | 'More';
@@ -142,7 +142,7 @@ function OrdersIcon({ color, active }: { color: string; active: boolean }) {
           iconStyles.bagBody,
           {
             borderColor: color,
-            backgroundColor: active ? 'rgba(255, 121, 0, 0.08)' : 'transparent',
+            backgroundColor: active ? 'rgba(249, 115, 22, 0.08)' : 'transparent',
           },
         ]}>
         {/* Receipt / Order Line */}
@@ -168,7 +168,7 @@ function MoreIcon({ color, active }: { color: string; active: boolean }) {
           iconStyles.moreCapsule,
           {
             borderColor: color,
-            backgroundColor: active ? 'rgba(255, 121, 0, 0.12)' : 'transparent',
+            backgroundColor: active ? 'rgba(249, 115, 22, 0.12)' : 'transparent',
           },
         ]}>
         <View style={[iconStyles.moreDot, { backgroundColor: color }]} />
@@ -186,7 +186,7 @@ function NavigationIcon({
   label: BottomBarItem;
   active: boolean;
 }) {
-  const color = active ? '#FF7900' : '#8E95A2';
+  const color = active ? colors.primary : '#9CA3AF';
 
   switch (label) {
     case 'Home':
@@ -258,7 +258,7 @@ export default function Bottombar({
 
   const renderTab = ({ label }: { label: BottomBarItem }) => {
     const isActive = activeItem === label;
-    const color = isActive ? '#FF7900' : '#8E95A2';
+    const color = isActive ? colors.primary : '#9CA3AF';
 
     return (
       <Pressable
@@ -311,13 +311,11 @@ export default function Bottombar({
   const safeBottom = Math.max(insets.bottom, 12);
 
   return (
-    <View
+    <SafeAreaView
+      edges={['bottom']}
       pointerEvents="box-none"
       style={[
         styles.outerContainer,
-        {
-          paddingBottom: safeBottom,
-        },
         style,
       ]}
       className={className}>
@@ -375,7 +373,7 @@ export default function Bottombar({
           </View>
         </Pressable>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -392,22 +390,22 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
     paddingHorizontal: 0,
-    backgroundColor: colors.surface,
+    backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
-    borderTopColor: colors.border,
+    borderTopColor: '#E5E7EB',
     zIndex: 99,
   },
   dockBar: {
     width: '100%',
     height: 68,
-    backgroundColor: colors.surface,
+    backgroundColor: '#FFFFFF',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 6,
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.08,
+    shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 4,
   },
@@ -432,7 +430,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
   activeTabContent: {
-    backgroundColor: 'rgba(255, 121, 0, 0.12)',
+    backgroundColor: 'rgba(249, 115, 22, 0.12)',
   },
   iconWrapper: {
     width: 24,
@@ -451,7 +449,7 @@ const styles = StyleSheet.create({
     width: 4,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#FF7900',
+    backgroundColor: colors.primary,
   },
   badge: {
     position: 'absolute',
@@ -465,7 +463,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 2,
     borderWidth: 1.5,
-    borderColor: '#17191C',
+    borderColor: '#FFFFFF',
   },
   badgeText: {
     fontSize: 8,
@@ -492,18 +490,18 @@ const styles = StyleSheet.create({
     width: 54,
     height: 54,
     borderRadius: 27,
-    backgroundColor: '#FF7900',
+    backgroundColor: colors.primary,
   },
   fabButton: {
     width: 54,
     height: 54,
     borderRadius: 27,
-    backgroundColor: '#FF7900',
+    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 4,
-    borderColor: colors.surface,
-    shadowColor: '#FF7900',
+    borderColor: '#FFFFFF',
+    shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.5,
     shadowRadius: 10,
@@ -536,7 +534,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '700',
     letterSpacing: 0.3,
-    color: '#FF9D00',
+    color: colors.primary,
   },
 });
 
