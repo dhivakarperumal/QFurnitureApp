@@ -55,24 +55,29 @@ const rightNavigationItems: ReadonlyArray<NavigationItem> = [
 function HomeIcon({ active }: { active: boolean }) {
   const color = active ? '#FF6A00' : '#404B5A';
 
-  if (active) {
-    return (
-      <Svg width={27} height={27} viewBox="0 0 28 28" fill="none">
-        <Path
-          d="M12.4 3.2C13.3 2.3 14.7 2.3 15.6 3.2L24.2 11.2C25.1 12 25.4 13.2 24.8 14.2C24.3 15.1 23.2 15.6 22.1 15.6H22V23C22 24.1 21.1 25 20 25H16.5C15.7 25 15 24.3 15 23.5V17.5C15 16.9 14.6 16.5 14 16.5C13.4 16.5 13 16.9 13 17.5V23.5C13 24.3 12.3 25 11.5 25H8C6.9 25 6 24.1 6 23V15.6H5.9C4.8 15.6 3.7 15.1 3.2 14.2C2.6 13.2 2.9 12 3.8 11.2L12.4 3.2Z"
-          fill={color}
-        />
-      </Svg>
-    );
-  }
-
   return (
     <Svg width={25} height={25} viewBox="0 0 28 28" fill="none">
       <Path
-        d="M12.4 3.2C13.3 2.3 14.7 2.3 15.6 3.2L24.2 11.2C25.1 12 25.4 13.2 24.8 14.2C24.3 15.1 23.2 15.6 22.1 15.6H22V23C22 24.1 21.1 25 20 25H16.5C15.7 25 15 24.3 15 23.5V17.5C15 16.9 14.6 16.5 14 16.5C13.4 16.5 13 16.9 13 17.5V23.5C13 24.3 12.3 25 11.5 25H8C6.9 25 6 24.1 6 23V15.6H5.9C4.8 15.6 3.7 15.1 3.2 14.2C2.6 13.2 2.9 12 3.8 11.2L12.4 3.2Z"
-        stroke={color}
-        strokeWidth={2.3}
+        d="M7.2 2.2h13.6a5 5 0 0 1 5 5v5.1H2.2V7.2a5 5 0 0 1 5-5Z"
+        fill={color}
+      />
+      <Path
+        d="M4.6 8.5c-2.2 0-4 1.8-4 4v5.1c0 3 2.4 5.4 5.4 5.4h16c3 0 5.4-2.4 5.4-5.4v-5.1c0-2.2-1.8-4-4-4h-1v4.1c0 1.8-1.4 3.2-3.2 3.2H8.8c-1.8 0-3.2-1.4-3.2-3.2V8.5H4.6Z"
+        fill={color}
+      />
+      <Path
+        d="M5.8 8.5v3.7a2.9 2.9 0 0 0 2.9 2.9h10.6a2.9 2.9 0 0 0 2.9-2.9V8.5"
+        stroke="#FFFFFF"
+        strokeWidth={1.7}
+        strokeLinecap="round"
         strokeLinejoin="round"
+      />
+      <Path
+        d="M4.3 22.5h2.4l-.6 2.1a1.4 1.4 0 0 1-2.8-.5l1-1.6Zm17 0h2.4l1 1.6a1.4 1.4 0 0 1-2.8.5l-.6-2.1Z"
+        fill={color}
+        stroke={color}
+        strokeWidth={1.4}
+        strokeLinecap="round"
       />
     </Svg>
   );
@@ -82,7 +87,7 @@ function ProductsIcon({ active }: { active: boolean }) {
   const color = active ? '#FF6A00' : '#404B5A';
 
   return (
-    <Svg width={25} height={25} viewBox="0 0 28 28" fill="none">
+    <Svg width={27} height={27} viewBox="0 0 28 28" fill="none">
       <Path
         d="M8.2 6.7 14 3.4l5.8 3.3v6.8L14 17l-5.8-3.5V6.7Z"
         stroke={color}
@@ -117,29 +122,65 @@ function OrdersIcon({ active }: { active: boolean }) {
 
   return (
     <Svg width={25} height={25} viewBox="0 0 28 28" fill="none">
-      {/* Clipboard Sheet */}
-      <Rect
-        x="5.5"
-        y="5"
-        width="17"
-        height="19"
-        rx="3"
+      <Path
+        d="M7.5 5.2H2.5V25.5H22.1M20.5 5.2h5v4.4"
         stroke={color}
         strokeWidth={2.3}
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
-      {/* Top Clip */}
       <Path
-        d="M10 5V3.8C10 3.3 10.4 3 11 3H17C17.6 3 18 3.3 18 3.8V5"
+        d="M8.6 5.4a4.8 4.8 0 0 1 9.6 0v1.2H8.6V5.4Z"
         stroke={color}
         strokeWidth={2.2}
+        strokeLinejoin="round"
+      />
+      <Circle
+        cx="13.4"
+        cy="4.3"
+        r="1.5"
+        stroke={color}
+        strokeWidth={1.8}
+      />
+      <Rect
+        x="4.5"
+        y="10"
+        width="3.2"
+        height="3.2"
+        rx="0.2"
+        stroke={color}
+        strokeWidth={1.7}
+      />
+      <Rect
+        x="4.5"
+        y="15.3"
+        width="3.2"
+        height="3.2"
+        rx="0.2"
+        stroke={color}
+        strokeWidth={1.7}
+      />
+      <Rect
+        x="4.5"
+        y="20.6"
+        width="3.2"
+        height="3.2"
+        rx="0.2"
+        stroke={color}
+        strokeWidth={1.7}
+      />
+      <Path
+        d="M9.4 11.6h4.8m-4.8 5.2h3.2m-3.2 5.2h3.9"
+        stroke={color}
+        strokeWidth={1.7}
         strokeLinecap="round"
       />
-      {/* Order List Items */}
       <Path
-        d="M9.5 10.5H18.5M9.5 14.5H18.5M9.5 18.5H15"
+        d="m15.2 13.2 5.3-3.1 5.4 3.1-5.4 3.1-5.3-3.1Zm0 0v6.2l5.3 3.2 5.4-3.2v-6.2m-10.7 0 5.3 3.1 5.4-3.1m-5.4 3.1v6.3m-2.8-11.6 5.4 3.1"
         stroke={color}
-        strokeWidth={2.2}
+        strokeWidth={1.8}
         strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </Svg>
   );
