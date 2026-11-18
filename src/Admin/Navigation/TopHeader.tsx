@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Image,
   Modal,
@@ -7,6 +7,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   Bell,
   Ellipsis,
@@ -52,6 +53,56 @@ export default function TopHeader({
   const insets = useSafeAreaInsets();
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [profileVisible, setProfileVisible] = useState(false);
+  const [userInitial, setUserInitial] = useState<string | null>(null);
+  const [userName, setUserName] = useState('');
+  const [userEmail, setUserEmail] = useState('');
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadUserInitial = async () => {
+      let serializedUser: string | null;
+      try {
+        serializedUser = await AsyncStorage.getItem('user');
+      } catch (error) {
+        if (__DEV__) {
+          console.warn('[TopHeader] Could not read the saved user:', error);
+        }
+        return;
+      }
+
+      if (!serializedUser) return;
+
+      let user: unknown;
+      try {
+        user = JSON.parse(serializedUser);
+      } catch (error) {
+        if (__DEV__) {
+          console.warn('[TopHeader] The saved user data is invalid:', error);
+        }
+        return;
+      }
+
+      if (typeof user !== 'object' || user === null) return;
+      const name =
+        'name' in user && typeof user.name === 'string' ? user.name.trim() : '';
+      const email =
+        'email' in user && typeof user.email === 'string'
+          ? user.email.trim()
+          : '';
+      const initial = Array.from(name)[0]?.toLocaleUpperCase();
+      if (mounted) {
+        setUserName(name);
+        setUserEmail(email);
+        if (initial) setUserInitial(initial);
+      }
+    };
+
+    loadUserInitial();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const openDrawer = () => {
     setProfileVisible(false);
@@ -115,17 +166,23 @@ export default function TopHeader({
             accessibilityRole="button"
             onPress={toggleProfile}
             className="h-[42px] w-[42px] items-center justify-center rounded-full bg-white/20">
+              {userInitial ? (
+                <Text className="text-[18px] font-black text-white">
+                  {userInitial}
+                </Text>
+              ) : (
               <UserRound size={22} color="#FFFFFF" strokeWidth={2.2} />
+              )}
           </Pressable>
 
           {profileVisible && (
             <View className="absolute right-0 top-[50px] w-[210px] rounded-[12px] border border-[#E5E7EB] bg-white p-[8px] shadow-lg elevation-[12]">
               <View className="mb-[6px] border-b border-[#E5E7EB] px-[8px] pb-[8px]">
                 <Text numberOfLines={1} className="text-[14px] font-bold text-[#17191C]">
-                  Account
+                  {userName || 'Account'}
                 </Text>
                 <Text numberOfLines={1} className="mt-[2px] text-[12px] text-[#6B7280]">
-                  Logged in
+                  {userEmail || 'Email unavailable'}
                 </Text>
               </View>
               <Pressable

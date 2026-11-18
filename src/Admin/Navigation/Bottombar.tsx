@@ -301,11 +301,10 @@ export default function Bottombar({
           </View>
         </View>
 
-        {/* Center Floating Action Button (Elevated inside the scoop) */}
-        <View pointerEvents="box-none" style={styles.fabContainer}>
-          {/* Ambient Radiant Orange Aura */}
-          <View style={styles.fabAura} pointerEvents="none" />
-
+        {/* Center Floating Action Button (Locked to exact pixel center: cx - 33) */}
+        <View
+          pointerEvents="box-none"
+          style={[styles.fabContainer, { left: cx - 33 }]}>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Add Action"
@@ -314,12 +313,8 @@ export default function Bottombar({
               styles.fabButton,
               pressed && styles.fabPressed,
             ]}>
-            <Svg
-              width={66}
-              height={66}
-              viewBox="0 0 66 66"
-              pointerEvents="none"
-              style={StyleSheet.absoluteFill}>
+            {/* Unified SVG: Gradient Circle and Centered White Plus in one canvas */}
+            <Svg width={66} height={66} viewBox="0 0 66 66">
               <Defs>
                 <LinearGradient
                   id="centerFabGrad"
@@ -332,21 +327,44 @@ export default function Bottombar({
                   <Stop offset="100%" stopColor="#EE2E00" />
                 </LinearGradient>
               </Defs>
+              {/* Outer Glow Halo Ring */}
               <Circle
                 cx="33"
                 cy="33"
-                r="31"
+                r="32.5"
+                stroke="#FFA74F"
+                strokeWidth="1.5"
+                opacity={0.4}
+                fill="none"
+              />
+              {/* Main Gradient Circle with White Border */}
+              <Circle
+                cx="33"
+                cy="33"
+                r="30.5"
                 fill="url(#centerFabGrad)"
                 stroke="#FFFFFF"
                 strokeWidth="3.5"
               />
+              {/* Symmetrical White Plus Icon (Horizontal bar) */}
+              <Rect
+                x="21"
+                y="30.8"
+                width="24"
+                height="4.4"
+                rx="2.2"
+                fill="#FFFFFF"
+              />
+              {/* Symmetrical White Plus Icon (Vertical bar) */}
+              <Rect
+                x="30.8"
+                y="21"
+                width="4.4"
+                height="24"
+                rx="2.2"
+                fill="#FFFFFF"
+              />
             </Svg>
-
-            {/* Symmetrical White Plus Icon */}
-            <View style={styles.plusContainer}>
-              <View style={styles.plusHorizontal} />
-              <View style={styles.plusVertical} />
-            </View>
           </Pressable>
         </View>
       </View>
@@ -450,18 +468,9 @@ const styles = StyleSheet.create({
   fabContainer: {
     position: 'absolute',
     top: -24,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 66,
+    height: 66,
     zIndex: 20,
-  },
-  fabAura: {
-    position: 'absolute',
-    width: 74,
-    height: 74,
-    borderRadius: 37,
-    backgroundColor: 'rgba(255, 122, 0, 0.16)',
   },
   fabButton: {
     width: 66,
@@ -470,32 +479,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#FF6A00',
-    shadowOffset: { width: 0, height: 8 },
+    shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.45,
-    shadowRadius: 14,
-    elevation: 12,
+    shadowRadius: 12,
+    elevation: 10,
   },
   fabPressed: {
     transform: [{ scale: 0.94 }],
     opacity: 0.94,
-  },
-  plusContainer: {
-    width: 24,
-    height: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  plusHorizontal: {
-    width: 24,
-    height: 4.4,
-    borderRadius: 2.2,
-    backgroundColor: '#FFFFFF',
-  },
-  plusVertical: {
-    position: 'absolute',
-    width: 4.4,
-    height: 24,
-    borderRadius: 2.2,
-    backgroundColor: '#FFFFFF',
   },
 });
