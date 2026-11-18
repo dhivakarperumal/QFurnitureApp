@@ -57,7 +57,7 @@ function HomeIcon({ active }: { active: boolean }) {
 
   if (active) {
     return (
-      <Svg width={25} height={25} viewBox="0 0 28 28" fill="none">
+      <Svg width={27} height={27} viewBox="0 0 28 28" fill="none">
         <Path
           d="M12.4 3.2C13.3 2.3 14.7 2.3 15.6 3.2L24.2 11.2C25.1 12 25.4 13.2 24.8 14.2C24.3 15.1 23.2 15.6 22.1 15.6H22V23C22 24.1 21.1 25 20 25H16.5C15.7 25 15 24.3 15 23.5V17.5C15 16.9 14.6 16.5 14 16.5C13.4 16.5 13 16.9 13 17.5V23.5C13 24.3 12.3 25 11.5 25H8C6.9 25 6 24.1 6 23V15.6H5.9C4.8 15.6 3.7 15.1 3.2 14.2C2.6 13.2 2.9 12 3.8 11.2L12.4 3.2Z"
           fill={color}
@@ -84,16 +84,29 @@ function ProductsIcon({ active }: { active: boolean }) {
   return (
     <Svg width={25} height={25} viewBox="0 0 28 28" fill="none">
       <Path
-        d="M10 9.5V7C10 4.8 11.8 3 14 3C16.2 3 18 4.8 18 7V9.5"
+        d="M8.2 6.7 14 3.4l5.8 3.3v6.8L14 17l-5.8-3.5V6.7Z"
         stroke={color}
-        strokeWidth={2.4}
-        strokeLinecap="round"
+        strokeWidth={2.1}
+        strokeLinejoin="round"
       />
       <Path
-        d="M5.5 10.5C5.2 10.5 5 10.8 5.1 11.1L6.8 22.6C7 23.9 8.1 25 9.5 25H18.5C19.9 25 21 23.9 21.2 22.6L22.9 11.1C23 10.8 22.8 10.5 22.5 10.5H5.5Z"
+        d="m8.2 6.7 5.8 3.5 5.8-3.5M14 10.2V17m-3.5-11.1 5.8 3.5"
         stroke={color}
-        strokeWidth={2.4}
+        strokeWidth={1.8}
         strokeLinejoin="round"
+      />
+      <Path
+        d="m2.8 19.1 2.9-1.7 4.2 7.1L7 26.2l-4.2-7.1Zm2.9-1.7 3.3-1.9a4 4 0 0 1 3-.3l2.2.7a3.6 3.6 0 0 0 2.7-.3l4.5-2.6a1.5 1.5 0 0 1 2 .5 1.5 1.5 0 0 1-.5 2l-5.6 3.3a5.5 5.5 0 0 1-4 .5l-3.6-1a3.1 3.1 0 0 0-2.2.3l-.9.5"
+        stroke={color}
+        strokeWidth={1.8}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path
+        d="m4.7 4.4 1 .6m2-3.2.3 1.1m13.3 1.5-1 .6m-2-3.2-.3 1.1M3.3 10.1l1.1-.3m19.2.3-1.1-.3"
+        stroke={color}
+        strokeWidth={1.8}
+        strokeLinecap="round"
       />
     </Svg>
   );
@@ -137,29 +150,42 @@ function MoreIcon({ active }: { active: boolean }) {
 
   return (
     <Svg width={25} height={25} viewBox="0 0 28 28" fill="none">
-      <Circle
-        cx="6.5"
-        cy="14"
-        r="2.5"
+      <Rect
+        x="2"
+        y="2"
+        width="10"
+        height="10"
+        rx="2"
         stroke={color}
         strokeWidth={2.3}
-        fill={active ? color : 'none'}
       />
-      <Circle
-        cx="14"
-        cy="14"
-        r="2.5"
+      <Rect
+        x="16"
+        y="2"
+        width="10"
+        height="10"
+        rx="2"
         stroke={color}
         strokeWidth={2.3}
-        fill={active ? color : 'none'}
       />
-      <Circle
-        cx="21.5"
-        cy="14"
-        r="2.5"
+      <Rect
+        x="2"
+        y="16"
+        width="10"
+        height="10"
+        rx="2"
         stroke={color}
         strokeWidth={2.3}
-        fill={active ? color : 'none'}
+      />
+      <Rect
+        x="17.5"
+        y="17.5"
+        width="7"
+        height="7"
+        rx="1.5"
+        transform="rotate(45 21 21)"
+        stroke={color}
+        strokeWidth={2.3}
       />
     </Svg>
   );
