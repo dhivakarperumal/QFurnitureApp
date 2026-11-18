@@ -1,11 +1,10 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
-  Dimensions,
-  LayoutChangeEvent,
   Pressable,
   StyleProp,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
   ViewStyle,
 } from 'react-native';
@@ -175,49 +174,36 @@ export default function Bottombar({
   style,
 }: BottomBarProps) {
   const insets = useSafeAreaInsets();
-  const screenWidth = Dimensions.get('window').width;
-  const initialWidth = Math.min(screenWidth - 24, 460);
-  const [barWidth, setBarWidth] = useState(initialWidth);
+  const { width: windowWidth } = useWindowDimensions();
+  const barWidth = windowWidth;
 
-  const barHeight = 74;
-  const cornerRadius = 32;
+  const safeBottom = Math.max(insets.bottom, 8);
+  const barHeight = 68;
+  const totalHeight = barHeight + safeBottom;
+
   const cx = barWidth / 2;
   const scoopWidth = 52;
-  const scoopDepth = 40;
+  const scoopDepth = 38;
 
-  // Exact white pill path with center scoop cutout
-  const barPath = `M ${cornerRadius} 0
+  // Full-width flat white body path with center scoop cutout (no rounded outer corners)
+  const barPath = `M 0 0
     H ${cx - scoopWidth}
     C ${cx - 28} 0, ${cx - 20} ${scoopDepth}, ${cx} ${scoopDepth}
     C ${cx + 20} ${scoopDepth}, ${cx + 28} 0, ${cx + scoopWidth} 0
-    H ${barWidth - cornerRadius}
-    A ${cornerRadius} ${cornerRadius} 0 0 1 ${barWidth} ${cornerRadius}
-    V ${barHeight - cornerRadius}
-    A ${cornerRadius} ${cornerRadius} 0 0 1 ${barWidth - cornerRadius} ${barHeight}
-    H ${cornerRadius}
-    A ${cornerRadius} ${cornerRadius} 0 0 1 0 ${barHeight - cornerRadius}
-    V ${cornerRadius}
-    A ${cornerRadius} ${cornerRadius} 0 0 1 ${cornerRadius} 0
+    H ${barWidth}
+    V ${totalHeight}
+    H 0
     Z`;
 
-  // Exact top orange contour line path
-  const contourPath = `M 0 ${cornerRadius}
-    A ${cornerRadius} ${cornerRadius} 0 0 1 ${cornerRadius} 0
+  // Top orange contour line across the entire screen
+  const contourPath = `M 0 0
     H ${cx - scoopWidth}
     C ${cx - 28} 0, ${cx - 20} ${scoopDepth}, ${cx} ${scoopDepth}
     C ${cx + 20} ${scoopDepth}, ${cx + 28} 0, ${cx + scoopWidth} 0
-    H ${barWidth - cornerRadius}
-    A ${cornerRadius} ${cornerRadius} 0 0 1 ${barWidth} ${cornerRadius}`;
+    H ${barWidth}`;
 
   const isTabActive = (dest: BottomBarItem) => {
     return activeItem === dest;
-  };
-
-  const handleLayout = (e: LayoutChangeEvent) => {
-    const w = e.nativeEvent.layout.width;
-    if (w > 0 && Math.abs(w - barWidth) > 1) {
-      setBarWidth(w);
-    }
   };
 
   const renderTab = ({ destination, label }: NavigationItem) => {
@@ -240,12 +226,12 @@ export default function Bottombar({
 
             {/* Notification Badge */}
             {destination === 'Orders' && badgeCount > 0 && (
-                <View style={styles.badge}>
-                  <Text style={styles.badgeText}>
-                    {badgeCount > 9 ? '9+' : badgeCount}
-                  </Text>
-                </View>
-              )}
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>
+                  {badgeCount > 9 ? '9+' : badgeCount}
+                </Text>
+              </View>
+            )}
           </View>
 
           <Text
@@ -264,41 +250,30 @@ export default function Bottombar({
     );
   };
 
-  // Safe bottom spacing for home indicator & navigation bar
-  const safeBottom = Math.max(insets.bottom, 12);
-
   return (
     <View
       pointerEvents="box-none"
-      style={[
-        styles.outerContainer,
-        {
-          paddingBottom: safeBottom,
-        },
-        style,
-      ]}
+      style={[styles.outerContainer, style]}
       className={className}>
-      <View
-        style={[styles.barContainer, { width: barWidth }]}
-        onLayout={handleLayout}>
-        {/* SVG Background, Center Wave Cutout & Orange Contour Glow */}
+      <View style={[styles.barContainer, { width: barWidth, height: totalHeight }]}>
+        {/* Full-Width SVG Background, Center Wave Cutout & Orange Glow */}
         <Svg
           width={barWidth}
-          height={barHeight}
+          height={totalHeight}
           pointerEvents="none"
           style={StyleSheet.absoluteFill}>
           {/* Ambient Glow Paths */}
           <Path
             d={contourPath}
             stroke="#FF9533"
-            strokeWidth={7}
+            strokeWidth={6}
             strokeOpacity={0.22}
             fill="none"
           />
           <Path
             d={contourPath}
             stroke="#FFB366"
-            strokeWidth={3.5}
+            strokeWidth={3}
             strokeOpacity={0.35}
             fill="none"
           />
@@ -310,8 +285,8 @@ export default function Bottombar({
           <Path d={contourPath} stroke="#FF7A00" strokeWidth={2} fill="none" />
         </Svg>
 
-        {/* Tab Items Row */}
-        <View style={styles.tabsRow}>
+        {/* Tab Items Row (positioned in the interactive barHeight zone, above safeBottom) */}
+        <View style={[styles.tabsRow, { height: barHeight }]}>
           {/* Left Navigation: Home, Products */}
           <View style={styles.tabsGroup}>
             {leftNavigationItems.map(renderTab)}
@@ -327,48 +302,50 @@ export default function Bottombar({
         </View>
 
         {/* Center Floating Action Button (Elevated inside the scoop) */}
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Add Action"
-          onPress={onAddPress}
-          style={({ pressed }) => [
-            styles.fabButton,
-            pressed && styles.fabPressed,
-          ]}>
-          <Svg
-            width={66}
-            height={66}
-            viewBox="0 0 66 66"
-            pointerEvents="none"
-            style={StyleSheet.absoluteFill}>
-            <Defs>
-              <LinearGradient
-                id="centerFabGrad"
-                x1="0%"
-                y1="0%"
-                x2="0%"
-                y2="100%">
-                <Stop offset="0%" stopColor="#FFA033" />
-                <Stop offset="25%" stopColor="#FF7A00" />
-                <Stop offset="100%" stopColor="#EE3505" />
-              </LinearGradient>
-            </Defs>
-            <Circle
-              cx="33"
-              cy="33"
-              r="31"
-              fill="url(#centerFabGrad)"
-              stroke="#FFFFFF"
-              strokeWidth="3.5"
-            />
-          </Svg>
+        <View pointerEvents="box-none" style={styles.fabContainer}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Add Action"
+            onPress={onAddPress}
+            style={({ pressed }) => [
+              styles.fabButton,
+              pressed && styles.fabPressed,
+            ]}>
+            <Svg
+              width={66}
+              height={66}
+              viewBox="0 0 66 66"
+              pointerEvents="none"
+              style={StyleSheet.absoluteFill}>
+              <Defs>
+                <LinearGradient
+                  id="centerFabGrad"
+                  x1="0%"
+                  y1="0%"
+                  x2="0%"
+                  y2="100%">
+                  <Stop offset="0%" stopColor="#FFA033" />
+                  <Stop offset="25%" stopColor="#FF7A00" />
+                  <Stop offset="100%" stopColor="#EE3505" />
+                </LinearGradient>
+              </Defs>
+              <Circle
+                cx="33"
+                cy="33"
+                r="31"
+                fill="url(#centerFabGrad)"
+                stroke="#FFFFFF"
+                strokeWidth="3.5"
+              />
+            </Svg>
 
-          {/* Symmetrical White Plus Icon */}
-          <View style={styles.plusContainer}>
-            <View style={styles.plusHorizontal} />
-            <View style={styles.plusVertical} />
-          </View>
-        </Pressable>
+            {/* Symmetrical White Plus Icon */}
+            <View style={styles.plusContainer}>
+              <View style={styles.plusHorizontal} />
+              <View style={styles.plusVertical} />
+            </View>
+          </Pressable>
+        </View>
       </View>
     </View>
   );
@@ -389,21 +366,19 @@ const styles = StyleSheet.create({
     zIndex: 100,
   },
   barContainer: {
-    height: 74,
-    alignSelf: 'center',
+    width: '100%',
     position: 'relative',
     shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.1,
-    shadowRadius: 18,
-    elevation: 10,
+    shadowOffset: { width: 0, height: -3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 8,
   },
   tabsRow: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
-    bottom: 0,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -428,8 +403,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 6,
     paddingHorizontal: 12,
-    borderRadius: 20,
-    minWidth: 66,
+    borderRadius: 18,
+    minWidth: 64,
+    overflow: 'hidden',
   },
   activeTabContent: {
     backgroundColor: '#FEEFE6',
@@ -468,11 +444,16 @@ const styles = StyleSheet.create({
     width: 66,
     height: '100%',
   },
-  fabButton: {
+  fabContainer: {
     position: 'absolute',
     top: -26,
-    left: '50%',
-    marginLeft: -33,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 20,
+  },
+  fabButton: {
     width: 66,
     height: 66,
     borderRadius: 33,
@@ -483,7 +464,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.45,
     shadowRadius: 14,
     elevation: 12,
-    zIndex: 20,
   },
   fabPressed: {
     transform: [{ scale: 0.94 }],

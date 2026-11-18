@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  ImageBackground,
   Pressable,
   ScrollView,
   Text,
@@ -237,11 +238,12 @@ export default function Home({ onActionPress }: HomeProps) {
   return (
     <ScrollView
       showsVerticalScrollIndicator={false}
-      contentContainerClassName="px-4 pb-[255px]"
+      contentContainerClassName="px-2 pb-[255px]"
       style={{ paddingTop: insets.top + 84 }}>
-      <View className="mb-4 min-h-[118px] justify-center overflow-hidden rounded-[22px] bg-[#17191C] px-5 py-5">
-        <View className="absolute -right-10 -top-14 h-[130px] w-[130px] rounded-full bg-white/10" />
-        <View className="absolute -bottom-14 right-16 h-[110px] w-[110px] rounded-full bg-[#F59E0B]/20" />
+      <ImageBackground
+        source={require('../../Assert/images/welcome.png')}
+        resizeMode="cover"
+        className="mb-4 min-h-[148px] justify-center overflow-hidden rounded-[22px] px-5 py-5">
         <Text className="text-[12px] font-bold uppercase tracking-[2px] text-[#FFD45A]">
           Admin dashboard
         </Text>
@@ -251,7 +253,7 @@ export default function Home({ onActionPress }: HomeProps) {
         <Text className="mt-1 text-[13px] text-white/75">
           Here’s what’s happening with your store today.
         </Text>
-      </View>
+      </ImageBackground>
 
       {loadError ? (
         <View className="mb-4 rounded-[14px] border border-[#FECACA] bg-[#FEF2F2] p-4">
