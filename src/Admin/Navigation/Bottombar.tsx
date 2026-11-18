@@ -1,7 +1,5 @@
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 import {
-  Animated,
-  Easing,
   Pressable,
   StyleProp,
   StyleSheet,
@@ -9,6 +7,13 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
+import {
+  ChartNoAxesCombined,
+  House,
+  ShoppingBag,
+  UserRound,
+} from 'lucide-react-native';
+import Svg, { Circle, Defs, LinearGradient, Path, Stop } from 'react-native-svg';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../theme/colors';
 
@@ -23,161 +28,24 @@ export type BottomBarProps = {
   style?: StyleProp<ViewStyle>;
 };
 
-const leftNavigationItems: ReadonlyArray<{ label: BottomBarItem }> = [
-  { label: 'Home' },
-  { label: 'Products' },
+type NavigationItem = {
+  destination: BottomBarItem;
+  label: string;
+};
+
+const leftNavigationItems: ReadonlyArray<NavigationItem> = [
+  { destination: 'Home', label: 'Home' },
+  { destination: 'Products', label: 'Products' },
 ];
 
-const rightNavigationItems: ReadonlyArray<{ label: BottomBarItem }> = [
-  { label: 'Orders' },
-  { label: 'More' },
+const rightNavigationItems: ReadonlyArray<NavigationItem> = [
+  { destination: 'Orders', label: 'Reports' },
+  { destination: 'More', label: 'Profile' },
 ];
 
 /* -------------------------------------------------------------------------- */
 /*                                ICON DESIGNS                                */
 /* -------------------------------------------------------------------------- */
-
-function HomeIcon({ color, active }: { color: string; active: boolean }) {
-  return (
-    <View style={iconStyles.container}>
-      {/* Roof Apex with Eaves */}
-      <View
-        style={[
-          iconStyles.roof,
-          {
-            borderColor: color,
-          },
-        ]}
-      />
-      {/* House Body */}
-      <View
-        style={[
-          iconStyles.houseBody,
-          {
-            borderColor: color,
-          },
-        ]}>
-        {/* Doorway */}
-        <View
-          style={[
-            iconStyles.houseDoor,
-            {
-              backgroundColor: active ? color : 'transparent',
-              borderColor: color,
-              borderWidth: active ? 0 : 1.2,
-            },
-          ]}
-        />
-      </View>
-    </View>
-  );
-}
-
-function ProductsIcon({ color, active }: { color: string; active: boolean }) {
-  return (
-    <View style={iconStyles.container}>
-      {/* 2x2 Catalog Grid */}
-      <View style={iconStyles.gridRow}>
-        <View
-          style={[
-            iconStyles.gridTile,
-            {
-              backgroundColor: active ? color : 'transparent',
-              borderColor: color,
-              borderWidth: active ? 0 : 1.8,
-            },
-          ]}
-        />
-        <View
-          style={[
-            iconStyles.gridTile,
-            {
-              borderColor: color,
-              borderWidth: 1.8,
-            },
-          ]}
-        />
-      </View>
-      <View style={iconStyles.gridRow}>
-        <View
-          style={[
-            iconStyles.gridTile,
-            {
-              borderColor: color,
-              borderWidth: 1.8,
-            },
-          ]}
-        />
-        <View
-          style={[
-            iconStyles.gridTile,
-            {
-              backgroundColor: active ? color : 'transparent',
-              borderColor: color,
-              borderWidth: active ? 0 : 1.8,
-              opacity: active ? 0.55 : 1,
-            },
-          ]}
-        />
-      </View>
-    </View>
-  );
-}
-
-function OrdersIcon({ color, active }: { color: string; active: boolean }) {
-  return (
-    <View style={iconStyles.container}>
-      {/* Shopping / Order Bag Handle */}
-      <View
-        style={[
-          iconStyles.bagHandle,
-          {
-            borderColor: color,
-          },
-        ]}
-      />
-      {/* Bag Body */}
-      <View
-        style={[
-          iconStyles.bagBody,
-          {
-            borderColor: color,
-            backgroundColor: active ? 'rgba(249, 115, 22, 0.08)' : 'transparent',
-          },
-        ]}>
-        {/* Receipt / Order Line */}
-        <View
-          style={[
-            iconStyles.bagLine,
-            {
-              backgroundColor: color,
-            },
-          ]}
-        />
-      </View>
-    </View>
-  );
-}
-
-function MoreIcon({ color, active }: { color: string; active: boolean }) {
-  return (
-    <View style={iconStyles.container}>
-      {/* Capsule Frame with 3 Dots */}
-      <View
-        style={[
-          iconStyles.moreCapsule,
-          {
-            borderColor: color,
-            backgroundColor: active ? 'rgba(249, 115, 22, 0.12)' : 'transparent',
-          },
-        ]}>
-        <View style={[iconStyles.moreDot, { backgroundColor: color }]} />
-        <View style={[iconStyles.moreDot, { backgroundColor: color }]} />
-        <View style={[iconStyles.moreDot, { backgroundColor: color }]} />
-      </View>
-    </View>
-  );
-}
 
 function NavigationIcon({
   label,
@@ -190,13 +58,20 @@ function NavigationIcon({
 
   switch (label) {
     case 'Home':
-      return <HomeIcon color={color} active={active} />;
+      return (
+        <House
+          color={color}
+          fill={active ? color : 'transparent'}
+          size={24}
+          strokeWidth={2.2}
+        />
+      );
     case 'Products':
-      return <ProductsIcon color={color} active={active} />;
+      return <ShoppingBag color={color} size={24} strokeWidth={2.2} />;
     case 'Orders':
-      return <OrdersIcon color={color} active={active} />;
+      return <ChartNoAxesCombined color={color} size={24} strokeWidth={2.2} />;
     case 'More':
-      return <MoreIcon color={color} active={active} />;
+      return <UserRound color={color} size={24} strokeWidth={2.2} />;
     default:
       return null;
   }
@@ -216,57 +91,17 @@ export default function Bottombar({
 }: BottomBarProps) {
   const insets = useSafeAreaInsets();
 
-  // Pulse Animation for the Center Button
-  const pulseAnim = useRef(new Animated.Value(1)).current;
-  const pulseOpacity = useRef(new Animated.Value(0.45)).current;
-
-  useEffect(() => {
-    const pulseLoop = Animated.loop(
-      Animated.parallel([
-        Animated.sequence([
-          Animated.timing(pulseAnim, {
-            toValue: 1.28,
-            duration: 1800,
-            easing: Easing.out(Easing.ease),
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulseAnim, {
-            toValue: 1,
-            duration: 0,
-            useNativeDriver: true,
-          }),
-        ]),
-        Animated.sequence([
-          Animated.timing(pulseOpacity, {
-            toValue: 0,
-            duration: 1800,
-            easing: Easing.out(Easing.ease),
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulseOpacity, {
-            toValue: 0.45,
-            duration: 0,
-            useNativeDriver: true,
-          }),
-        ]),
-      ]),
-    );
-
-    pulseLoop.start();
-    return () => pulseLoop.stop();
-  }, [pulseAnim, pulseOpacity]);
-
-  const renderTab = ({ label }: { label: BottomBarItem }) => {
-    const isActive = activeItem === label;
+  const renderTab = ({ destination, label }: NavigationItem) => {
+    const isActive = activeItem === destination;
     const color = isActive ? colors.primary : '#4B5563';
 
     return (
       <Pressable
-        key={label}
+        key={destination}
         accessibilityRole="tab"
         accessibilityState={{ selected: isActive }}
         accessibilityLabel={`${label} Tab`}
-        onPress={() => onItemPress?.(label)}
+        onPress={() => onItemPress?.(destination)}
         style={({ pressed }) => [
           styles.tabButton,
           pressed && { opacity: 0.65 },
@@ -277,10 +112,10 @@ export default function Bottombar({
             isActive && styles.activeTabContent,
           ]}>
           <View style={styles.iconWrapper}>
-            <NavigationIcon label={label} active={isActive} />
+            <NavigationIcon label={destination} active={isActive} />
 
             {/* Optional Notification Badge (e.g. for Orders) */}
-            {label === 'Orders' && badgeCount > 0 && (
+            {destination === 'Orders' && badgeCount > 0 && (
               <View style={styles.badge}>
                 <Text style={styles.badgeText}>
                   {badgeCount > 9 ? '9+' : badgeCount}
@@ -319,6 +154,18 @@ export default function Bottombar({
       className={className}>
       {/* Dock Bar */}
       <View style={styles.dockBar}>
+        <Svg
+          pointerEvents="none"
+          style={styles.centerWave}
+          viewBox="0 0 400 48"
+          preserveAspectRatio="none">
+          <Path
+            d="M0 1 H140 C164 1 172 4 184 19 C192 29 194 43 200 43 C206 43 208 29 216 19 C228 4 236 1 260 1 H400"
+            fill="none"
+            stroke="#FDBA74"
+            strokeWidth={2}
+          />
+        </Svg>
         {/* Left Tabs: Home, Products */}
         <View style={styles.tabsGroup}>
           {leftNavigationItems.map(renderTab)}
@@ -343,15 +190,7 @@ export default function Bottombar({
           },
         ]}>
         {/* Ambient Pulse Ring */}
-        <Animated.View
-          style={[
-            styles.pulseRing,
-            {
-              transform: [{ scale: pulseAnim }],
-              opacity: pulseOpacity,
-            },
-          ]}
-        />
+        <View style={styles.pulseRing} />
 
         {/* Main Floating Action Button */}
         <Pressable
@@ -362,6 +201,33 @@ export default function Bottombar({
             styles.fabButton,
             pressed && styles.fabPressed,
           ]}>
+          <Svg
+            pointerEvents="none"
+            style={styles.fabSvg}
+            viewBox="0 0 72 72">
+            <Defs>
+              <LinearGradient id="centerFabGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                <Stop offset="0%" stopColor="#FF7900" />
+                <Stop offset="100%" stopColor="#EF3B0C" />
+              </LinearGradient>
+            </Defs>
+            <Circle
+              cx="36"
+              cy="36"
+              r="35"
+              fill="none"
+              stroke="#FDBA74"
+              strokeWidth="2"
+            />
+            <Circle
+              cx="36"
+              cy="36"
+              r="32"
+              fill="url(#centerFabGradient)"
+              stroke="#FFFFFF"
+              strokeWidth="3.5"
+            />
+          </Svg>
           {/* Precision Symmetrical Plus Icon */}
           <View style={styles.plusContainer}>
             <View style={styles.plusHorizontal} />
@@ -385,17 +251,16 @@ const styles = StyleSheet.create({
     bottom: 0,
     width: '100%',
     alignItems: 'center',
-    paddingHorizontal: 4,
+    paddingHorizontal: 0,
     backgroundColor: '#FFFFFF',
     zIndex: 99,
   },
   dockBar: {
-    width: '98%',
+    width: '100%',
     height: 82,
     backgroundColor: '#FFFFFF',
-    borderRadius: 41,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -405,6 +270,13 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.12,
     shadowRadius: 14,
     elevation: 8,
+  },
+  centerWave: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: 48,
   },
   tabsGroup: {
     flex: 1,
@@ -437,7 +309,7 @@ const styles = StyleSheet.create({
   },
   tabLabel: {
     marginTop: 3,
-    fontSize: 11,
+    fontSize: 14,
     letterSpacing: 0.2,
   },
   badge: {
@@ -460,151 +332,68 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   centerSlot: {
-    width: 82,
+    width: 88,
     height: '100%',
   },
   floatingFabWrapper: {
     position: 'absolute',
     alignItems: 'center',
     justifyContent: 'center',
-    width: 86,
-    height: 86,
+    width: 88,
+    height: 88,
     zIndex: 101,
   },
   pulseRing: {
     position: 'absolute',
-    width: 86,
-    height: 86,
-    borderRadius: 43,
+    width: 88,
+    height: 88,
+    borderRadius: 44,
     borderWidth: 2,
     borderColor: '#FED7AA',
     backgroundColor: 'rgba(249, 115, 22, 0.12)',
   },
   fabButton: {
-    width: 68,
-    height: 68,
-    borderRadius: 34,
-    backgroundColor: colors.primary,
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 4,
-    borderColor: '#FFFFFF',
+    overflow: 'visible',
     shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.5,
     shadowRadius: 10,
     elevation: 10,
   },
+  fabSvg: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+  },
   fabPressed: {
     transform: [{ scale: 0.92 }],
     opacity: 0.92,
   },
   plusContainer: {
-    width: 20,
-    height: 20,
+    width: 28,
+    height: 28,
     alignItems: 'center',
     justifyContent: 'center',
   },
   plusHorizontal: {
-    width: 18,
-    height: 3,
-    borderRadius: 1.5,
+    width: 28,
+    height: 4,
+    borderRadius: 2,
     backgroundColor: '#FFFFFF',
   },
   plusVertical: {
     position: 'absolute',
-    width: 3,
-    height: 18,
-    borderRadius: 1.5,
+    width: 4,
+    height: 28,
+    borderRadius: 2,
     backgroundColor: '#FFFFFF',
-  },
-});
-
-const iconStyles = StyleSheet.create({
-  container: {
-    width: 24,
-    height: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  // Home
-  roof: {
-    position: 'absolute',
-    top: 2,
-    width: 13,
-    height: 13,
-    transform: [{ rotate: '45deg' }],
-    borderLeftWidth: 2.2,
-    borderTopWidth: 2.2,
-    borderRadius: 1.5,
-  },
-  houseBody: {
-    position: 'absolute',
-    bottom: 2.5,
-    width: 15,
-    height: 11,
-    borderLeftWidth: 2,
-    borderRightWidth: 2,
-    borderBottomWidth: 2,
-    borderBottomLeftRadius: 3,
-    borderBottomRightRadius: 3,
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-  },
-  houseDoor: {
-    width: 4.5,
-    height: 5.5,
-    borderTopLeftRadius: 2,
-    borderTopRightRadius: 2,
-  },
-  // Products (2x2 Grid)
-  gridRow: {
-    flexDirection: 'row',
-    marginBottom: 2.5,
-  },
-  gridTile: {
-    width: 8,
-    height: 8,
-    borderRadius: 2.5,
-    marginRight: 2.5,
-  },
-  // Orders (Shopping / Order Bag)
-  bagHandle: {
-    width: 9,
-    height: 5.5,
-    borderTopLeftRadius: 4.5,
-    borderTopRightRadius: 4.5,
-    borderWidth: 2,
-    borderBottomWidth: 0,
-    marginBottom: -1,
-  },
-  bagBody: {
-    width: 18,
-    height: 13,
-    borderRadius: 3.5,
-    borderWidth: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  bagLine: {
-    width: 7,
-    height: 2,
-    borderRadius: 1,
-  },
-  // More (Capsule + 3 Dots)
-  moreCapsule: {
-    width: 22,
-    height: 15,
-    borderRadius: 7.5,
-    borderWidth: 1.8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  moreDot: {
-    width: 3,
-    height: 3,
-    borderRadius: 1.5,
-    marginHorizontal: 1.2,
   },
 });
