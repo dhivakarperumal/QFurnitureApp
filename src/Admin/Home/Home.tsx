@@ -7,6 +7,16 @@ import {
   Text,
   View,
 } from 'react-native';
+import {
+  Armchair,
+  Clock,
+  IndianRupee,
+  Package,
+  ShoppingBag,
+  Tag,
+  Truck,
+  Users,
+} from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '../../api';
 
@@ -45,6 +55,91 @@ type DashboardOrder = {
   created_at?: string;
 };
 
+type DashboardUser = {
+  role?: string;
+  user_type?: string;
+  account_type?: string;
+  status?: string;
+  account_status?: string;
+  is_active?: boolean | number | string;
+  active?: boolean | number | string;
+};
+
+type DashboardUsersResponse = {
+  users?: DashboardUser[];
+  data?: DashboardUser[];
+  pagination?: {
+    totalPages?: number | string;
+  };
+};
+
+type DashboardOffer = {
+  status?: string;
+  is_active?: boolean | number | string;
+  active?: boolean | number | string;
+  starts_at?: string;
+  ends_at?: string;
+  start_date?: string;
+  end_date?: string;
+  valid_from?: string;
+  valid_until?: string;
+};
+
+type DashboardOffersResponse = {
+  offers?: DashboardOffer[];
+  data?: DashboardOffer[];
+};
+
+type DashboardMetricIcon =
+  | 'products'
+  | 'orders'
+  | 'revenue'
+  | 'pending'
+  | 'transit'
+  | 'customers'
+  | 'stock'
+  | 'offers';
+
+type DashboardMetric = {
+  label: string;
+  description: string;
+  value: number | string;
+  color: string;
+  borderColor: string;
+  watermarkColor: string;
+  icon: DashboardMetricIcon;
+};
+
+function DashboardIcon({
+  name,
+  size,
+  color,
+}: {
+  name: DashboardMetricIcon;
+  size: number;
+  color: string;
+}) {
+  const props = { size, color, strokeWidth: 2.5 };
+  switch (name) {
+    case 'products':
+      return <ShoppingBag {...props} />;
+    case 'orders':
+      return <Armchair {...props} />;
+    case 'revenue':
+      return <IndianRupee {...props} />;
+    case 'pending':
+      return <Clock {...props} />;
+    case 'transit':
+      return <Truck {...props} />;
+    case 'customers':
+      return <Users {...props} />;
+    case 'stock':
+      return <Package {...props} />;
+    case 'offers':
+      return <Tag {...props} />;
+  }
+}
+
 const quickActions = [
   { label: 'Add Product', icon: '＋', color: '#F59E0B' },
   { label: 'New Order', icon: '▤', color: '#3B82F6' },
@@ -69,13 +164,78 @@ const toNumber = (value: number | string | null | undefined, fallback = 0) => {
 const formatCurrency = (value: number) =>
   `₹${value.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
 
+const formatDashboardRevenue = (value: number) => {
+  if (value >= 100000) return `₹${(value / 100000).toFixed(2)}L`;
+  if (value >= 1000) return `₹${(value / 1000).toFixed(1)}K`;
+  return formatCurrency(value);
+};
+
 const formatOrderId = (order: DashboardOrder) =>
   order.order_id || `ORD${String(order.id).padStart(4, '0')}`;
+
+const normalizeStatus = (status?: string) => (status ?? '').trim().toLowerCase();
+
+const getListData = <T,>(
+  response: T[] | { users?: T[]; offers?: T[]; data?: T[] } | undefined,
+  key: 'users' | 'offers',
+): T[] => {
+  if (Array.isArray(response)) return response;
+  if (response && Array.isArray(response[key])) return response[key];
+  if (response && Array.isArray(response.data)) return response.data;
+  throw new Error(`The ${key} response did not contain a list.`);
+};
+
+const isActiveCustomer = (user: DashboardUser) => {
+  const role = (user.role ?? user.user_type ?? user.account_type ?? '')
+    .trim()
+    .toLowerCase();
+  const status = (user.account_status ?? user.status ?? '').trim().toLowerCase();
+  const customerRole = !role || ['customer', 'user', 'client'].includes(role);
+  const activeFlag = user.is_active ?? user.active;
+  const active = activeFlag === undefined
+    ? !['inactive', 'disabled'].includes(status)
+    : activeFlag === true ||
+      activeFlag === 1 ||
+      ['1', 'true'].includes(String(activeFlag).trim().toLowerCase());
+  return customerRole && active && (!status || ['active', 'enabled'].includes(status));
+};
+
+const isActiveOffer = (offer: DashboardOffer, now: number) => {
+  const activeFlag = offer.is_active ?? offer.active;
+  const normalizedFlag =
+    typeof activeFlag === 'string' ? activeFlag.trim().toLowerCase() : activeFlag;
+  if (normalizedFlag === false || normalizedFlag === 0 || normalizedFlag === '0' || normalizedFlag === 'false') {
+    return false;
+  }
+  const flagMarksActive =
+    normalizedFlag === true ||
+    normalizedFlag === 1 ||
+    normalizedFlag === '1' ||
+    normalizedFlag === 'true';
+  if (!flagMarksActive && normalizeStatus(offer.status) !== 'active') {
+    return false;
+  }
+
+  const start = offer.starts_at ?? offer.start_date ?? offer.valid_from;
+  const end = offer.ends_at ?? offer.end_date ?? offer.valid_until;
+  const startsAt = start ? new Date(start).getTime() : Number.NEGATIVE_INFINITY;
+  const endDate = end ? new Date(end) : null;
+  if (end && /^\d{4}-\d{2}-\d{2}$/.test(end) && endDate) {
+    endDate.setHours(23, 59, 59, 999);
+  }
+  const endsAt = endDate ? endDate.getTime() : Number.POSITIVE_INFINITY;
+  return (
+    (!start || (!Number.isNaN(startsAt) && startsAt <= now)) &&
+    (!end || (!Number.isNaN(endsAt) && endsAt >= now))
+  );
+};
 
 export default function Home({ onActionPress }: HomeProps) {
   const insets = useSafeAreaInsets();
   const [products, setProducts] = useState<DashboardProduct[]>([]);
   const [orders, setOrders] = useState<DashboardOrder[]>([]);
+  const [customers, setCustomers] = useState<DashboardUser[]>([]);
+  const [offers, setOffers] = useState<DashboardOffer[]>([]);
   const [totalProductCount, setTotalProductCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -95,9 +255,14 @@ export default function Home({ onActionPress }: HomeProps) {
         exclude_combo_products: true,
         page: 1,
       };
-      const [productsResponse, ordersResponse] = await Promise.all([
+      const [productsResponse, ordersResponse, customersResponse, offersResponse] =
+        await Promise.all([
         api.get<ProductsResponse>('/products', { params: productParams }),
         api.get<DashboardOrder[]>('/orders', { params: { status: 'All' } }),
+        api.get<DashboardUsersResponse | DashboardUser[]>('/users', {
+          params: { page: 1, limit: 100 },
+        }),
+        api.get<DashboardOffersResponse | DashboardOffer[]>('/offers'),
       ]);
 
       if (!Array.isArray(productsResponse.data?.products)) {
@@ -105,6 +270,21 @@ export default function Home({ onActionPress }: HomeProps) {
       }
       if (!Array.isArray(ordersResponse.data)) {
         throw new Error('The orders response did not contain an order list.');
+      }
+      const allCustomers = getListData(customersResponse.data, 'users');
+      const offerList = getListData(offersResponse.data, 'offers');
+      const customerPagination = Array.isArray(customersResponse.data)
+        ? undefined
+        : customersResponse.data.pagination;
+      const customerTotalPages = Math.max(
+        1,
+        toNumber(customerPagination?.totalPages, 1),
+      );
+      for (let page = 2; page <= customerTotalPages; page += 1) {
+        const pageResponse = await api.get<
+          DashboardUsersResponse | DashboardUser[]
+        >('/users', { params: { page, limit: 100 } });
+        allCustomers.push(...getListData(pageResponse.data, 'users'));
       }
 
       const allProducts = [...productsResponse.data.products];
@@ -127,6 +307,8 @@ export default function Home({ onActionPress }: HomeProps) {
         toNumber(productsResponse.data.stats?.total, allProducts.length),
       );
       setOrders(ordersResponse.data);
+      setCustomers(allCustomers);
+      setOffers(offerList);
     } catch (error: unknown) {
       const message =
         typeof error === 'object' &&
@@ -145,23 +327,6 @@ export default function Home({ onActionPress }: HomeProps) {
     loadDashboard();
   }, [loadDashboard]);
 
-  const dashboardStats = useMemo(() => {
-    const revenue = orders.reduce(
-      (total, order) => total + toNumber(order.total_amount),
-      0,
-    );
-    const pending = orders.filter(
-      order => !['delivered', 'cancelled'].includes((order.status ?? '').toLowerCase()),
-    ).length;
-
-    return [
-      { label: 'Total Products', value: totalProductCount, icon: '▣', color: '#F59E0B' },
-      { label: 'Orders', value: orders.length, icon: '▤', color: '#10B981' },
-      { label: 'Revenue', value: formatCurrency(revenue), icon: '₹', color: '#F97316' },
-      { label: 'Pending', value: pending, icon: '◷', color: '#EF4444' },
-    ];
-  }, [orders, totalProductCount]);
-
   const lowStockProducts = useMemo(
     () =>
       products.filter(product => {
@@ -178,6 +343,51 @@ export default function Home({ onActionPress }: HomeProps) {
       }),
     [products],
   );
+
+  const dashboardStats = useMemo<DashboardMetric[]>(() => {
+    const activeOrders = orders.filter(
+      order => normalizeStatus(order.status) !== 'cancelled',
+    );
+    const revenue = activeOrders.reduce(
+      (total, order) => total + toNumber(order.total_amount),
+      0,
+    );
+    const pendingOrders = orders.filter(order =>
+      ['order placed', 'new', 'processing', 'packing'].includes(
+        normalizeStatus(order.status),
+      ),
+    ).length;
+    const ordersInTransit = orders.filter(order =>
+      ['shipping', 'shipped', 'out for delivery'].includes(
+        normalizeStatus(order.status),
+      ),
+    ).length;
+    const activeCustomerCount = customers.filter(isActiveCustomer).length;
+    const activeOfferCount = offers.filter(offer =>
+      isActiveOffer(offer, Date.now()),
+    ).length;
+    const style = [
+      { color: '#F97316', borderColor: '#FCE6D7', watermarkColor: '#FFF0E3' },
+      { color: '#10B981', borderColor: '#D5F5E9', watermarkColor: '#DDF8ED' },
+      { color: '#F59E0B', borderColor: '#FDECC8', watermarkColor: '#FFF4D8' },
+      { color: '#F43F5E', borderColor: '#FFE0E7', watermarkColor: '#FFE9EE' },
+      { color: '#3B82F6', borderColor: '#DBEAFE', watermarkColor: '#E8F1FF' },
+      { color: '#06B6D4', borderColor: '#CFFAFE', watermarkColor: '#E0FBFE' },
+      { color: '#A855F7', borderColor: '#F0DFFF', watermarkColor: '#F6ECFF' },
+      { color: '#8B5CF6', borderColor: '#E9DDFF', watermarkColor: '#F1EAFF' },
+    ];
+
+    return [
+      { label: 'Products', description: 'Items in your catalog', value: totalProductCount, icon: 'products', ...style[0] },
+      { label: 'Orders', description: 'All recorded orders', value: orders.length, icon: 'orders', ...style[1] },
+      { label: 'Revenue', description: 'Excluding cancelled orders', value: formatDashboardRevenue(revenue), icon: 'revenue', ...style[2] },
+      { label: 'Pending Orders', description: 'Awaiting fulfillment', value: pendingOrders, icon: 'pending', ...style[3] },
+      { label: 'Orders in Transit', description: 'Shipping or out for delivery', value: ordersInTransit, icon: 'transit', ...style[4] },
+      { label: 'Customers', description: 'Active customer accounts', value: activeCustomerCount, icon: 'customers', ...style[5] },
+      { label: 'Low Stock', description: 'At or below reorder level', value: lowStockProducts.length, icon: 'stock', ...style[6] },
+      { label: 'Active Offers', description: 'Currently active promotions', value: activeOfferCount, icon: 'offers', ...style[7] },
+    ];
+  }, [customers, lowStockProducts.length, offers, orders, totalProductCount]);
 
   const orderStatusSummary = useMemo(
     () =>
@@ -238,7 +448,7 @@ export default function Home({ onActionPress }: HomeProps) {
   return (
     <ScrollView
       showsVerticalScrollIndicator={false}
-      contentContainerClassName="px-2 pb-[255px]"
+      contentContainerClassName="px-3 pb-[255px]"
       style={{ paddingTop: insets.top + 84 }}>
       <ImageBackground
         source={require('../../Assert/images/welcome.png')}
@@ -273,18 +483,37 @@ export default function Home({ onActionPress }: HomeProps) {
         {dashboardStats.map(stat => (
           <View
             key={stat.label}
-            className="mb-3 w-[48%] rounded-[18px] border border-[#ECE8DF] bg-white p-4 shadow-sm elevation-[3]">
+            className="relative mb-3 h-[118px] w-[49%] justify-center overflow-hidden rounded-[16px] border bg-white pl-3 pr-2 shadow-sm elevation-[3]"
+            style={{ borderColor: stat.borderColor }}>
             <View
-              className="mb-3 h-[42px] w-[42px] items-center justify-center rounded-[14px]"
-              style={{ backgroundColor: stat.color }}>
-              <Text className="text-[21px] font-black text-white">{stat.icon}</Text>
+              className="absolute left-0 top-[16px] h-[86px] w-[4px] rounded-r-full"
+              style={{ backgroundColor: stat.color }}
+            />
+            <View className="absolute bottom-1 right-1">
+              <DashboardIcon
+                name={stat.icon}
+                size={48}
+                color={stat.watermarkColor}
+              />
             </View>
-            <Text className="text-[12px] font-bold text-[#718080]">
-              {stat.label}
-            </Text>
-            <Text className="mt-1 text-[24px] font-black text-[#17191C]">
-              {loading ? '—' : stat.value}
-            </Text>
+            <View className="flex-row items-center">
+              <View
+                className="h-[48px] w-[48px] items-center justify-center rounded-[12px] shadow-sm elevation-[3]"
+                style={{ backgroundColor: stat.color }}>
+                <DashboardIcon name={stat.icon} size={23} color="#FFFFFF" />
+              </View>
+              <View className="ml-3 flex-1">
+                <Text numberOfLines={2} className="text-[13px] font-bold text-[#17191C]">
+                  {stat.label}
+                </Text>
+                <Text className="text-[24px] font-black leading-[29px] text-[#17191C]">
+                  {loading ? '—' : stat.value}
+                </Text>
+                <Text numberOfLines={2} className="text-[10px] text-[#64748B]">
+                  {stat.description}
+                </Text>
+              </View>
+            </View>
           </View>
         ))}
       </View>

@@ -69,7 +69,7 @@ export default function TopHeader({
     <View
       style={[styles.header, { paddingTop: insets.top }]}
       className="absolute left-0 right-0 top-0 z-10">
-      <View className="h-[72px] flex-row items-center px-[12px]">
+      <View className="h-[72px] flex-row items-center px-2">
         <Pressable
           accessibilityLabel="Open menu"
           accessibilityRole="button"
@@ -163,7 +163,7 @@ export default function TopHeader({
         <View
           style={{ paddingTop: insets.top, backgroundColor: colors.primary }}
           className="flex-1">
-          <View className="h-[72px] flex-row items-center border-b border-white/30 px-[12px]">
+          <View className="h-[72px] flex-row items-center border-b border-white/30 px-2">
             <Image
               source={require('../../Assert/images/appicon.png')}
               className="h-[48px] w-[48px] rounded-full"

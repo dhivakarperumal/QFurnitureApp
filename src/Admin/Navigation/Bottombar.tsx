@@ -182,14 +182,14 @@ export default function Bottombar({
   const totalHeight = barHeight + safeBottom;
 
   const cx = barWidth / 2;
-  const scoopWidth = 52;
-  const scoopDepth = 38;
+  const scoopWidth = 60;
+  const scoopDepth = 43;
 
-  // Full-width flat white body path with center scoop cutout (no rounded outer corners)
+  // Full-width flat white body path with center scoop cutout
   const barPath = `M 0 0
     H ${cx - scoopWidth}
-    C ${cx - 28} 0, ${cx - 20} ${scoopDepth}, ${cx} ${scoopDepth}
-    C ${cx + 20} ${scoopDepth}, ${cx + 28} 0, ${cx + scoopWidth} 0
+    C ${cx - 36} 0, ${cx - 24} ${scoopDepth}, ${cx} ${scoopDepth}
+    C ${cx + 24} ${scoopDepth}, ${cx + 36} 0, ${cx + scoopWidth} 0
     H ${barWidth}
     V ${totalHeight}
     H 0
@@ -198,8 +198,8 @@ export default function Bottombar({
   // Top orange contour line across the entire screen
   const contourPath = `M 0 0
     H ${cx - scoopWidth}
-    C ${cx - 28} 0, ${cx - 20} ${scoopDepth}, ${cx} ${scoopDepth}
-    C ${cx + 20} ${scoopDepth}, ${cx + 28} 0, ${cx + scoopWidth} 0
+    C ${cx - 36} 0, ${cx - 24} ${scoopDepth}, ${cx} ${scoopDepth}
+    C ${cx + 24} ${scoopDepth}, ${cx + 36} 0, ${cx + scoopWidth} 0
     H ${barWidth}`;
 
   const isTabActive = (dest: BottomBarItem) => {
@@ -267,13 +267,13 @@ export default function Bottombar({
             d={contourPath}
             stroke="#FF9533"
             strokeWidth={6}
-            strokeOpacity={0.22}
+            strokeOpacity={0.25}
             fill="none"
           />
           <Path
             d={contourPath}
-            stroke="#FFB366"
-            strokeWidth={3}
+            stroke="#FFB066"
+            strokeWidth={3.5}
             strokeOpacity={0.35}
             fill="none"
           />
@@ -282,7 +282,7 @@ export default function Bottombar({
           <Path d={barPath} fill="#FFFFFF" />
 
           {/* Sharp Orange Contour Stroke */}
-          <Path d={contourPath} stroke="#FF7A00" strokeWidth={2} fill="none" />
+          <Path d={contourPath} stroke="#FF7A00" strokeWidth={2.4} fill="none" />
         </Svg>
 
         {/* Tab Items Row (positioned in the interactive barHeight zone, above safeBottom) */}
@@ -303,6 +303,9 @@ export default function Bottombar({
 
         {/* Center Floating Action Button (Elevated inside the scoop) */}
         <View pointerEvents="box-none" style={styles.fabContainer}>
+          {/* Ambient Radiant Orange Aura */}
+          <View style={styles.fabAura} pointerEvents="none" />
+
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Add Action"
@@ -324,9 +327,9 @@ export default function Bottombar({
                   y1="0%"
                   x2="0%"
                   y2="100%">
-                  <Stop offset="0%" stopColor="#FFA033" />
-                  <Stop offset="25%" stopColor="#FF7A00" />
-                  <Stop offset="100%" stopColor="#EE3505" />
+                  <Stop offset="0%" stopColor="#FFA233" />
+                  <Stop offset="30%" stopColor="#FF7300" />
+                  <Stop offset="100%" stopColor="#EE2E00" />
                 </LinearGradient>
               </Defs>
               <Circle
@@ -441,17 +444,24 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   centerGap: {
-    width: 66,
+    width: 72,
     height: '100%',
   },
   fabContainer: {
     position: 'absolute',
-    top: -26,
+    top: -24,
     left: 0,
     right: 0,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 20,
+  },
+  fabAura: {
+    position: 'absolute',
+    width: 74,
+    height: 74,
+    borderRadius: 37,
+    backgroundColor: 'rgba(255, 122, 0, 0.16)',
   },
   fabButton: {
     width: 66,
@@ -477,15 +487,15 @@ const styles = StyleSheet.create({
   },
   plusHorizontal: {
     width: 24,
-    height: 4.2,
-    borderRadius: 2.1,
+    height: 4.4,
+    borderRadius: 2.2,
     backgroundColor: '#FFFFFF',
   },
   plusVertical: {
     position: 'absolute',
-    width: 4.2,
+    width: 4.4,
     height: 24,
-    borderRadius: 2.1,
+    borderRadius: 2.2,
     backgroundColor: '#FFFFFF',
   },
 });
