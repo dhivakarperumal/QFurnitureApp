@@ -106,14 +106,14 @@ export default function Products({ onActionPress }: ProductsProps) {
             <Text className="text-[12px] font-bold uppercase tracking-[2px] text-[#F59E0B]">
               Catalog
             </Text>
-            <Text className="mt-1 text-[26px] font-black text-[#073E56]">
+            <Text className="mt-1 text-[26px] font-black text-[#17191C]">
               Products
             </Text>
           </View>
           <Pressable
             accessibilityRole="button"
             onPress={() => onActionPress?.('Add New Product')}
-            className="h-[46px] flex-row items-center rounded-[14px] bg-[#073E56] px-4 shadow-sm elevation-[4]">
+            className="h-[46px] flex-row items-center rounded-[14px] bg-[#17191C] px-4 shadow-sm elevation-[4]">
             <Text className="mr-2 text-[20px] font-bold text-white">＋</Text>
             <Text className="text-[12px] font-bold text-white">Add Product</Text>
           </Pressable>
@@ -130,7 +130,7 @@ export default function Products({ onActionPress }: ProductsProps) {
                 <Text className="text-[18px] font-black text-white">{stat.icon}</Text>
               </View>
               <Text className="text-[12px] font-bold text-[#718080]">{stat.label}</Text>
-              <Text className="mt-1 text-[24px] font-black text-[#073E56]">{stat.value}</Text>
+              <Text className="mt-1 text-[24px] font-black text-[#17191C]">{stat.value}</Text>
               <Text className="mt-1 text-[10px] text-[#94A3B8]">{stat.sub}</Text>
             </View>
           ))}
@@ -144,7 +144,7 @@ export default function Products({ onActionPress }: ProductsProps) {
               onChangeText={setSearchTerm}
               placeholder="Search products by name or SKU..."
               placeholderTextColor="#94A3B8"
-              className="flex-1 text-[13px] text-[#073E56]"
+              className="flex-1 text-[13px] text-[#17191C]"
             />
           </View>
 
@@ -159,7 +159,7 @@ export default function Products({ onActionPress }: ProductsProps) {
                 className={[
                   'mr-2 h-[38px] justify-center rounded-full border px-4',
                   status === item
-                    ? 'border-[#073E56] bg-[#073E56]'
+                    ? 'border-[#17191C] bg-[#17191C]'
                     : 'border-[#E2E8F0] bg-white',
                 ].join(' ')}>
                 <Text
@@ -185,7 +185,7 @@ export default function Products({ onActionPress }: ProductsProps) {
                   'h-[38px] w-[42px] items-center justify-center rounded-[9px]',
                   viewMode === 'grid' ? 'bg-white' : '',
                 ].join(' ')}>
-                <Text className="text-[17px] text-[#073E56]">▦</Text>
+                <Text className="text-[17px] text-[#17191C]">▦</Text>
               </Pressable>
               <Pressable
                 accessibilityLabel="List view"
@@ -194,7 +194,7 @@ export default function Products({ onActionPress }: ProductsProps) {
                   'h-[38px] w-[42px] items-center justify-center rounded-[9px]',
                   viewMode === 'list' ? 'bg-white' : '',
                 ].join(' ')}>
-                <Text className="text-[20px] text-[#073E56]">☷</Text>
+                <Text className="text-[20px] text-[#17191C]">☷</Text>
               </Pressable>
             </View>
           </View>
@@ -232,13 +232,13 @@ export default function Products({ onActionPress }: ProductsProps) {
                   <Text className="text-[9px] font-bold uppercase tracking-[1px] text-[#F59E0B]">
                     {product.category}
                   </Text>
-                  <Text numberOfLines={1} className="mt-1 text-[13px] font-black text-[#073E56]">
+                  <Text numberOfLines={1} className="mt-1 text-[13px] font-black text-[#17191C]">
                     {product.name}
                   </Text>
                   <Text className="mt-1 text-[9px] text-[#94A3B8]">SKU: {product.sku}</Text>
                   <View className="mt-3 flex-row items-center justify-between border-t border-[#F1F5F9] pt-3">
                     <View>
-                      <Text className="text-[14px] font-black text-[#073E56]">
+                      <Text className="text-[14px] font-black text-[#17191C]">
                         {formatRupees(product.price)}
                       </Text>
                       {product.mrp ? (
@@ -271,12 +271,12 @@ export default function Products({ onActionPress }: ProductsProps) {
                   <Text className="text-[9px] font-bold uppercase text-[#F59E0B]">
                     {product.category}
                   </Text>
-                  <Text numberOfLines={1} className="mt-0.5 text-[13px] font-black text-[#073E56]">
+                  <Text numberOfLines={1} className="mt-0.5 text-[13px] font-black text-[#17191C]">
                     {product.name}
                   </Text>
                   <Text className="mt-1 text-[10px] text-[#94A3B8]">SKU: {product.sku}</Text>
                   <View className="mt-2 flex-row items-center">
-                    <Text className="mr-2 text-[12px] font-black text-[#073E56]">
+                    <Text className="mr-2 text-[12px] font-black text-[#17191C]">
                       {formatRupees(product.price)}
                     </Text>
                     <View
@@ -307,9 +307,9 @@ export default function Products({ onActionPress }: ProductsProps) {
         animationType="fade"
         visible={stockProduct !== null}
         onRequestClose={() => setStockProduct(null)}>
-        <View className="flex-1 items-center justify-center bg-[#073E56]/70 px-5">
+        <View className="flex-1 items-center justify-center bg-[#17191C]/70 px-5">
           <View className="w-full rounded-[24px] bg-white p-5">
-            <Text className="text-[18px] font-black text-[#073E56]">
+            <Text className="text-[18px] font-black text-[#17191C]">
               Update Stock
             </Text>
             <Text className="mt-1 text-[12px] text-[#94A3B8]">
@@ -320,7 +320,7 @@ export default function Products({ onActionPress }: ProductsProps) {
               onChangeText={setStockValue}
               keyboardType="number-pad"
               placeholder="0"
-              className="my-5 h-[64px] rounded-[16px] border border-[#E2E8F0] bg-[#F8FAFC] text-center text-[24px] font-black text-[#073E56]"
+              className="my-5 h-[64px] rounded-[16px] border border-[#E2E8F0] bg-[#F8FAFC] text-center text-[24px] font-black text-[#17191C]"
             />
             <View className="flex-row">
               <Pressable
@@ -330,7 +330,7 @@ export default function Products({ onActionPress }: ProductsProps) {
               </Pressable>
               <Pressable
                 onPress={saveStock}
-                className="h-[48px] flex-1 items-center justify-center rounded-[14px] bg-[#073E56]">
+                className="h-[48px] flex-1 items-center justify-center rounded-[14px] bg-[#17191C]">
                 <Text className="text-[12px] font-bold text-white">Update Stock</Text>
               </Pressable>
             </View>

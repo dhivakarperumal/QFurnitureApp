@@ -353,7 +353,7 @@ export default function Orders({
             <Text className="text-[10px] font-bold uppercase tracking-[1px] text-[#94A3B8]">
               Order ID
             </Text>
-            <Text className="mt-1 text-[14px] font-black text-[#073E56]">
+            <Text className="mt-1 text-[14px] font-black text-[#17191C]">
               {formatOrderId(order)}
             </Text>
           </View>
@@ -375,12 +375,12 @@ export default function Orders({
             </Text>
           </View>
           <View className="flex-1">
-            <Text className="text-[13px] font-bold text-[#073E56]">{customer}</Text>
+            <Text className="text-[13px] font-bold text-[#17191C]">{customer}</Text>
             <Text className="mt-0.5 text-[10px] text-[#94A3B8]">
               {order.customer_phone || order.customer_email || 'Contact unavailable'}
             </Text>
           </View>
-          <Text className="text-[15px] font-black text-[#073E56]">
+          <Text className="text-[15px] font-black text-[#17191C]">
             {formatCurrency(order.total_amount)}
           </Text>
         </Pressable>
@@ -416,12 +416,12 @@ export default function Orders({
         <View className="mt-3 flex-row">
           <Pressable
             onPress={() => openOrder(order)}
-            className="mr-2 h-[42px] flex-1 items-center justify-center rounded-[12px] border border-[#073E56]">
-            <Text className="text-[11px] font-bold text-[#073E56]">View Order</Text>
+            className="mr-2 h-[42px] flex-1 items-center justify-center rounded-[12px] border border-[#17191C]">
+            <Text className="text-[11px] font-bold text-[#17191C]">View Order</Text>
           </Pressable>
           <Pressable
             onPress={() => openOrder(order)}
-            className="h-[42px] flex-1 items-center justify-center rounded-[12px] bg-[#073E56]">
+            className="h-[42px] flex-1 items-center justify-center rounded-[12px] bg-[#17191C]">
             <Text className="text-[11px] font-bold text-white">Order Details →</Text>
           </Pressable>
         </View>
@@ -440,7 +440,7 @@ export default function Orders({
           <Text className="text-[12px] font-bold uppercase tracking-[2px] text-[#F59E0B]">
             Fulfilment
           </Text>
-          <Text className="mt-1 text-[26px] font-black text-[#073E56]">
+          <Text className="mt-1 text-[26px] font-black text-[#17191C]">
             Orders
           </Text>
         </View>
@@ -461,7 +461,7 @@ export default function Orders({
               <Text className="text-[10px] font-bold text-[#718080]">
                 {stat.label}
               </Text>
-              <Text className="mt-0.5 text-[23px] font-black text-[#073E56]">
+              <Text className="mt-0.5 text-[23px] font-black text-[#17191C]">
                 {stat.value}
               </Text>
               <Text className="mt-0.5 text-[9px] text-[#94A3B8]">{stat.note}</Text>
@@ -477,7 +477,7 @@ export default function Orders({
               onChangeText={setSearchTerm}
               placeholder="Search ID, customer, phone..."
               placeholderTextColor="#94A3B8"
-              className="flex-1 text-[13px] text-[#073E56]"
+              className="flex-1 text-[13px] text-[#17191C]"
             />
             {searchTerm.length > 0 && (
               <Pressable onPress={() => setSearchTerm('')}>
@@ -494,7 +494,7 @@ export default function Orders({
                 className={[
                   'mr-2 h-[36px] justify-center rounded-full border px-3',
                   activeStatus === item
-                    ? 'border-[#073E56] bg-[#073E56]'
+                    ? 'border-[#17191C] bg-[#17191C]'
                     : 'border-[#E2E8F0] bg-white',
                 ].join(' ')}>
                 <Text
@@ -520,7 +520,7 @@ export default function Orders({
                   'h-[34px] w-[40px] items-center justify-center rounded-[8px]',
                   viewMode === 'cards' ? 'bg-white' : '',
                 ].join(' ')}>
-                <Text className="text-[16px] text-[#073E56]">▦</Text>
+                <Text className="text-[16px] text-[#17191C]">▦</Text>
               </Pressable>
               <Pressable
                 accessibilityLabel="Compact list view"
@@ -529,7 +529,7 @@ export default function Orders({
                   'h-[34px] w-[40px] items-center justify-center rounded-[8px]',
                   viewMode === 'list' ? 'bg-white' : '',
                 ].join(' ')}>
-                <Text className="text-[17px] text-[#073E56]">☷</Text>
+                <Text className="text-[17px] text-[#17191C]">☷</Text>
               </Pressable>
             </View>
           </View>
@@ -548,7 +548,7 @@ export default function Orders({
 
         {loading ? (
           <View className="items-center rounded-[18px] border border-[#ECE8DF] bg-white py-12">
-            <ActivityIndicator size="large" color="#073E56" />
+            <ActivityIndicator size="large" color="#17191C" />
             <Text className="mt-3 text-[12px] font-semibold text-[#94A3B8]">
               Loading orders...
             </Text>
@@ -578,7 +578,7 @@ export default function Orders({
                   onPress={() => openOrder(order)}
                   className="flex-row items-center border-b border-[#F1F5F9] px-3 py-4">
                   <View className="flex-1">
-                    <Text className="text-[12px] font-black text-[#073E56]">
+                    <Text className="text-[12px] font-black text-[#17191C]">
                       {formatOrderId(order)}
                     </Text>
                     <Text className="mt-1 text-[10px] text-[#64748B]">
@@ -586,7 +586,7 @@ export default function Orders({
                     </Text>
                   </View>
                   <View className="items-end">
-                    <Text className="text-[12px] font-black text-[#073E56]">
+                    <Text className="text-[12px] font-black text-[#17191C]">
                       {formatCurrency(order.total_amount)}
                     </Text>
                     <Text
@@ -612,7 +612,7 @@ export default function Orders({
                 disabled={currentPage === 1}
                 onPress={() => setCurrentPage(page => Math.max(1, page - 1))}
                 className="mr-2 h-[34px] w-[38px] items-center justify-center rounded-[9px] border border-[#E2E8F0]">
-                <Text className="font-bold text-[#073E56]">‹</Text>
+                <Text className="font-bold text-[#17191C]">‹</Text>
               </Pressable>
               <Text className="mr-2 text-[10px] font-bold text-[#64748B]">
                 {currentPage}/{totalPages}
@@ -623,7 +623,7 @@ export default function Orders({
                   setCurrentPage(page => Math.min(totalPages, page + 1))
                 }
                 className="h-[34px] w-[38px] items-center justify-center rounded-[9px] border border-[#E2E8F0]">
-                <Text className="font-bold text-[#073E56]">›</Text>
+                <Text className="font-bold text-[#17191C]">›</Text>
               </Pressable>
             </View>
           </View>
@@ -635,9 +635,9 @@ export default function Orders({
         animationType="fade"
         visible={updateModal !== null}
         onRequestClose={() => setUpdateModal(null)}>
-        <View className="flex-1 items-center justify-center bg-[#073E56]/70 px-5">
+        <View className="flex-1 items-center justify-center bg-[#17191C]/70 px-5">
           <View className="w-full rounded-[24px] bg-white p-5">
-            <Text className="text-[18px] font-black text-[#073E56]">
+            <Text className="text-[18px] font-black text-[#17191C]">
               {updateModal?.status === 'Shipping'
                 ? 'Shipping details'
                 : 'Cancel order'}
@@ -656,7 +656,7 @@ export default function Orders({
                   }
                   placeholder="Tracking / AWB number"
                   placeholderTextColor="#94A3B8"
-                  className="mt-5 h-[50px] rounded-[13px] border border-[#E2E8F0] bg-[#F8FAFC] px-4 text-[13px] text-[#073E56]"
+                  className="mt-5 h-[50px] rounded-[13px] border border-[#E2E8F0] bg-[#F8FAFC] px-4 text-[13px] text-[#17191C]"
                 />
                 <TextInput
                   value={updateModal.courier}
@@ -667,7 +667,7 @@ export default function Orders({
                   }
                   placeholder="Courier name"
                   placeholderTextColor="#94A3B8"
-                  className="mt-3 h-[50px] rounded-[13px] border border-[#E2E8F0] bg-[#F8FAFC] px-4 text-[13px] text-[#073E56]"
+                  className="mt-3 h-[50px] rounded-[13px] border border-[#E2E8F0] bg-[#F8FAFC] px-4 text-[13px] text-[#17191C]"
                 />
               </>
             ) : (
@@ -682,7 +682,7 @@ export default function Orders({
                 placeholderTextColor="#94A3B8"
                 multiline
                 textAlignVertical="top"
-                className="mt-5 min-h-[100px] rounded-[13px] border border-[#E2E8F0] bg-[#F8FAFC] p-4 text-[13px] text-[#073E56]"
+                className="mt-5 min-h-[100px] rounded-[13px] border border-[#E2E8F0] bg-[#F8FAFC] p-4 text-[13px] text-[#17191C]"
               />
             )}
             <View className="mt-5 flex-row">
@@ -694,7 +694,7 @@ export default function Orders({
               <Pressable
                 disabled={savingStatus}
                 onPress={submitStatusUpdate}
-                className="h-[48px] flex-1 items-center justify-center rounded-[14px] bg-[#073E56]">
+                className="h-[48px] flex-1 items-center justify-center rounded-[14px] bg-[#17191C]">
                 {savingStatus ? (
                   <ActivityIndicator color="white" />
                 ) : (
@@ -713,14 +713,14 @@ export default function Orders({
         animationType="fade"
         visible={selectedOrder !== null}
         onRequestClose={() => setSelectedOrder(null)}>
-        <View className="flex-1 items-center justify-center bg-[#073E56]/70 px-5">
+        <View className="flex-1 items-center justify-center bg-[#17191C]/70 px-5">
           <View className="w-full rounded-[24px] bg-white p-5">
             <View className="mb-4 flex-row items-start justify-between">
               <View>
                 <Text className="text-[10px] font-bold uppercase tracking-[1px] text-[#94A3B8]">
                   Order details
                 </Text>
-                <Text className="mt-1 text-[19px] font-black text-[#073E56]">
+                <Text className="mt-1 text-[19px] font-black text-[#17191C]">
                   {selectedOrder ? formatOrderId(selectedOrder) : ''}
                 </Text>
               </View>
@@ -745,7 +745,7 @@ export default function Orders({
                 <Text className="text-[11px] font-semibold text-[#94A3B8]">
                   {label}
                 </Text>
-                <Text className="max-w-[65%] text-right text-[11px] font-bold text-[#073E56]">
+                <Text className="max-w-[65%] text-right text-[11px] font-bold text-[#17191C]">
                   {value}
                 </Text>
               </View>

@@ -1,37 +1,23 @@
 
 export const colors = {
-  // Primary – Deep Teal
-  primary: '#004D4A',
-  primaryDark: '#002F2D',
-  primaryLight: '#007A73',
+  primary: '#F97316',
+  primaryDark: '#C2410C',
+  primaryLight: '#FDBA74',
 
-  // Accent – Luxury Gold
-  accent: '#FFB800',
-  accentDark: '#E59A00',
-  accentLight: '#FFE477',
-
-  // Background
-  background: '#FFF8ED',
+  background: '#FFF7ED',
   surface: '#FFFFFF',
-  border: '#E8DCC8',
 
-  // Text
-  text: '#202B2B',
-  textSecondary: '#718080',
-  textOnPrimary: '#FFFFFF',
+  textPrimary: '#1F2937',
+  textSecondary: '#6B7280',
 
-  // Status
-  success: '#2E7D32',
-  warning: '#ED6C02',
-  error: '#D32F2F',
-  disabled: '#A0A0A0',
+  border: '#E5E7EB',
 
-  navBackground: '#073E56',
-  navBorder: '#E9A91A',
-  navAccent: '#F7A40A',
-  navAccentDark: '#C87808',
-  navAccentLight: '#FFD95A',
-  navTextDark: '#071F2B',
+  success: '#16A34A',
+  error: '#DC2626',
+  warning: '#F59E0B',
+
+  white: '#FFFFFF',
+  black: '#000000',
 } as const;
 
 export type AppColor = keyof typeof colors;
