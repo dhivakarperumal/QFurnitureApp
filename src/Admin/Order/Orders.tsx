@@ -434,8 +434,8 @@ export default function Orders({
       <ScrollView
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
-        contentContainerClassName="px-4 pb-[126px]"
-        style={{ paddingTop: insets.top + 170 }}>
+        contentContainerClassName="px-4 pb-[255px]"
+        style={{ paddingTop: insets.top + 84 }}>
         <View className="mb-4">
           <Text className="text-[12px] font-bold uppercase tracking-[2px] text-[#F59E0B]">
             Fulfilment

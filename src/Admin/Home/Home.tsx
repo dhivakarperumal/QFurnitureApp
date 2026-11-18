@@ -55,7 +55,7 @@ export default function Home({ onActionPress }: HomeProps) {
   return (
     <ScrollView
       showsVerticalScrollIndicator={false}
-      contentContainerClassName="px-4 pb-[126px]"
+      contentContainerClassName="px-4 pb-[255px]"
       style={{ paddingTop: insets.top + 84 }}>
       <View className="mb-4 min-h-[118px] justify-center overflow-hidden rounded-[22px] bg-[#17191C] px-5 py-5">
         <View className="absolute -right-10 -top-14 h-[130px] w-[130px] rounded-full bg-white/10" />

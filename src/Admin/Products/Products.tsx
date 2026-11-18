@@ -99,8 +99,8 @@ export default function Products({ onActionPress }: ProductsProps) {
     <View className="flex-1 bg-[#F7F8FA]">
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerClassName="px-4 pb-[126px]"
-        style={{ paddingTop: insets.top + 170 }}>
+        contentContainerClassName="px-4 pb-[255px]"
+        style={{ paddingTop: insets.top + 84 }}>
         <View className="mb-4 flex-row items-end justify-between">
           <View>
             <Text className="text-[12px] font-bold uppercase tracking-[2px] text-[#F59E0B]">
