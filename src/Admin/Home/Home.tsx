@@ -64,7 +64,7 @@ export default function Home({ onActionPress }: HomeProps) {
           Admin dashboard
         </Text>
         <Text className="mt-1 text-[24px] font-black text-white">
-          {greeting}, DHIVA!
+          {greeting}!
         </Text>
         <Text className="mt-1 text-[13px] text-white/75">
           Here’s what’s happening with your store today.
