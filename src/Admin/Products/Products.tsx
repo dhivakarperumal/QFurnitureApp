@@ -236,23 +236,7 @@ export default function Products({ onActionPress }: ProductsProps) {
         showsVerticalScrollIndicator={false}
         contentContainerClassName="px-4 pb-[255px]"
         style={{ paddingTop: insets.top + 84 }}>
-        <View className="mb-4 flex-row items-end justify-between">
-          <View>
-            <Text className="text-[12px] font-bold uppercase tracking-[2px] text-[#F59E0B]">
-              Catalog
-            </Text>
-            <Text className="mt-1 text-[26px] font-black text-[#17191C]">
-              Products
-            </Text>
-          </View>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => onActionPress?.('Add New Product')}
-            className="h-[46px] flex-row items-center rounded-[14px] bg-[#17191C] px-4 shadow-sm elevation-[4]">
-            <Text className="mr-2 text-[20px] font-bold text-white">＋</Text>
-            <Text className="text-[12px] font-bold text-white">Add Product</Text>
-          </Pressable>
-        </View>
+       
 
         <View className="mb-4 flex-row flex-wrap justify-between">
           {stats.map(stat => (
