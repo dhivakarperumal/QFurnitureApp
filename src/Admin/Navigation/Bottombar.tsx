@@ -45,22 +45,22 @@ export default function Bottombar({
         onPress={() => onItemPress?.(item.label)}
         style={({ pressed }) => (pressed ? { opacity: 0.72 } : null)}
         className={[
-          'flex-1 h-[72px] items-center justify-center',
+          'flex-1 h-[56px] items-center justify-center',
           isMore
-            ? 'h-[68px] rounded-[28px] bg-[#F7A40A] border-2 border-[#FFD95A]'
+            ? 'h-[52px] rounded-[22px] bg-[#F7A40A] border-2 border-[#FFD95A]'
             : '',
           isMore && isActive ? 'border-[#FFE289]' : '',
         ].join(' ')}>
         <Text
           className={[
-            'h-[42px] text-white text-[38px] leading-[42px] text-center',
+            'h-[28px] text-white text-[24px] leading-[28px] text-center',
             isMore ? 'text-[#073E56]' : '',
           ].join(' ')}>
           {item.icon}
         </Text>
         <Text
           className={[
-            'text-white text-[17px] leading-[20px] font-bold',
+            'text-white text-[11px] leading-[13px] font-bold',
             isMore ? 'text-[#071F2B]' : '',
           ].join(' ')}>
           {item.label}
@@ -73,13 +73,13 @@ export default function Bottombar({
     <View
       pointerEvents="box-none"
       style={{ bottom: Math.max(insets.bottom, 10) }}
-      className={`absolute left-3 right-3 ${className ?? ''}`}>
-      <View className="h-[92px] rounded-[46px] border-[3px] border-[#E9A91A] bg-[#073E56] flex-row items-center px-[14px] pt-[5px] shadow-lg elevation-[14]">
+      className={`absolute left-0 right-0 ${className ?? ''}`}>
+      <View className="h-[72px] border-t-[2px] border-[#E9A91A] bg-[#073E56] flex-row items-center px-[10px] shadow-lg elevation-[14]">
         <View className="flex-1 h-full flex-row items-center">
           {navigationItems.map(renderItem)}
         </View>
 
-        <View className="w-[82px] h-[92px] items-center">
+        <View className="w-[68px] h-[72px] items-center">
           <Pressable
             accessibilityLabel="Add"
             accessibilityRole="button"
@@ -87,9 +87,9 @@ export default function Bottombar({
             style={({ pressed }) =>
               pressed ? { transform: [{ scale: 0.96 }] } : null
             }
-            className="w-[82px] h-[82px] rounded-full items-center justify-center bg-[#F7A40A] border-[5px] border-[#C87808] -mt-[28px] shadow-lg elevation-[10]">
-            <View className="absolute w-[42px] h-[10px] rounded-[5px] bg-white" />
-            <View className="w-[10px] h-[42px] rounded-[5px] bg-white" />
+            className="w-[64px] h-[64px] rounded-full items-center justify-center bg-[#F7A40A] border-[4px] border-[#C87808] -mt-[18px] shadow-lg elevation-[10]">
+            <View className="absolute w-[32px] h-[8px] rounded-[4px] bg-white" />
+            <View className="w-[8px] h-[32px] rounded-[4px] bg-white" />
           </Pressable>
         </View>
 
