@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Image,
   ImageBackground,
   Pressable,
   ScrollView,
@@ -18,7 +19,7 @@ import {
   Users,
 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import api from '../../api';
+import api, { API_BASE_URL } from '../../api';
 
 type HomeProps = {
   onActionPress?: (label: string) => void;
@@ -27,12 +28,19 @@ type HomeProps = {
 type DashboardProduct = {
   id?: number | string;
   name?: string;
+  product_code?: string;
+  selling_price?: number | string | null;
+  offer_price?: number | string | null;
+  mrp?: number | string | null;
   status?: string;
   inventory_status?: string;
   available_stock?: number | string | null;
   total_stock?: number | string | null;
   stock?: number | string | null;
   minimum_stock?: number | string | null;
+  images?: string[] | null;
+  main_image_index?: number | string | null;
+  variants?: Array<{ image?: string | null }>;
 };
 
 type ProductsResponse = {
@@ -53,6 +61,22 @@ type DashboardOrder = {
   total_amount?: number | string;
   status?: string;
   created_at?: string;
+  items?: DashboardOrderItem[];
+};
+
+type DashboardOrderItem = {
+  product_id?: number | string | null;
+  product_name?: string;
+  item_type?: string;
+  combo_id?: number | string | null;
+  quantity?: number | string | null;
+  qty?: number | string | null;
+  count?: number | string | null;
+  name?: string;
+  product?: {
+    id?: number | string | null;
+    name?: string;
+  };
 };
 
 type DashboardUser = {
@@ -108,6 +132,14 @@ type DashboardMetric = {
   borderColor: string;
   watermarkColor: string;
   icon: DashboardMetricIcon;
+};
+
+type TopSellingProduct = {
+  key: string;
+  name: string;
+  quantity: number;
+  price: number;
+  imageUri: string | undefined;
 };
 
 function DashboardIcon({
@@ -172,6 +204,31 @@ const formatDashboardRevenue = (value: number) => {
 
 const formatOrderId = (order: DashboardOrder) =>
   order.order_id || `ORD${String(order.id).padStart(4, '0')}`;
+
+const getProductKey = (id?: number | string | null, name?: string) => {
+  if (id != null) return `id:${id}`;
+  const normalizedName = name?.trim().toLowerCase();
+  return normalizedName ? `name:${normalizedName}` : null;
+};
+
+const resolveProductImage = (product: DashboardProduct) => {
+  const images = product.images ?? [];
+  const requestedIndex = toNumber(product.main_image_index);
+  const index =
+    Number.isInteger(requestedIndex) &&
+    requestedIndex >= 0 &&
+    requestedIndex < images.length
+      ? requestedIndex
+      : 0;
+  const path =
+    images[index] ??
+    images[0] ??
+    product.variants?.find(variant => variant.image)?.image;
+  if (!path?.trim()) return undefined;
+  if (/^https?:\/\//i.test(path)) return path;
+  const apiOrigin = API_BASE_URL.replace(/\/api\/?$/, '');
+  return `${apiOrigin}${path.startsWith('/') ? '' : '/'}${path}`;
+};
 
 const normalizeStatus = (status?: string) => (status ?? '').trim().toLowerCase();
 
@@ -343,6 +400,56 @@ export default function Home({ onActionPress }: HomeProps) {
       }),
     [products],
   );
+
+  const topSellingProducts = useMemo<TopSellingProduct[]>(() => {
+    const soldByProduct = new Map<string, number>();
+
+    orders.forEach(order => {
+      if (normalizeStatus(order.status) === 'cancelled') return;
+      (order.items ?? []).forEach(item => {
+        if (
+          normalizeStatus(item.item_type) === 'combo' ||
+          item.combo_id != null
+        ) {
+          return;
+        }
+        const key = getProductKey(
+          item.product_id ?? item.product?.id,
+          item.product_name ?? item.product?.name ?? item.name,
+        );
+        if (!key) return;
+        const quantity = Math.max(
+          1,
+          toNumber(item.quantity ?? item.qty ?? item.count, 1),
+        );
+        soldByProduct.set(key, (soldByProduct.get(key) ?? 0) + quantity);
+      });
+    });
+
+    return products
+      .map(product => {
+        const idKey = getProductKey(product.id ?? product.product_code);
+        const nameKey = getProductKey(undefined, product.name);
+        const quantity =
+          (idKey ? soldByProduct.get(idKey) : undefined) ??
+          (nameKey ? soldByProduct.get(nameKey) : undefined) ??
+          0;
+        if (quantity === 0) return null;
+
+        return {
+          key: idKey ?? nameKey ?? product.name ?? 'product',
+          name: product.name ?? 'Unnamed product',
+          quantity,
+          price: toNumber(
+            product.selling_price ?? product.offer_price ?? product.mrp,
+          ),
+          imageUri: resolveProductImage(product),
+        };
+      })
+      .filter((product): product is TopSellingProduct => product !== null)
+      .sort((first, second) => second.quantity - first.quantity)
+      .slice(0, 5);
+  }, [orders, products]);
 
   const dashboardStats = useMemo<DashboardMetric[]>(() => {
     const activeOrders = orders.filter(
@@ -620,6 +727,57 @@ export default function Home({ onActionPress }: HomeProps) {
             </Pressable>
           ))}
         </View>
+      </View>
+
+      <View className="mb-4 rounded-[18px] border border-[#ECE8DF] bg-white p-4">
+        <View className="mb-4 flex-row items-center justify-between">
+          <Text className="text-[17px] font-black text-[#17191C]">
+            Top Selling Products
+          </Text>
+          <Text className="text-[11px] font-bold text-[#A16207]">Top 5</Text>
+        </View>
+        {loading ? (
+          <ActivityIndicator color="#F97316" />
+        ) : topSellingProducts.length > 0 ? (
+          topSellingProducts.map((product, index) => (
+            <View
+              key={product.key}
+              className={`flex-row items-center py-3 ${
+                index < topSellingProducts.length - 1
+                  ? 'border-b border-[#F1F5F9]'
+                  : ''
+              }`}>
+              <Image
+                source={
+                  product.imageUri
+                    ? { uri: product.imageUri }
+                    : require('../../Assert/images/Cozy Mustard Armchair Living Room.png')
+                }
+                accessibilityLabel={`${product.name} image`}
+                resizeMode="cover"
+                className="mr-3 h-[56px] w-[56px] rounded-[12px] bg-[#FFF7ED]"
+              />
+              <View className="flex-1">
+                <Text
+                  numberOfLines={1}
+                  className="text-[13px] font-bold text-[#17191C]">
+                  {product.name}
+                </Text>
+                <Text className="mt-1 text-[11px] text-[#64748B]">
+                  Sold {product.quantity}{' '}
+                  {product.quantity === 1 ? 'unit' : 'units'}
+                </Text>
+              </View>
+              <Text className="ml-2 text-[12px] font-black text-[#17191C]">
+                {formatCurrency(product.price)}
+              </Text>
+            </View>
+          ))
+        ) : (
+          <Text className="text-[12px] text-[#64748B]">
+            No product sales found yet.
+          </Text>
+        )}
       </View>
 
       <View className="mb-4 rounded-[18px] border border-[#ECE8DF] bg-white p-4">
