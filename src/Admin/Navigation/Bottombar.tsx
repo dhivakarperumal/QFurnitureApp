@@ -44,8 +44,8 @@ const leftNavigationItems: ReadonlyArray<NavigationItem> = [
 ];
 
 const rightNavigationItems: ReadonlyArray<NavigationItem> = [
-  { destination: 'Orders', label: 'Reports' },
-  { destination: 'More', label: 'Profile' },
+  { destination: 'Orders', label: 'Orders' },
+  { destination: 'More', label: 'More' },
 ];
 
 /* -------------------------------------------------------------------------- */
@@ -99,42 +99,67 @@ function ProductsIcon({ active }: { active: boolean }) {
   );
 }
 
-function ReportsIcon({ active }: { active: boolean }) {
+function OrdersIcon({ active }: { active: boolean }) {
   const color = active ? '#FF6A00' : '#404B5A';
 
   return (
     <Svg width={25} height={25} viewBox="0 0 28 28" fill="none">
-      <Rect x="4" y="16" width="4.5" height="9" rx="1.5" fill={color} />
-      <Rect x="11.5" y="11" width="4.5" height="14" rx="1.5" fill={color} />
-      <Rect x="19" y="6" width="4.5" height="19" rx="1.5" fill={color} />
-      <Path
-        d="M5 14C8 12 13 8 22 3.5"
+      {/* Clipboard Sheet */}
+      <Rect
+        x="5.5"
+        y="5"
+        width="17"
+        height="19"
+        rx="3"
         stroke={color}
-        strokeWidth={2.4}
+        strokeWidth={2.3}
+      />
+      {/* Top Clip */}
+      <Path
+        d="M10 5V3.8C10 3.3 10.4 3 11 3H17C17.6 3 18 3.3 18 3.8V5"
+        stroke={color}
+        strokeWidth={2.2}
         strokeLinecap="round"
       />
+      {/* Order List Items */}
       <Path
-        d="M17 3.5H22V8.5"
+        d="M9.5 10.5H18.5M9.5 14.5H18.5M9.5 18.5H15"
         stroke={color}
-        strokeWidth={2.4}
+        strokeWidth={2.2}
         strokeLinecap="round"
-        strokeLinejoin="round"
       />
     </Svg>
   );
 }
 
-function ProfileIcon({ active }: { active: boolean }) {
+function MoreIcon({ active }: { active: boolean }) {
   const color = active ? '#FF6A00' : '#404B5A';
 
   return (
     <Svg width={25} height={25} viewBox="0 0 28 28" fill="none">
-      <Circle cx="14" cy="8" r="5" stroke={color} strokeWidth={2.4} />
-      <Path
-        d="M5 23.5C5 18.5 9 15.5 14 15.5C19 15.5 23 18.5 23 23.5"
+      <Circle
+        cx="6.5"
+        cy="14"
+        r="2.5"
         stroke={color}
-        strokeWidth={2.4}
-        strokeLinecap="round"
+        strokeWidth={2.3}
+        fill={active ? color : 'none'}
+      />
+      <Circle
+        cx="14"
+        cy="14"
+        r="2.5"
+        stroke={color}
+        strokeWidth={2.3}
+        fill={active ? color : 'none'}
+      />
+      <Circle
+        cx="21.5"
+        cy="14"
+        r="2.5"
+        stroke={color}
+        strokeWidth={2.3}
+        fill={active ? color : 'none'}
       />
     </Svg>
   );
@@ -153,9 +178,9 @@ function TabIcon({
     case 'Products':
       return <ProductsIcon active={active} />;
     case 'Orders':
-      return <ReportsIcon active={active} />;
+      return <OrdersIcon active={active} />;
     case 'More':
-      return <ProfileIcon active={active} />;
+      return <MoreIcon active={active} />;
     default:
       return null;
   }
@@ -295,7 +320,7 @@ export default function Bottombar({
           {/* Center Gap for FAB */}
           <View style={styles.centerGap} pointerEvents="none" />
 
-          {/* Right Navigation: Reports, Profile */}
+          {/* Right Navigation: Orders, More */}
           <View style={styles.tabsGroup}>
             {rightNavigationItems.map(renderTab)}
           </View>
