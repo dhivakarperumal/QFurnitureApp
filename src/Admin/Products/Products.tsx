@@ -12,8 +12,9 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api, { API_BASE_URL } from '../../api';
+import ProductsDetails from './ProductsDetails';
 
-type Product = {
+export type Product = {
   id: number | string;
   name: string;
   sku: string;
@@ -53,6 +54,7 @@ type ProductsResponse = {
 
 type ProductsProps = {
   onActionPress?: (label: string) => void;
+  onDetailsVisibilityChange?: (visible: boolean) => void;
 };
 
 const formatRupees = (value: number) =>
@@ -115,7 +117,10 @@ const mapApiProduct = (item: ApiProduct): Product => {
   };
 };
 
-export default function Products({ onActionPress }: ProductsProps) {
+export default function Products({
+  onActionPress,
+  onDetailsVisibilityChange,
+}: ProductsProps) {
   const insets = useSafeAreaInsets();
   const [searchTerm, setSearchTerm] = useState('');
   const [status, setStatus] = useState<'All' | Product['status']>('All');
@@ -123,8 +128,24 @@ export default function Products({ onActionPress }: ProductsProps) {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [stockProduct, setStockProduct] = useState<Product | null>(null);
   const [stockValue, setStockValue] = useState('');
+
+  const showProductDetails = (product: Product) => {
+    setSelectedProduct(product);
+    onDetailsVisibilityChange?.(true);
+  };
+
+  const hideProductDetails = () => {
+    setSelectedProduct(null);
+    onDetailsVisibilityChange?.(false);
+  };
+
+  useEffect(
+    () => () => onDetailsVisibilityChange?.(false),
+    [onDetailsVisibilityChange],
+  );
 
   const fetchProducts = useCallback(async () => {
     setLoading(true);
@@ -194,10 +215,42 @@ export default function Products({ onActionPress }: ProductsProps) {
   }, [products, searchTerm, status]);
 
   const stats = [
-    { label: 'Total Products', value: products.length, sub: 'All furniture', icon: '▣', color: '#F59E0B' },
-    { label: 'Active', value: products.filter(item => item.status === 'Active').length, sub: 'Active products', icon: '✓', color: '#10B981' },
-    { label: 'Out of Stock', value: products.filter(item => item.status === 'Out of Stock').length, sub: 'Inactive products', icon: '!', color: '#F59E0B' },
-    { label: 'Low Stock', value: products.filter(item => item.status === 'Low Stock').length, sub: 'Need restocking', icon: '⚠', color: '#EF4444' },
+    {
+      label: 'Total Products',
+      value: products.length,
+      sub: 'All furniture',
+      icon: '▣',
+      color: '#F97316',
+      borderColor: '#FCE6D7',
+      watermarkColor: '#FFF0E3',
+    },
+    {
+      label: 'Active',
+      value: products.filter(item => item.status === 'Active').length,
+      sub: 'Active products',
+      icon: '✓',
+      color: '#10B981',
+      borderColor: '#D5F5E9',
+      watermarkColor: '#DDF8ED',
+    },
+    {
+      label: 'Out of Stock',
+      value: products.filter(item => item.status === 'Out of Stock').length,
+      sub: 'Inactive products',
+      icon: '!',
+      color: '#F59E0B',
+      borderColor: '#FDECC8',
+      watermarkColor: '#FFF4D8',
+    },
+    {
+      label: 'Low Stock',
+      value: products.filter(item => item.status === 'Low Stock').length,
+      sub: 'Need restocking',
+      icon: '⚠',
+      color: '#F43F5E',
+      borderColor: '#FFE0E7',
+      watermarkColor: '#FFE9EE',
+    },
   ];
 
   const statusStyles: Record<Product['status'], { background: string; color: string }> = {
@@ -230,6 +283,15 @@ export default function Products({ onActionPress }: ProductsProps) {
 
   const statuses: Array<'All' | Product['status']> = ['All', 'Active', 'Low Stock', 'Out of Stock'];
 
+  if (selectedProduct) {
+    return (
+      <ProductsDetails
+        product={selectedProduct}
+        onBack={hideProductDetails}
+      />
+    );
+  }
+
   return (
     <View className="flex-1 bg-[#F7F8FA]">
       <ScrollView
@@ -242,15 +304,35 @@ export default function Products({ onActionPress }: ProductsProps) {
           {stats.map(stat => (
             <View
               key={stat.label}
-              className="mb-3 w-[48%] rounded-[18px] border border-[#ECE8DF] bg-white p-4 shadow-sm elevation-[2]">
+              className="relative mb-3 h-[118px] w-[49%] justify-center overflow-hidden rounded-[16px] border bg-white pl-3 pr-2 shadow-sm elevation-[3]"
+              style={{ borderColor: stat.borderColor }}>
               <View
-                className="mb-3 h-[42px] w-[42px] items-center justify-center rounded-[14px]"
-                style={{ backgroundColor: stat.color }}>
-                <Text className="text-[18px] font-black text-white">{stat.icon}</Text>
+                className="absolute left-0 top-[16px] h-[86px] w-[4px] rounded-r-full"
+                style={{ backgroundColor: stat.color }}
+              />
+              <Text
+                className="absolute bottom-1 right-1 text-[42px] font-black"
+                style={{ color: stat.watermarkColor }}>
+                {stat.icon}
+              </Text>
+              <View className="flex-row items-center">
+                <View
+                  className="h-[48px] w-[48px] items-center justify-center rounded-[12px] shadow-sm elevation-[3]"
+                  style={{ backgroundColor: stat.color }}>
+                  <Text className="text-[19px] font-black text-white">{stat.icon}</Text>
+                </View>
+                <View className="ml-3 flex-1">
+                  <Text numberOfLines={2} className="text-[13px] font-bold text-[#17191C]">
+                    {stat.label}
+                  </Text>
+                  <Text className="text-[24px] font-black leading-[29px] text-[#17191C]">
+                    {stat.value}
+                  </Text>
+                  <Text numberOfLines={2} className="text-[10px] text-[#64748B]">
+                    {stat.sub}
+                  </Text>
+                </View>
               </View>
-              <Text className="text-[12px] font-bold text-[#718080]">{stat.label}</Text>
-              <Text className="mt-1 text-[24px] font-black text-[#17191C]">{stat.value}</Text>
-              <Text className="mt-1 text-[10px] text-[#94A3B8]">{stat.sub}</Text>
             </View>
           ))}
         </View>
@@ -350,36 +432,43 @@ export default function Products({ onActionPress }: ProductsProps) {
               <View
                 key={product.id}
                 className="mb-4 w-[48%] overflow-hidden rounded-[18px] border border-[#ECE8DF] bg-white shadow-sm elevation-[2]">
-                <View className="w-full overflow-hidden bg-[#FFF6E8]">
-                  <Image
-                    source={
-                      product.imageUri
-                        ? { uri: product.imageUri }
-                        : require('../../Assert/images/Cozy Mustard Armchair Living Room.png')
-                    }
-                    accessibilityLabel={`${product.name} image`}
-                    resizeMode="cover"
-                    style={styles.productImage}
-                  />
-                  <View
-                    className="absolute left-3 top-3 rounded-full px-2.5 py-1"
-                    style={{ backgroundColor: statusStyles[product.status].background }}>
-                    <Text
-                      className="text-[9px] font-bold"
-                      style={{ color: statusStyles[product.status].color }}>
-                      {product.status}
-                    </Text>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`View ${product.name} details`}
+                  onPress={() => showProductDetails(product)}>
+                  <View className="w-full overflow-hidden bg-[#FFF6E8]">
+                    <Image
+                      source={
+                        product.imageUri
+                          ? { uri: product.imageUri }
+                          : require('../../Assert/images/Cozy Mustard Armchair Living Room.png')
+                      }
+                      accessibilityLabel={`${product.name} image`}
+                      resizeMode="cover"
+                      style={styles.productImage}
+                    />
+                    <View
+                      className="absolute left-3 top-3 rounded-full px-2.5 py-1"
+                      style={{ backgroundColor: statusStyles[product.status].background }}>
+                      <Text
+                        className="text-[9px] font-bold"
+                        style={{ color: statusStyles[product.status].color }}>
+                        {product.status}
+                      </Text>
+                    </View>
                   </View>
-                </View>
-                <View className="p-3">
-                  <Text className="text-[9px] font-bold uppercase tracking-[1px] text-[#F59E0B]">
-                    {product.category}
-                  </Text>
-                  <Text numberOfLines={1} className="mt-1 text-[13px] font-black text-[#17191C]">
-                    {product.name}
-                  </Text>
-                  <Text className="mt-1 text-[9px] text-[#94A3B8]">SKU: {product.sku}</Text>
-                  <View className="mt-3 flex-row items-center justify-between border-t border-[#F1F5F9] pt-3">
+                  <View className="px-3 pb-2 pt-3">
+                    <Text className="text-[9px] font-bold uppercase tracking-[1px] text-[#F59E0B]">
+                      {product.category}
+                    </Text>
+                    <Text numberOfLines={1} className="mt-1 text-[13px] font-black text-[#17191C]">
+                      {product.name}
+                    </Text>
+                    <Text className="mt-1 text-[9px] text-[#94A3B8]">SKU: {product.sku}</Text>
+                  </View>
+                </Pressable>
+                <View className="px-3 pb-3">
+                  <View className="flex-row items-center justify-between border-t border-[#F1F5F9] pt-3">
                     <View>
                       <Text className="text-[14px] font-black text-[#17191C]">
                         {formatRupees(product.price)}
@@ -391,6 +480,8 @@ export default function Products({ onActionPress }: ProductsProps) {
                       ) : null}
                     </View>
                     <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={`Edit stock for ${product.name}`}
                       onPress={() => openStockEditor(product)}
                       className="h-[34px] min-w-[34px] items-center justify-center rounded-full bg-[#FFF3D6] px-2">
                       <Text className="text-[11px] font-black text-[#B45309]">{product.stock}</Text>
@@ -403,50 +494,58 @@ export default function Products({ onActionPress }: ProductsProps) {
         ) : (
           <View>
             {filteredProducts.map(product => (
-              <Pressable
+              <View
                 key={product.id}
-                onPress={() => onActionPress?.(product.name)}
                 className="mb-3 flex-row items-center rounded-[16px] border border-[#ECE8DF] bg-white p-3 shadow-sm elevation-[1]">
-                <Image
-                  source={
-                    product.imageUri
-                      ? { uri: product.imageUri }
-                      : require('../../Assert/images/Cozy Mustard Armchair Living Room.png')
-                  }
-                  accessibilityLabel={`${product.name} image`}
-                  resizeMode="cover"
-                  className="mr-3 h-[68px] w-[68px] rounded-[13px]"
-                />
-                <View className="flex-1">
-                  <Text className="text-[9px] font-bold uppercase text-[#F59E0B]">
-                    {product.category}
-                  </Text>
-                  <Text numberOfLines={1} className="mt-0.5 text-[13px] font-black text-[#17191C]">
-                    {product.name}
-                  </Text>
-                  <Text className="mt-1 text-[10px] text-[#94A3B8]">SKU: {product.sku}</Text>
-                  <View className="mt-2 flex-row items-center">
-                    <Text className="mr-2 text-[12px] font-black text-[#17191C]">
-                      {formatRupees(product.price)}
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`View ${product.name} details`}
+                  onPress={() => {
+                    onActionPress?.(product.name);
+                    showProductDetails(product);
+                  }}
+                  className="flex-1 flex-row items-center">
+                  <Image
+                    source={
+                      product.imageUri
+                        ? { uri: product.imageUri }
+                        : require('../../Assert/images/Cozy Mustard Armchair Living Room.png')
+                    }
+                    accessibilityLabel={`${product.name} image`}
+                    resizeMode="cover"
+                    className="mr-3 h-[68px] w-[68px] rounded-[13px]"
+                  />
+                  <View className="flex-1 pr-2">
+                    <Text className="text-[9px] font-bold uppercase text-[#F59E0B]">
+                      {product.category}
                     </Text>
-                    <View
-                      className="rounded-full px-2 py-0.5"
-                      style={{ backgroundColor: statusStyles[product.status].background }}>
-                      <Text
-                        className="text-[8px] font-bold"
-                        style={{ color: statusStyles[product.status].color }}>
-                        {product.status}
+                    <Text numberOfLines={1} className="mt-0.5 text-[13px] font-black text-[#17191C]">
+                      {product.name}
+                    </Text>
+                    <Text className="mt-1 text-[10px] text-[#94A3B8]">SKU: {product.sku}</Text>
+                    <View className="mt-2 flex-row items-center">
+                      <Text className="mr-2 text-[12px] font-black text-[#17191C]">
+                        {formatRupees(product.price)}
                       </Text>
+                      <View
+                        className="rounded-full px-2 py-0.5"
+                        style={{ backgroundColor: statusStyles[product.status].background }}>
+                        <Text
+                          className="text-[8px] font-bold"
+                          style={{ color: statusStyles[product.status].color }}>
+                          {product.status}
+                        </Text>
+                      </View>
                     </View>
                   </View>
-                </View>
+                </Pressable>
                 <Pressable
                   accessibilityLabel={`Edit stock for ${product.name}`}
                   onPress={() => openStockEditor(product)}
                   className="ml-2 h-[40px] w-[40px] items-center justify-center rounded-full bg-[#FFF3D6]">
                   <Text className="text-[12px] font-black text-[#B45309]">{product.stock}</Text>
                 </Pressable>
-              </Pressable>
+              </View>
             ))}
           </View>
         )}

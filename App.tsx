@@ -34,6 +34,7 @@ function AppContent() {
   const [authenticated, setAuthenticated] = useState(false);
   const [checkingSession, setCheckingSession] = useState(true);
   const [authScreen, setAuthScreen] = useState<'login' | 'register'>('login');
+  const [productDetailsOpen, setProductDetailsOpen] = useState(false);
   const [activeItem, setActiveItem] = useState<
     'Home' | 'Products' | 'Orders' | 'More'
   >('Home');
@@ -88,13 +89,15 @@ function AppContent() {
 
   return (
     <View className="flex-1 bg-white">
-      <TopHeader
-        onMenuPress={() => console.log('Menu')}
-        onNotificationPress={() => console.log('Notifications')}
-        onProfilePress={() => console.log('Profile')}
-        onLogoutPress={handleLogout}
-        onDrawerItemPress={item => setActiveItem(item)}
-      />
+      {!productDetailsOpen ? (
+        <TopHeader
+          onMenuPress={() => console.log('Menu')}
+          onNotificationPress={() => console.log('Notifications')}
+          onProfilePress={() => console.log('Profile')}
+          onLogoutPress={handleLogout}
+          onDrawerItemPress={item => setActiveItem(item)}
+        />
+      ) : null}
       {activeItem === 'Home' ? (
         <Home
           onActionPress={action => {
@@ -106,7 +109,10 @@ function AppContent() {
           }}
         />
       ) : activeItem === 'Products' ? (
-        <Products onActionPress={action => console.log(action)} />
+        <Products
+          onActionPress={action => console.log(action)}
+          onDetailsVisibilityChange={setProductDetailsOpen}
+        />
       ) : activeItem === 'Orders' ? (
         <Orders />
       ) : (

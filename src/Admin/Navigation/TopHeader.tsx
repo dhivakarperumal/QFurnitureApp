@@ -13,6 +13,7 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   Bell,
+  ChevronLeft,
   Ellipsis,
   Home,
   LogOut,
@@ -37,6 +38,8 @@ type HeaderOrder = {
 
 type TopHeaderProps = {
   shopName?: string;
+  pageTitle?: string;
+  onBackPress?: () => void;
   notificationCount?: number;
   onMenuPress?: () => void;
   onNotificationPress?: () => void;
@@ -78,6 +81,8 @@ const formatOrderTime = (value?: string) => {
 
 export default function TopHeader({
   shopName = 'Q Furniture',
+  pageTitle,
+  onBackPress,
   notificationCount = 0,
   onMenuPress,
   onNotificationPress,
@@ -215,30 +220,48 @@ export default function TopHeader({
         pointerEvents="none"
         className="absolute inset-0 bg-black/20"
       />
-      <View className="h-[64px] flex-row items-center px-2">
-        <Pressable
-          accessibilityLabel="Open menu"
-          accessibilityRole="button"
-          onPress={openDrawer}
-          className="h-[42px] w-[42px] items-center justify-center">
-          <Menu size={28} color="#FFFFFF" strokeWidth={2.2} />
-        </Pressable>
+      <View className={`${pageTitle ? 'h-[56px]' : 'h-[64px]'} flex-row items-center px-2`}>
+        {pageTitle ? (
+          <Pressable
+            accessibilityLabel="Back"
+            accessibilityRole="button"
+            onPress={onBackPress}
+            className="h-[42px] w-[42px] items-center justify-center rounded-full bg-white">
+            <ChevronLeft size={26} color="#F97316" strokeWidth={2.7} />
+          </Pressable>
+        ) : (
+          <Pressable
+            accessibilityLabel="Open menu"
+            accessibilityRole="button"
+            onPress={openDrawer}
+            className="h-[42px] w-[42px] items-center justify-center">
+            <Menu size={28} color="#FFFFFF" strokeWidth={2.2} />
+          </Pressable>
+        )}
 
-        <View className="flex-1 flex-row items-center">
-          <Image
-            source={require('../../Assert/images/appicon.png')}
-            className="h-[48px] w-[48px] rounded-full"
-            resizeMode="cover"
-          />
-          <View className="ml-[8px] flex-1">
-            <Text numberOfLines={1} className="text-[14px] font-bold text-white">
-              {shopName}
-            </Text>
-            <Text numberOfLines={1} className="text-[10px] text-white/85">
-              Hi Welcome, Admin (Admin)
+        {pageTitle ? (
+          <View className="flex-1 justify-center pl-3">
+            <Text numberOfLines={1} className="text-[16px] font-bold text-white">
+              {pageTitle}
             </Text>
           </View>
-        </View>
+        ) : (
+          <View className="flex-1 flex-row items-center">
+            <Image
+              source={require('../../Assert/images/appicon.png')}
+              className="h-[48px] w-[48px] rounded-full"
+              resizeMode="cover"
+            />
+            <View className="ml-[8px] flex-1">
+              <Text numberOfLines={1} className="text-[14px] font-bold text-white">
+                {shopName}
+              </Text>
+              <Text numberOfLines={1} className="text-[10px] text-white/85">
+                Hi Welcome, Admin (Admin)
+              </Text>
+            </View>
+          </View>
+        )}
 
         <View className="relative mr-[6px]">
           <Pressable
@@ -327,12 +350,13 @@ export default function TopHeader({
           )}
         </View>
 
-        <View className="relative">
-          <Pressable
-            accessibilityLabel="Open profile menu"
-            accessibilityRole="button"
-            onPress={toggleProfile}
-            className="h-[42px] w-[42px] items-center justify-center rounded-full bg-white/20">
+        {!pageTitle ? (
+          <View className="relative">
+            <Pressable
+              accessibilityLabel="Open profile menu"
+              accessibilityRole="button"
+              onPress={toggleProfile}
+              className="h-[42px] w-[42px] items-center justify-center rounded-full bg-white/20">
               {userInitial ? (
                 <Text className="text-[18px] font-black text-white">
                   {userInitial}
@@ -340,10 +364,10 @@ export default function TopHeader({
               ) : (
               <UserRound size={22} color="#FFFFFF" strokeWidth={2.2} />
               )}
-          </Pressable>
+            </Pressable>
 
-          {profileVisible && (
-            <View className="absolute right-0 top-[50px] w-[210px] rounded-[12px] border border-[#E5E7EB] bg-white p-[8px] shadow-lg elevation-[12]">
+            {profileVisible && (
+              <View className="absolute right-0 top-[50px] w-[210px] rounded-[12px] border border-[#E5E7EB] bg-white p-[8px] shadow-lg elevation-[12]">
               <View className="mb-[6px] border-b border-[#E5E7EB] px-[8px] pb-[8px]">
                 <Text numberOfLines={1} className="text-[14px] font-bold text-[#17191C]">
                   {userName || 'Account'}
@@ -374,9 +398,10 @@ export default function TopHeader({
                 <View className="ml-[8px]" />
                 <Text className="text-[14px] font-bold text-[#DC2626]">Logout</Text>
               </Pressable>
-            </View>
-          )}
-        </View>
+              </View>
+            )}
+          </View>
+        ) : null}
       </View>
 
       <Modal
@@ -437,6 +462,12 @@ export default function TopHeader({
 
 const styles = StyleSheet.create({
   header: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 100,
+    elevation: 100,
     backgroundColor: colors.primary,
     width: '100%',
   },
