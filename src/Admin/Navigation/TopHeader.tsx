@@ -3,6 +3,7 @@ import {
   Image,
   Modal,
   Pressable,
+  StyleSheet,
   Text,
   View,
 } from 'react-native';
@@ -18,6 +19,7 @@ import {
   X,
 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { colors } from '../../theme/colors';
 
 type TopHeaderProps = {
   shopName?: string;
@@ -65,8 +67,8 @@ export default function TopHeader({
 
   return (
     <View
-      style={{ paddingTop: insets.top }}
-      className="absolute left-0 right-0 top-0 z-10 bg-[#17191C]">
+      style={[styles.header, { paddingTop: insets.top }]}
+      className="absolute left-0 right-0 top-0 z-10">
       <View className="h-[72px] flex-row items-center px-[12px]">
         <Pressable
           accessibilityLabel="Open menu"
@@ -76,17 +78,18 @@ export default function TopHeader({
           <Menu size={28} color="#FFFFFF" strokeWidth={2.2} />
         </Pressable>
 
-        <View className="mx-[8px] h-[44px] w-[1.5px] bg-[#FF7900]" />
-
         <View className="flex-1 flex-row items-center">
           <Image
             source={require('../../Assert/images/appicon.png')}
-            className="h-[48px] w-[48px] rounded-[10px]"
+            className="h-[48px] w-[48px] rounded-full"
             resizeMode="cover"
           />
           <View className="ml-[8px] flex-1">
             <Text numberOfLines={1} className="text-[14px] font-bold text-white">
               {shopName}
+            </Text>
+            <Text numberOfLines={1} className="text-[10px] text-white/85">
+              Hi Welcome, Admin (Admin)
             </Text>
           </View>
         </View>
@@ -111,8 +114,8 @@ export default function TopHeader({
             accessibilityLabel="Open profile menu"
             accessibilityRole="button"
             onPress={toggleProfile}
-            className="h-[42px] w-[42px] items-center justify-center rounded-full bg-[#FF7900]">
-            <UserRound size={22} color="#17191C" strokeWidth={2.2} />
+            className="h-[42px] w-[42px] items-center justify-center rounded-full bg-white/20">
+              <UserRound size={22} color="#FFFFFF" strokeWidth={2.2} />
           </Pressable>
 
           {profileVisible && (
@@ -158,12 +161,12 @@ export default function TopHeader({
         animationType="fade"
         onRequestClose={() => setDrawerVisible(false)}>
         <View
-          style={{ paddingTop: insets.top }}
-          className="flex-1 bg-[#17191C]">
-          <View className="h-[72px] flex-row items-center border-b border-[#4B5563] px-[12px]">
+          style={{ paddingTop: insets.top, backgroundColor: colors.primary }}
+          className="flex-1">
+          <View className="h-[72px] flex-row items-center border-b border-white/30 px-[12px]">
             <Image
               source={require('../../Assert/images/appicon.png')}
-              className="h-[48px] w-[48px] rounded-[10px]"
+              className="h-[48px] w-[48px] rounded-full"
               resizeMode="cover"
             />
             <View className="ml-[10px] flex-1">
@@ -191,9 +194,9 @@ export default function TopHeader({
                   setDrawerVisible(false);
                   onDrawerItemPress?.(item.label);
                 }}
-                className="mb-[8px] h-[56px] flex-row items-center rounded-[10px] border border-[#374151] bg-[#24272B] px-[14px]">
+                className="mb-[8px] h-[56px] flex-row items-center rounded-[10px] px-[14px]">
                 <View className="w-[42px] items-center">
-                  <ItemIcon size={24} color="#FF7900" strokeWidth={2} />
+                  <ItemIcon size={24} color="#FFFFFF" strokeWidth={2} />
                 </View>
                 <Text className="ml-[8px] text-[16px] font-bold text-white">
                   {item.label}
@@ -207,3 +210,10 @@ export default function TopHeader({
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  header: {
+    backgroundColor: colors.primary,
+    width: '100%',
+  },
+});

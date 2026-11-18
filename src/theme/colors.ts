@@ -1,25 +1,23 @@
 
 export const colors = {
-  primary: '#FF7900',
-  primaryLight: '#FF9D00',
-  primaryDark: '#E85D04',
-  background: '#F8F9FA',
+  primary: '#F97316',
+  primaryDark: '#C2410C',
+  primaryLight: '#FDBA74',
+
+  background: '#FFF7ED',
   surface: '#FFFFFF',
-  border: '#E5E7EB',
-  textPrimary: '#17191C',
+
+  textPrimary: '#1F2937',
   textSecondary: '#6B7280',
+
+  border: '#E5E7EB',
+
   success: '#16A34A',
   error: '#DC2626',
+  warning: '#F59E0B',
+
   white: '#FFFFFF',
   black: '#000000',
-  text: '#17191C',
-  textOnPrimary: '#FFFFFF',
-  navBackground: '#17191C',
-  navBorder: '#E5E7EB',
-  navAccent: '#FF7900',
-  navAccentDark: '#E85D04',
-  navAccentLight: '#FF9D00',
-  navTextDark: '#17191C',
 } as const;
 
 export type AppColor = keyof typeof colors;

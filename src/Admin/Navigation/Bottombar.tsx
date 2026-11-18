@@ -10,6 +10,7 @@ import {
   ViewStyle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { colors } from '../../theme/colors';
 
 export type BottomBarItem = 'Home' | 'Products' | 'Orders' | 'More';
 
@@ -388,28 +389,27 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
+    width: '100%',
     alignItems: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: 0,
+    backgroundColor: colors.surface,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
     zIndex: 99,
   },
   dockBar: {
     width: '100%',
-    maxWidth: 440,
     height: 68,
-    backgroundColor: '#17191C',
-    borderRadius: 28,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.09)',
+    backgroundColor: colors.surface,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 6,
-    // Multi-layer Soft Shadows
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.35,
-    shadowRadius: 18,
-    elevation: 14,
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 4,
   },
   tabsGroup: {
     flex: 1,
@@ -502,7 +502,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 4,
-    borderColor: '#17191C',
+    borderColor: colors.surface,
     shadowColor: '#FF7900',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.5,
