@@ -20,7 +20,6 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type TopHeaderProps = {
-  name?: string;
   shopName?: string;
   notificationCount?: number;
   onMenuPress?: () => void;
@@ -40,8 +39,7 @@ const drawerItems = [
 ] as const;
 
 export default function TopHeader({
-  name = 'DHIVA',
-  shopName = 'Q Living Furniture',
+  shopName = 'Q Furniture',
   notificationCount = 0,
   onMenuPress,
   onNotificationPress,
@@ -52,7 +50,6 @@ export default function TopHeader({
   const insets = useSafeAreaInsets();
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [profileVisible, setProfileVisible] = useState(false);
-  const firstLetter = name.trim().charAt(0).toUpperCase() || 'U';
 
   const openDrawer = () => {
     setProfileVisible(false);
@@ -91,9 +88,6 @@ export default function TopHeader({
             <Text numberOfLines={1} className="text-[14px] font-bold text-white">
               {shopName}
             </Text>
-            <Text numberOfLines={1} className="mt-[1px] text-[12px] text-[#FF9D00]">
-              {name}
-            </Text>
           </View>
         </View>
 
@@ -118,16 +112,14 @@ export default function TopHeader({
             accessibilityRole="button"
             onPress={toggleProfile}
             className="h-[42px] w-[42px] items-center justify-center rounded-full bg-[#FF7900]">
-            <Text className="text-[20px] font-black text-[#17191C]">
-              {firstLetter}
-            </Text>
+            <UserRound size={22} color="#17191C" strokeWidth={2.2} />
           </Pressable>
 
           {profileVisible && (
             <View className="absolute right-0 top-[50px] w-[210px] rounded-[12px] border border-[#E5E7EB] bg-white p-[8px] shadow-lg elevation-[12]">
               <View className="mb-[6px] border-b border-[#E5E7EB] px-[8px] pb-[8px]">
                 <Text numberOfLines={1} className="text-[14px] font-bold text-[#17191C]">
-                  {name}
+                  Account
                 </Text>
                 <Text numberOfLines={1} className="mt-[2px] text-[12px] text-[#6B7280]">
                   Logged in
@@ -177,9 +169,6 @@ export default function TopHeader({
             <View className="ml-[10px] flex-1">
               <Text numberOfLines={1} className="text-[16px] font-bold text-white">
                 {shopName}
-              </Text>
-              <Text numberOfLines={1} className="mt-[2px] text-[13px] text-[#FF9D00]">
-                {name}
               </Text>
             </View>
             <Pressable
