@@ -274,14 +274,14 @@ export default function Shop({
         transparent
         animationType="slide"
         onRequestClose={() => setFiltersVisible(false)}>
-        <View className="flex-1 justify-end bg-black/40">
+        <View className="flex-1 flex-row justify-end bg-black/40">
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Close filters"
             onPress={() => setFiltersVisible(false)}
             className="absolute inset-0"
           />
-          <View className="max-h-[82%] rounded-t-[24px] bg-[#FCFAF7] px-5 pb-8 pt-5">
+          <View className="h-full w-[86%] max-w-[420px] rounded-l-[24px] bg-[#FCFAF7] px-5 pb-8 pt-5">
             <View className="mb-4 flex-row items-center justify-between">
               <View>
                 <Text className="text-[20px] font-black text-[#351D0E]">Filters</Text>
