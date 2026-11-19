@@ -507,7 +507,7 @@ export default function Shop({
             <View
               style={{ paddingTop: insets.top + 12 }}
               className="flex-row items-center border-b border-[#E7DCCF] bg-white px-4 pb-4">
-              <View className="mr-2 h-[42px] w-[42px] items-center justify-center rounded-[14px] bg-[#EAF4F0]">
+              <View className="mr-2 h-[42px] w-[42px] items-center justify-center rounded-[14px] bg-[#FFF0E1]">
                 <SlidersHorizontal size={20} color="#F97316" />
               </View>
               <View className="flex-1">
