@@ -468,7 +468,6 @@ export default function Storefront({
       const detailProps = {
         itemId: detailTarget.itemId,
         favorite: favoriteIds.includes(actionId),
-        onBack: () => setDetailTarget(null),
         onFavoritePress: toggleFavorite,
         onAddToCart: addToCart,
         onBuyNow: buyNow,

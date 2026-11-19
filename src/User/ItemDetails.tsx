@@ -30,7 +30,6 @@ export type ItemDetailsProps = {
   itemId: string;
   itemType: 'product' | 'combo';
   favorite: boolean;
-  onBack: () => void;
   onFavoritePress: (productId: string) => void;
   onAddToCart: (productId: string) => void;
   onBuyNow?: (productId: string) => void;
@@ -63,7 +62,6 @@ export default function ItemDetails({
   itemId,
   itemType,
   favorite,
-  onBack,
   onFavoritePress,
   onAddToCart,
   onBuyNow,
