@@ -23,7 +23,7 @@ export default function Hero({
   return (
     <View className="relative mx-4 mt-2 min-h-[310px] justify-center overflow-hidden rounded-[26px] bg-[#F2E0CC] px-5 py-6">
       {imageUri ? (
-        <Image source={{ uri: imageUri }} className="absolute inset-0 h-full w-full" resizeMode="cover" />
+        <Image source={{ uri: imageUri }} className="absolute inset-0 h-full w-full" resizeMode="contain" />
       ) : null}
       <View pointerEvents="none" className="absolute inset-0 bg-white/25" />
       <View className="w-[70%]">
