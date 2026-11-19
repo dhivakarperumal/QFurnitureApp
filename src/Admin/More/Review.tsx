@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import {
   AlertCircle,
+  Boxes,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
@@ -65,10 +66,16 @@ type ReviewProduct = {
   id: number | string;
   name: string;
   product_code?: string;
+  combo_code?: string;
+};
+
+type ReviewCatalogItem = ReviewProduct & {
+  type: 'Product' | 'Combo';
 };
 
 type ReviewForm = {
   product_id: string;
+  combo_id: string;
   user_name: string;
   user_email: string;
   rating: number;
@@ -88,6 +95,7 @@ type ReviewsResponse = {
 
 const initialForm: ReviewForm = {
   product_id: '',
+  combo_id: '',
   user_name: '',
   user_email: '',
   rating: 5,
@@ -191,9 +199,9 @@ export default function Review({
   const [addVisible, setAddVisible] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
-  const [products, setProducts] = useState<ReviewProduct[]>([]);
-  const [productsLoading, setProductsLoading] = useState(false);
-  const [productsError, setProductsError] = useState<string | null>(null);
+  const [catalogItems, setCatalogItems] = useState<ReviewCatalogItem[]>([]);
+  const [catalogLoading, setCatalogLoading] = useState(false);
+  const [catalogError, setCatalogError] = useState<string | null>(null);
   const [productPickerVisible, setProductPickerVisible] = useState(false);
   const [productSearch, setProductSearch] = useState('');
   const [newReview, setNewReview] = useState<ReviewForm>(initialForm);
@@ -241,42 +249,68 @@ export default function Review({
   useEffect(() => {
     if (!addVisible) return;
     let active = true;
-    setProductsLoading(true);
-    setProductsError(null);
-    api
-      .get<{ products?: ReviewProduct[] }>('/products', {
-        params: { page: 1, limit: 100, status: 'All' },
-      })
-      .then(response => {
+    setCatalogLoading(true);
+    setCatalogError(null);
+    const loadCatalog = async () => {
+      try {
+        const [productsResponse, combosResponse] = await Promise.all([
+          api.get<{ products?: ReviewProduct[] }>('/products', {
+            params: {
+              page: 1,
+              limit: 100,
+              exclude_combo_products: true,
+            },
+          }),
+          api.get<{ combos?: ReviewProduct[] }>('/combos', {
+            params: { page: 1, limit: 100 },
+          }),
+        ]);
         if (!active) return;
-        if (!Array.isArray(response.data.products)) {
+        if (!Array.isArray(productsResponse.data.products)) {
           throw new Error(
             'The product response did not contain a product list.',
           );
         }
-        setProducts(response.data.products);
-      })
-      .catch(error => {
+        if (!Array.isArray(combosResponse.data.combos)) {
+          throw new Error('The combo response did not contain a combo list.');
+        }
+        setCatalogItems([
+          ...productsResponse.data.products.map(product => ({
+            ...product,
+            type: 'Product' as const,
+          })),
+          ...combosResponse.data.combos.map(combo => ({
+            ...combo,
+            type: 'Combo' as const,
+          })),
+        ]);
+      } catch (error: unknown) {
         if (!active) return;
-        setProductsError(getErrorMessage(error, 'Could not load products.'));
-        if (__DEV__) console.warn('[Review] Could not load products:', error);
-      })
-      .finally(() => {
-        if (active) setProductsLoading(false);
-      });
+        setCatalogError(
+          getErrorMessage(error, 'Could not load products and combos.'),
+        );
+        if (__DEV__)
+          console.warn('[Review] Could not load products and combos:', error);
+      } finally {
+        if (active) setCatalogLoading(false);
+      }
+    };
+    loadCatalog();
     return () => {
       active = false;
     };
   }, [addVisible]);
 
-  const filteredProducts = useMemo(() => {
+  const filteredCatalogItems = useMemo(() => {
     const query = productSearch.trim().toLowerCase();
-    return products.filter(product =>
-      `${product.name} ${product.product_code || ''}`
+    return catalogItems.filter(item =>
+      `${item.type} ${item.name} ${item.product_code || ''} ${
+        item.combo_code || ''
+      }`
         .toLowerCase()
         .includes(query),
     );
-  }, [products, productSearch]);
+  }, [catalogItems, productSearch]);
 
   const updateStatus = async (review: ReviewRecord, status: ReviewStatus) => {
     setBusyReviewId(review.id);
@@ -443,10 +477,15 @@ export default function Review({
     const userName = newReview.user_name.trim();
     const comment = newReview.comment.trim();
     const userEmail = newReview.user_email.trim();
-    if (!newReview.product_id || !userName || !comment) {
+    if (
+      (!newReview.product_id && !newReview.combo_id) ||
+      (newReview.product_id && newReview.combo_id) ||
+      !userName ||
+      !comment
+    ) {
       Alert.alert(
         'Required information',
-        'Select a product and enter the customer name and review.',
+        'Select one product or combo and enter the customer name and review.',
       );
       return;
     }
@@ -457,11 +496,14 @@ export default function Review({
     setSubmitting(true);
     try {
       await api.post('/reviews', {
-        ...newReview,
-        product_id: Number(newReview.product_id),
+        ...(newReview.product_id
+          ? { product_id: Number(newReview.product_id) }
+          : { combo_id: Number(newReview.combo_id) }),
         user_name: userName,
         user_email: userEmail || null,
+        rating: newReview.rating,
         comment,
+        review_image: newReview.review_image,
       });
       closeAddModal();
       setRefreshKey(value => value + 1);
@@ -481,6 +523,11 @@ export default function Review({
     review.combo_id
       ? review.combo_name || 'Combo unavailable'
       : review.product_name || 'Product unavailable';
+  const selectedCatalogItem = catalogItems.find(
+    item =>
+      (item.type === 'Product' && String(item.id) === newReview.product_id) ||
+      (item.type === 'Combo' && String(item.id) === newReview.combo_id),
+  );
   const filters: Array<'All' | ReviewStatus> = [
     'All',
     'Pending',
@@ -894,12 +941,12 @@ export default function Review({
                 <View>
                   <Text className="text-[15px] font-black text-[#17191C]">
                     {productPickerVisible
-                      ? 'Select product'
+                      ? 'Select product or combo'
                       : 'Add manual review'}
                   </Text>
                   <Text className="mt-1 text-[9px] text-[#64748B]">
                     {productPickerVisible
-                      ? 'Choose the product for this review'
+                      ? 'Choose what the customer reviewed'
                       : 'Record customer feedback'}
                   </Text>
                 </View>
@@ -935,14 +982,14 @@ export default function Review({
                       />
                     </View>
                   </View>
-                  {productsLoading ? (
+                  {catalogLoading ? (
                     <View className="flex-1 items-center justify-center">
                       <ActivityIndicator size="large" color="#F97316" />
                     </View>
-                  ) : productsError ? (
+                  ) : catalogError ? (
                     <View className="items-center px-5 py-8">
                       <Text className="text-center text-[10px] text-[#B91C1C]">
-                        {productsError}
+                        {catalogError}
                       </Text>
                     </View>
                   ) : (
@@ -950,14 +997,17 @@ export default function Review({
                       keyboardShouldPersistTaps="handled"
                       contentContainerClassName="px-4 py-2"
                     >
-                      {filteredProducts.map(product => (
+                      {filteredCatalogItems.map(item => (
                         <Pressable
-                          key={product.id}
+                          key={`${item.type}-${item.id}`}
                           accessibilityRole="button"
                           onPress={() => {
                             setNewReview(current => ({
                               ...current,
-                              product_id: String(product.id),
+                              product_id:
+                                item.type === 'Product' ? String(item.id) : '',
+                              combo_id:
+                                item.type === 'Combo' ? String(item.id) : '',
                             }));
                             setProductPickerVisible(false);
                             setProductSearch('');
@@ -965,25 +1015,34 @@ export default function Review({
                           className="flex-row items-center border-b border-[#F1F5F9] py-3"
                         >
                           <View className="mr-3 h-[36px] w-[36px] items-center justify-center rounded-[10px] bg-[#FFF1D6]">
-                            <Package size={17} color="#C2410C" />
+                            {item.type === 'Combo' ? (
+                              <Boxes size={17} color="#C2410C" />
+                            ) : (
+                              <Package size={17} color="#C2410C" />
+                            )}
                           </View>
                           <View className="flex-1">
                             <Text
                               numberOfLines={1}
                               className="text-[11px] font-bold text-[#334155]"
                             >
-                              {product.name}
+                              {item.name}
                             </Text>
-                            <Text className="mt-1 text-[8px] text-[#94A3B8]">
-                              {product.product_code || `Product #${product.id}`}
+                            <Text className="mt-1 text-[8px] font-semibold text-[#C2410C]">
+                              {item.type}
+                            </Text>
+                            <Text className="mt-0.5 text-[8px] text-[#94A3B8]">
+                              {item.product_code ||
+                                item.combo_code ||
+                                `${item.type} #${item.id}`}
                             </Text>
                           </View>
                           <ChevronRight size={17} color="#94A3B8" />
                         </Pressable>
                       ))}
-                      {!filteredProducts.length ? (
+                      {!filteredCatalogItems.length ? (
                         <Text className="py-8 text-center text-[10px] text-[#64748B]">
-                          No products found.
+                          No products or combos found.
                         </Text>
                       ) : null}
                     </ScrollView>
@@ -1001,13 +1060,13 @@ export default function Review({
                     contentContainerClassName="px-5 py-4"
                   >
                     <Text className="mb-1.5 text-[10px] font-bold text-[#64748B]">
-                      Target product *
+                      Product or combo *
                     </Text>
                     <Pressable
                       accessibilityRole="button"
                       onPress={() => {
                         setProductPickerVisible(true);
-                        setProductsError(null);
+                        setCatalogError(null);
                       }}
                       className="mb-4 h-[46px] flex-row items-center justify-between rounded-[11px] border border-[#E2E8F0] px-3"
                     >
@@ -1019,10 +1078,9 @@ export default function Review({
                             : 'text-[#94A3B8]'
                         }`}
                       >
-                        {products.find(
-                          product =>
-                            String(product.id) === newReview.product_id,
-                        )?.name || 'Select a product'}
+                        {selectedCatalogItem
+                          ? `${selectedCatalogItem.type}: ${selectedCatalogItem.name}`
+                          : 'Select a product or combo'}
                       </Text>
                       <ChevronRight size={16} color="#94A3B8" />
                     </Pressable>
