@@ -14,6 +14,7 @@ import Home from './Home/Home';
 import Shop from './Shop/Shop';
 import Tabs from './Tabs';
 import Cart from './Cart/Cart';
+import Checkout from './Cart/Checkout';
 import Favorites from './Favorites/Favorites';
 import type {
   StoreBanner,
@@ -23,9 +24,7 @@ import type {
   StoreProduct,
   StoreTab,
 } from './types';
-import {
-  productCategory,
-} from './utils';
+import { productCategory } from './utils';
 import AccountScreen, { type AccountSubScreen } from './Account/AccountScreen';
 import ProfileScreen from './Account/ProfileScreen';
 import AddressesScreen from './Account/AddressesScreen';
@@ -78,33 +77,47 @@ export default function Storefront({
   const [cartLoading, setCartLoading] = useState(true);
   const [cartError, setCartError] = useState<string | null>(null);
   const [pendingCartIds, setPendingCartIds] = useState<string[]>([]);
-  const [accountSubScreen, setAccountSubScreen] = useState<AccountSubScreen>('menu');
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [accountSubScreen, setAccountSubScreen] =
+    useState<AccountSubScreen>('menu');
 
   const loadStore = useCallback(async () => {
     setLoading(true);
     setLoadError(null);
     try {
-      const [categoriesResponse, productsResponse, heroResponse, offerResponse] =
-        await Promise.all([
-          api.get<StoreCategory[]>('/categories'),
-          api.get<{ products?: StoreProduct[] }>('/products', {
-            params: { page: 1, limit: 100, search: '', status: 'All' },
-          }),
-          api.get<{ banners?: StoreBanner[] }>('/banners/hero'),
-          api.get<{ banners?: StoreBanner[] }>('/banners/offers'),
-        ]);
+      const [
+        categoriesResponse,
+        productsResponse,
+        heroResponse,
+        offerResponse,
+      ] = await Promise.all([
+        api.get<StoreCategory[]>('/categories'),
+        api.get<{ products?: StoreProduct[] }>('/products', {
+          params: { page: 1, limit: 100, search: '', status: 'All' },
+        }),
+        api.get<{ banners?: StoreBanner[] }>('/banners/hero'),
+        api.get<{ banners?: StoreBanner[] }>('/banners/offers'),
+      ]);
 
       if (!Array.isArray(categoriesResponse.data)) {
-        throw new Error('The categories response did not contain a category list.');
+        throw new Error(
+          'The categories response did not contain a category list.',
+        );
       }
       if (!Array.isArray(productsResponse.data?.products)) {
-        throw new Error('The products response did not contain a product list.');
+        throw new Error(
+          'The products response did not contain a product list.',
+        );
       }
       if (!Array.isArray(heroResponse.data?.banners)) {
-        throw new Error('The hero banner response did not contain a banner list.');
+        throw new Error(
+          'The hero banner response did not contain a banner list.',
+        );
       }
       if (!Array.isArray(offerResponse.data?.banners)) {
-        throw new Error('The offer banner response did not contain a banner list.');
+        throw new Error(
+          'The offer banner response did not contain a banner list.',
+        );
       }
 
       setStoreData({
@@ -151,7 +164,9 @@ export default function Storefront({
     try {
       const { data } = await api.get<StoreFavorite[]>('/favorites');
       if (!Array.isArray(data)) {
-        throw new Error('The favorites response did not contain a favorites list.');
+        throw new Error(
+          'The favorites response did not contain a favorites list.',
+        );
       }
       setFavoriteItems(data);
     } catch (error) {
@@ -170,23 +185,29 @@ export default function Storefront({
 
   const retryFavorites = useCallback(() => {
     loadFavorites().catch(error => {
-      if (__DEV__) console.warn('[Storefront] Could not reload favorites:', error);
+      if (__DEV__)
+        console.warn('[Storefront] Could not reload favorites:', error);
     });
   }, [loadFavorites]);
 
-  const handleTabPress = useCallback((tab: StoreTab) => {
-    if (tab !== 'Profile') setAccountSubScreen('menu');
-    setActiveTab(tab);
-    if (tab === 'Cart') retryCart();
-    if (tab === 'Favorites') retryFavorites();
-  }, [retryCart, retryFavorites]);
+  const handleTabPress = useCallback(
+    (tab: StoreTab) => {
+      setCheckoutOpen(false);
+      if (tab !== 'Profile') setAccountSubScreen('menu');
+      setActiveTab(tab);
+      if (tab === 'Cart') retryCart();
+      if (tab === 'Favorites') retryFavorites();
+    },
+    [retryCart, retryFavorites],
+  );
 
   useEffect(() => {
     loadCart().catch(error => {
       if (__DEV__) console.warn('[Storefront] Could not load the cart:', error);
     });
     loadFavorites().catch(error => {
-      if (__DEV__) console.warn('[Storefront] Could not load favorites:', error);
+      if (__DEV__)
+        console.warn('[Storefront] Could not load favorites:', error);
     });
   }, [loadCart, loadFavorites]);
 
@@ -229,10 +250,12 @@ export default function Storefront({
     if (pendingFavoriteIds.includes(productId)) return;
     const savedFavorite = favoriteItems.find(item =>
       item.item_type === 'combo'
-        ? `combo-${item.combo_id ?? String(item.id).replace(/^combo-/, '')}` === productId
+        ? `combo-${item.combo_id ?? String(item.id).replace(/^combo-/, '')}` ===
+          productId
         : String(item.product_id ?? item.id) === productId,
     );
-    const isCombo = savedFavorite?.item_type === 'combo' || productId.startsWith('combo-');
+    const isCombo =
+      savedFavorite?.item_type === 'combo' || productId.startsWith('combo-');
     const numericId = Number(
       isCombo ? productId.replace(/^combo-/, '') : productId,
     );
@@ -245,7 +268,9 @@ export default function Storefront({
     try {
       if (savedFavorite) {
         await api.delete(
-          isCombo ? `/favorites/combos/${numericId}` : `/favorites/${numericId}`,
+          isCombo
+            ? `/favorites/combos/${numericId}`
+            : `/favorites/${numericId}`,
         );
       } else if (isCombo) {
         await api.post(`/favorites/combos/${numericId}`);
@@ -256,9 +281,7 @@ export default function Storefront({
     } catch (error) {
       Alert.alert('Favorites could not be updated', errorMessage(error));
     } finally {
-      setPendingFavoriteIds(current =>
-        current.filter(id => id !== productId),
-      );
+      setPendingFavoriteIds(current => current.filter(id => id !== productId));
     }
   };
 
@@ -273,11 +296,15 @@ export default function Storefront({
         }
         await api.post('/cart', { combo_id: comboId, quantity: 1 });
       } else {
-        const product = storeData.products.find(
-          item => String(item.id) === productId,
-        ) ?? favoriteItems.find(item => String(item.id) === productId);
+        const product =
+          storeData.products.find(item => String(item.id) === productId) ??
+          favoriteItems.find(item => String(item.id) === productId);
         const numericProductId = Number(product?.product_id ?? product?.id);
-        if (!product || !Number.isSafeInteger(numericProductId) || numericProductId < 1) {
+        if (
+          !product ||
+          !Number.isSafeInteger(numericProductId) ||
+          numericProductId < 1
+        ) {
           throw new Error('This product is no longer available.');
         }
         const variants = product.variants ?? [];
@@ -285,7 +312,9 @@ export default function Storefront({
         const variantColor =
           variant?.colorName ?? variant?.color ?? variant?.colour ?? 'Default';
         const variantSize =
-          variant?.size ?? variant?.selectedSizes?.[0] ?? (variants.length ? 'Free Size' : '');
+          variant?.size ??
+          variant?.selectedSizes?.[0] ??
+          (variants.length ? 'Free Size' : '');
 
         await api.post('/cart', {
           product_id: numericProductId,
@@ -392,6 +421,24 @@ export default function Storefront({
     }
 
     if (activeTab === 'Cart') {
+      if (checkoutOpen) {
+        return (
+          <Checkout
+            items={cartItems}
+            onBack={() => setCheckoutOpen(false)}
+            onOrderPlaced={() => {
+              setCheckoutOpen(false);
+              loadCart().catch(error => {
+                if (__DEV__)
+                  console.warn(
+                    '[Storefront] Could not reload cart after checkout:',
+                    error,
+                  );
+              });
+            }}
+          />
+        );
+      }
       return (
         <Cart
           items={cartItems}
@@ -403,6 +450,7 @@ export default function Storefront({
           onQuantityChange={updateCartQuantity}
           onRemove={removeFromCart}
           onExplorePress={() => setActiveTab('Explore')}
+          onCheckoutPress={() => setCheckoutOpen(true)}
         />
       );
     }
@@ -439,18 +487,24 @@ export default function Storefront({
         </View>
       ) : loadError ? (
         <View className="flex-1 items-center justify-center px-6">
-          <Text className="text-center text-[14px] text-[#8B2D20]">{loadError}</Text>
+          <Text className="text-center text-[14px] text-[#8B2D20]">
+            {loadError}
+          </Text>
           <Pressable
             accessibilityRole="button"
             onPress={loadStore}
-            className="mt-4 rounded-full bg-[#F97316] px-5 py-3">
+            className="mt-4 rounded-full bg-[#F97316] px-5 py-3"
+          >
             <Text className="text-[13px] font-bold text-white">Try again</Text>
           </Pressable>
         </View>
       ) : activeTab === 'Profile' ? (
         // Account screens manage their own scroll — render directly without wrapper
         // paddingBottom accounts for the absolute-positioned tab bar (~65px) + home indicator
-        <View className="flex-1" style={{ paddingBottom: Math.max(insets.bottom + 65, 90) }}>
+        <View
+          className="flex-1"
+          style={{ paddingBottom: Math.max(insets.bottom + 65, 90) }}
+        >
           {renderTabContent()}
         </View>
       ) : (
@@ -458,7 +512,8 @@ export default function Storefront({
           key={activeTab}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
-          contentContainerClassName="pb-[115px]">
+          contentContainerClassName="pb-[115px]"
+        >
           {renderTabContent()}
         </ScrollView>
       )}
