@@ -39,12 +39,15 @@ export default function ProductCard({
   return (
     <View
       style={cardWidth ? { width: cardWidth } : undefined}
-      className={`mb-3 overflow-hidden rounded-[20px] border border-[#F0E7DE] bg-white shadow-sm ${
+      className={`${compact ? 'mb-2 rounded-[18px]' : 'mb-3 rounded-[20px]'} overflow-hidden border border-[#F0E7DE] bg-white shadow-sm ${
         cardWidth ? 'mr-3' : ''
       } ${
         cardWidth ? '' : compact ? 'w-[48%]' : 'w-[258px]'
       }`}>
-      <View className="relative h-[170px] overflow-hidden bg-[#F4E9DD]">
+      <View
+        className={`relative ${
+          compact ? 'h-[128px]' : 'h-[170px]'
+        } overflow-hidden bg-[#F4E9DD]`}>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`View ${product.name} details`}
@@ -59,55 +62,78 @@ export default function ProductCard({
           )}
         </Pressable>
         {discount > 0 ? (
-          <View className="absolute left-3 top-3 rounded-full bg-[#187A45] px-3 py-1">
-            <Text className="text-[11px] font-bold text-white">{discount}% OFF</Text>
+          <View
+            className={`absolute rounded-full bg-[#187A45] ${
+              compact ? 'left-2 top-2 px-2 py-1' : 'left-3 top-3 px-3 py-1'
+            }`}>
+            <Text className={`font-bold text-white ${compact ? 'text-[9px]' : 'text-[11px]'}`}>
+              {discount}% OFF
+            </Text>
           </View>
         ) : null}
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={favorite ? 'Remove from favorites' : 'Add to favorites'}
           onPress={() => onFavoritePress(id)}
-          className="absolute right-3 top-3 h-[36px] w-[36px] items-center justify-center rounded-full bg-white">
+          className={`absolute items-center justify-center rounded-full bg-white ${
+            compact ? 'right-2 top-2 h-[32px] w-[32px]' : 'right-3 top-3 h-[36px] w-[36px]'
+          }`}>
           <Heart
-            size={19}
+            size={compact ? 17 : 19}
             color={favorite ? '#F97316' : '#634D3B'}
             fill={favorite ? '#F97316' : 'transparent'}
           />
         </Pressable>
       </View>
-      <View className="p-3">
-        <Text className="text-[10px] font-bold uppercase tracking-[1.4px] text-[#A06E46]">
+      <View className={compact ? 'p-2' : 'p-3'}>
+        <Text
+          numberOfLines={2}
+          className={`font-bold uppercase text-[#A06E46] ${
+            compact
+              ? 'text-[9px] leading-[12px] tracking-[0.8px]'
+              : 'text-[10px] tracking-[1.4px]'
+          }`}>
           {productCategory(product) || 'Furniture'}
         </Text>
         <Pressable
           accessibilityRole="button"
           onPress={() => onProductPress(id)}
-          className="mt-1 min-h-[40px]">
-          <Text numberOfLines={2} className="text-[14px] font-bold leading-5 text-[#351D0E]">
+          className={`mt-1 ${compact ? 'min-h-[34px]' : 'min-h-[40px]'}`}>
+          <Text
+            numberOfLines={2}
+            className={`font-bold text-[#351D0E] ${
+              compact ? 'text-[12px] leading-[16px]' : 'text-[14px] leading-5'
+            }`}>
             {product.name}
           </Text>
         </Pressable>
         {Number.isFinite(rating) && rating > 0 ? (
-          <View className="mt-1 flex-row items-center">
-            <Star size={13} color="#F97316" fill="#F97316" />
-            <Text className="ml-1 text-[11px] font-semibold text-[#634D3B]">
+          <View className={`flex-row items-center ${compact ? 'mt-0' : 'mt-1'}`}>
+            <Star size={compact ? 12 : 13} color="#F97316" fill="#F97316" />
+            <Text className={`ml-1 font-semibold text-[#634D3B] ${compact ? 'text-[10px]' : 'text-[11px]'}`}>
               {rating.toFixed(1)}
             </Text>
           </View>
         ) : null}
-        <View className="mt-2 flex-row items-center justify-between">
+        <View className={`flex-row items-center justify-between ${compact ? 'mt-1' : 'mt-2'}`}>
           <View className="flex-1">
-            <Text className="text-[16px] font-black text-[#351D0E]">{formatPrice(price)}</Text>
+            <Text className={`font-black text-[#351D0E] ${compact ? 'text-[14px]' : 'text-[16px]'}`}>
+              {formatPrice(price)}
+            </Text>
             {discount > 0 ? (
-              <Text className="text-[11px] text-[#9A8B7D] line-through">{formatPrice(mrp)}</Text>
+              <Text className={`text-[#9A8B7D] line-through ${compact ? 'text-[10px]' : 'text-[11px]'}`}>
+                {formatPrice(mrp)}
+              </Text>
             ) : null}
           </View>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={`Add ${product.name} to cart`}
             onPress={() => onAddToCart(id)}
-            className="h-[42px] w-[42px] items-center justify-center rounded-[12px] bg-[#F97316]">
-            <ShoppingCart size={20} color="#FFFFFF" />
+            className={`items-center justify-center rounded-[12px] bg-[#F97316] ${
+              compact ? 'h-[36px] w-[36px]' : 'h-[42px] w-[42px]'
+            }`}>
+            <ShoppingCart size={compact ? 18 : 20} color="#FFFFFF" />
           </Pressable>
         </View>
       </View>
