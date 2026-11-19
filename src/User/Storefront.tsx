@@ -330,8 +330,8 @@ export default function Storefront({
     }
   };
 
-  const addToCart = async (productId: string) => {
-    if (pendingCartIds.includes(productId)) return;
+  const addToCart = async (productId: string): Promise<boolean> => {
+    if (pendingCartIds.includes(productId)) return false;
     setPendingCartIds(current => [...current, productId]);
     try {
       if (productId.startsWith('combo-')) {
@@ -369,11 +369,20 @@ export default function Storefront({
         });
       }
       await loadCart();
+      return true;
     } catch (error) {
       Alert.alert('Could not add to cart', errorMessage(error));
+      return false;
     } finally {
       setPendingCartIds(current => current.filter(id => id !== productId));
     }
+  };
+
+  const buyNow = async (productId: string) => {
+    if (!(await addToCart(productId))) return;
+    setDetailTarget(null);
+    setCheckoutOpen(true);
+    setActiveTab('Cart');
   };
 
   const updateCartQuantity = async (item: StoreCartItem, quantity: number) => {
@@ -462,6 +471,7 @@ export default function Storefront({
         onBack: () => setDetailTarget(null),
         onFavoritePress: toggleFavorite,
         onAddToCart: addToCart,
+        onBuyNow: buyNow,
       };
       return detailTarget.itemType === 'combo' ? (
         <ComboDetails {...detailProps} />

@@ -7,7 +7,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { Armchair, Heart, Star } from 'lucide-react-native';
+import { Armchair, Heart, ShoppingCart, Star } from 'lucide-react-native';
 import api from '../api';
 import type { StoreProduct } from './types';
 import {
@@ -33,6 +33,7 @@ export type ItemDetailsProps = {
   onBack: () => void;
   onFavoritePress: (productId: string) => void;
   onAddToCart: (productId: string) => void;
+  onBuyNow?: (productId: string) => void;
 };
 
 function getErrorMessage(error: unknown) {
@@ -65,6 +66,7 @@ export default function ItemDetails({
   onBack,
   onFavoritePress,
   onAddToCart,
+  onBuyNow,
 }: ItemDetailsProps) {
   const [item, setItem] = useState<DetailItem | null>(null);
   const [loading, setLoading] = useState(true);
@@ -258,32 +260,66 @@ export default function ItemDetails({
             </View>
           ) : null}
 
-          <View className="mt-5 flex-row">
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={favorite ? 'Remove from favorites' : 'Add to favorites'}
-              onPress={() => onFavoritePress(actionId)}
-              className="mr-3 h-[50px] w-[54px] items-center justify-center rounded-full border border-[#F0E7DE] bg-white">
-              <Heart
-                size={21}
-                color={favorite ? '#F97316' : '#634D3B'}
-                fill={favorite ? '#F97316' : 'transparent'}
-              />
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              disabled={Number.isFinite(stock) && stock <= 0}
-              onPress={() => onAddToCart(actionId)}
-              className={`h-[50px] flex-1 items-center justify-center rounded-full ${
-                Number.isFinite(stock) && stock <= 0
-                  ? 'bg-[#CDBBA8]'
-                  : 'bg-[#F97316]'
-              }`}>
-              <Text className="text-[14px] font-black text-white">
-                {Number.isFinite(stock) && stock <= 0 ? 'Out of stock' : 'Add to cart'}
-              </Text>
-            </Pressable>
-          </View>
+          {itemType === 'combo' ? (
+            <View className="mt-5 flex-row">
+              <Pressable
+                accessibilityRole="button"
+                disabled={Number.isFinite(stock) && stock <= 0}
+                onPress={() => onAddToCart(actionId)}
+                className={`mr-3 h-[50px] flex-1 flex-row items-center justify-center rounded-full ${
+                  Number.isFinite(stock) && stock <= 0
+                    ? 'bg-[#CDBBA8]'
+                    : 'bg-[#F97316]'
+                }`}>
+                <ShoppingCart size={18} color="#FFFFFF" />
+                <Text className="ml-2 text-[14px] font-black text-white">
+                  {Number.isFinite(stock) && stock <= 0
+                    ? 'Out of stock'
+                    : 'Add to cart'}
+                </Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                disabled={Number.isFinite(stock) && stock <= 0}
+                onPress={() => (onBuyNow ?? onAddToCart)(actionId)}
+                className={`h-[50px] flex-1 items-center justify-center rounded-full ${
+                  Number.isFinite(stock) && stock <= 0
+                    ? 'bg-[#CDBBA8]'
+                    : 'bg-[#351D0E]'
+                }`}>
+                <Text className="text-[14px] font-black text-white">
+                  {Number.isFinite(stock) && stock <= 0 ? 'Unavailable' : 'Buy now'}
+                </Text>
+              </Pressable>
+            </View>
+          ) : (
+            <View className="mt-5 flex-row">
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={favorite ? 'Remove from favorites' : 'Add to favorites'}
+                onPress={() => onFavoritePress(actionId)}
+                className="mr-3 h-[50px] w-[54px] items-center justify-center rounded-full border border-[#F0E7DE] bg-white">
+                <Heart
+                  size={21}
+                  color={favorite ? '#F97316' : '#634D3B'}
+                  fill={favorite ? '#F97316' : 'transparent'}
+                />
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                disabled={Number.isFinite(stock) && stock <= 0}
+                onPress={() => onAddToCart(actionId)}
+                className={`h-[50px] flex-1 items-center justify-center rounded-full ${
+                  Number.isFinite(stock) && stock <= 0
+                    ? 'bg-[#CDBBA8]'
+                    : 'bg-[#F97316]'
+                }`}>
+                <Text className="text-[14px] font-black text-white">
+                  {Number.isFinite(stock) && stock <= 0 ? 'Out of stock' : 'Add to cart'}
+                </Text>
+              </Pressable>
+            </View>
+          )}
         </>
       ) : null}
     </View>
