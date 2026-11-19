@@ -77,6 +77,7 @@ export default function Home({
         onAddToCart={onAddToCart}
         onProductPress={onProductPress}
       />
+      <ShopByRoom onRoomPress={onRoomPress} />
       <TopRatedProducts
         products={products}
         favorites={favorites}
@@ -84,15 +85,14 @@ export default function Home({
         onAddToCart={onAddToCart}
         onProductPress={onProductPress}
       />
+      <OfferBanners banners={offerBanners} onShopPress={onExplorePress} />
       <FeaturedCombos
         favorites={favorites}
         onFavoritePress={onFavoritePress}
         onAddToCart={onAddToCart}
         onProductPress={onProductPress}
       />
-      <ShopByRoom onRoomPress={onRoomPress} />
       <CustomFurniture onRequestPress={onCustomFurniturePress} />
-      <OfferBanners banners={offerBanners} onShopPress={onExplorePress} />
       <Reviews />
     </>
   );
