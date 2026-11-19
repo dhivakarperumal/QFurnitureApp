@@ -1,5 +1,16 @@
-import React from 'react';
-import { Image, Pressable, ScrollView, Text, View } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  Image,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from 'react-native';
+import type {
+  NativeScrollEvent,
+  NativeSyntheticEvent,
+  ScrollViewInstance,
+} from 'react-native';
 import { Armchair, ArrowRight } from 'lucide-react-native';
 import type { StoreCategory } from '../types';
 import { categoryImage } from '../utils';
@@ -15,6 +26,38 @@ export default function Category({
   onCategoryPress,
   onViewAllPress,
 }: CategoryProps) {
+  const scrollRef = useRef<ScrollViewInstance>(null);
+  const scrollPositionRef = useRef(0);
+  const [contentWidth, setContentWidth] = useState(0);
+  const [viewportWidth, setViewportWidth] = useState(0);
+  const [isUserScrolling, setIsUserScrolling] = useState(false);
+  const categoryStep = 128;
+
+  useEffect(() => {
+    if (isUserScrolling || categories.length < 2) {
+      return;
+    }
+
+    const maxScroll = Math.max(0, contentWidth - viewportWidth);
+    if (maxScroll <= 0) {
+      return;
+    }
+
+    const interval = setInterval(() => {
+      const nextPosition = scrollPositionRef.current + categoryStep;
+      const targetPosition = nextPosition >= maxScroll ? 0 : nextPosition;
+
+      scrollRef.current?.scrollTo({ x: targetPosition, animated: true });
+      scrollPositionRef.current = targetPosition;
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [categories.length, contentWidth, isUserScrolling, viewportWidth]);
+
+  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    scrollPositionRef.current = event.nativeEvent.contentOffset.x;
+  };
+
   return (
     <View className="mt-7">
       <View className="mb-4 flex-row items-center justify-between px-4">
@@ -29,7 +72,18 @@ export default function Category({
           <ArrowRight size={14} color="#634D3B" />
         </Pressable>
       </View>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="px-4">
+      <ScrollView
+        ref={scrollRef}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerClassName="px-4"
+        onLayout={event => setViewportWidth(event.nativeEvent.layout.width)}
+        onContentSizeChange={width => setContentWidth(width)}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+        onScrollBeginDrag={() => setIsUserScrolling(true)}
+        onScrollEndDrag={() => setIsUserScrolling(false)}
+        onMomentumScrollEnd={() => setIsUserScrolling(false)}>
         {categories.map((category, index) => {
           const imageUri = categoryImage(category);
           return (
