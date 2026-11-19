@@ -16,6 +16,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Eye, EyeOff, LockKeyhole, UserRound } from 'lucide-react-native';
 import api, { setTokenCache } from '../api';
 import { colors } from '../theme/colors';
+import { googleAuthError, signInWithGoogle } from '../services/googleAuth';
 
 type LoginProps = {
   onLogin: () => void;
@@ -36,6 +37,38 @@ export default function Login({ onLogin, onRegisterPress }: LoginProps) {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [googleSubmitting, setGoogleSubmitting] = useState(false);
+
+  const handleGoogleLogin = async () => {
+    if (googleSubmitting) return;
+    setGoogleSubmitting(true);
+    try {
+      const googleUser = await signInWithGoogle();
+      if (!googleUser) return;
+
+      const { data } = await api.post<LoginResponse>('/auth/google-login', {
+        credential: googleUser.idToken,
+      });
+      if (!data.token) {
+        throw new Error('The server did not return an authentication token.');
+      }
+
+      await AsyncStorage.setItem('userToken', data.token);
+      if (data.user) {
+        await AsyncStorage.setItem('user', JSON.stringify(data.user));
+      }
+      setTokenCache(data.token);
+      onLogin();
+    } catch (error: any) {
+      const message =
+        error?.data?.message ||
+        error?.message ||
+        googleAuthError(error);
+      Alert.alert('Google login failed', message);
+    } finally {
+      setGoogleSubmitting(false);
+    }
+  };
 
   const handleSubmit = async () => {
     const normalizedIdentifier = identifier.trim();
@@ -179,6 +212,32 @@ export default function Login({ onLogin, onRegisterPress }: LoginProps) {
                 <Text style={{ color: colors.white }} className="text-[15px] font-black">
                   Sign in
                 </Text>
+              )}
+            </Pressable>
+
+            <View className="mt-5 flex-row items-center">
+              <View className="h-[1px] flex-1 bg-[#E5E7EB]" />
+              <Text className="mx-3 text-[12px] text-[#94A3B8]">or</Text>
+              <View className="h-[1px] flex-1 bg-[#E5E7EB]" />
+            </View>
+
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Continue with Google"
+              onPress={handleGoogleLogin}
+              disabled={submitting || googleSubmitting}
+              className="mt-5 h-[52px] flex-row items-center justify-center rounded-[12px] border border-[#D1D5DB] bg-white disabled:opacity-60">
+              {googleSubmitting ? (
+                <ActivityIndicator color="#4285F4" />
+              ) : (
+                <>
+                  <View className="mr-3 h-[22px] w-[22px] items-center justify-center rounded-full bg-white">
+                    <Text className="text-[18px] font-black text-[#4285F4]">G</Text>
+                  </View>
+                  <Text className="text-[15px] font-bold text-[#202124]">
+                    Continue with Google
+                  </Text>
+                </>
               )}
             </Pressable>
 

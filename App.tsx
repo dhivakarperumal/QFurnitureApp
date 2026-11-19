@@ -16,6 +16,7 @@ import Products from './src/Admin/Products/Products';
 import Orders from './src/Admin/Order/Orders';
 import OrdersDetails from './src/Admin/Order/OrdersDetails';
 import type { Order } from './src/Admin/Order/Orders';
+import { signOutGoogle } from './src/services/googleAuth';
 import Login from './src/Auth/Login';
 import Register from './src/Auth/Register';
 import { clearTokenCache, setTokenCache } from './src/api';
@@ -69,6 +70,11 @@ function AppContent() {
   }, []);
 
   const handleLogout = async () => {
+    try {
+      await signOutGoogle();
+    } catch (error) {
+      if (__DEV__) console.warn('[App] Google sign-out failed:', error);
+    }
     await AsyncStorage.removeItem('userToken');
     await AsyncStorage.removeItem('user');
     clearTokenCache();
