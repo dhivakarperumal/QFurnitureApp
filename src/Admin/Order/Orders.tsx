@@ -1,14 +1,16 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   ActivityIndicator,
   Modal,
   Pressable,
   ScrollView,
+  Share,
   Text,
   TextInput,
   View,
 } from 'react-native';
+import { Eye, Printer } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '../../api';
 
@@ -29,7 +31,7 @@ type OrderItem = {
   product_id?: number | string | null;
 };
 
-type Order = {
+export type Order = {
   id: number | string;
   order_id?: string;
   status?: OrderStatus;
@@ -47,11 +49,12 @@ type Order = {
 type OrdersProps = {
   statusFilter?: 'All' | OrderStatus;
   onOrderPress?: (order: Order) => void;
+  onScrollVisibilityChange?: (visible: boolean) => void;
 };
 
 type UpdateModalData = {
   order: Order;
-  status: 'Shipping' | 'Cancelled';
+  status: string;
   tracking: string;
   courier: string;
   reason: string;
@@ -119,8 +122,10 @@ function formatCurrency(value?: string | number) {
 export default function Orders({
   statusFilter = 'All',
   onOrderPress,
+  onScrollVisibilityChange,
 }: OrdersProps) {
   const insets = useSafeAreaInsets();
+  const lastScrollY = useRef(0);
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -227,10 +232,6 @@ export default function Orders({
   ];
 
   const openStatusUpdate = (order: Order, status: string) => {
-    if (status !== 'Shipping' && status !== 'Cancelled') {
-      performStatusUpdate(order, { status });
-      return;
-    }
     setUpdateModal({
       order,
       status,
@@ -271,7 +272,7 @@ export default function Orders({
       updateData.tracking_number = tracking.trim();
       updateData.courier_name = courier.trim();
       updateData.shipped_at = new Date().toISOString();
-    } else {
+    } else if (status === 'Cancelled') {
       if (!reason.trim()) {
         Alert.alert('Reason required', 'Please enter a cancellation reason.');
         return;
@@ -289,6 +290,28 @@ export default function Orders({
       onOrderPress(order);
     } else {
       setSelectedOrder(order);
+    }
+  };
+
+  const printOrder = async (order: Order) => {
+    const invoiceText = [
+      `Q Furnitures - Invoice`,
+      `Order: ${formatOrderId(order)}`,
+      `Customer: ${order.customer_name || 'Guest Customer'}`,
+      `Phone: ${order.customer_phone || 'Unavailable'}`,
+      `Payment: ${order.payment_method || 'Not specified'}`,
+      `Status: ${order.status || 'New'}`,
+      `Date: ${formatDate(order.created_at)}`,
+      `Total: ${formatCurrency(order.total_amount)}`,
+    ].join('\n');
+
+    try {
+      await Share.share({
+        title: `Invoice ${formatOrderId(order)}`,
+        message: invoiceText,
+      });
+    } catch (error) {
+      console.error('Print/share invoice error:', error);
     }
   };
 
@@ -413,16 +436,20 @@ export default function Orders({
         </View>
 
         {renderStatusSelector(order)}
-        <View className="mt-3 flex-row">
+        <View className="mt-3 flex-row items-center justify-end">
           <Pressable
             onPress={() => openOrder(order)}
-            className="mr-2 h-[42px] flex-1 items-center justify-center rounded-[12px] border border-[#17191C]">
-            <Text className="text-[11px] font-bold text-[#17191C]">View Order</Text>
+            accessibilityRole="button"
+            accessibilityLabel={`View order ${formatOrderId(order)}`}
+            className="mr-2 h-[42px] w-[42px] items-center justify-center rounded-[12px] border border-[#17191C]">
+            <Eye size={20} color="#17191C" strokeWidth={2} />
           </Pressable>
           <Pressable
-            onPress={() => openOrder(order)}
-            className="h-[42px] flex-1 items-center justify-center rounded-[12px] bg-[#17191C]">
-            <Text className="text-[11px] font-bold text-white">Order Details →</Text>
+            onPress={() => printOrder(order)}
+            accessibilityRole="button"
+            accessibilityLabel={`Print invoice ${formatOrderId(order)}`}
+            className="h-[42px] w-[42px] items-center justify-center rounded-[12px] bg-[#17191C]">
+            <Printer size={20} color="#FFFFFF" strokeWidth={2} />
           </Pressable>
         </View>
       </View>
@@ -434,16 +461,19 @@ export default function Orders({
       <ScrollView
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
+        scrollEventThrottle={16}
+        onScroll={event => {
+          const currentScrollY = event.nativeEvent.contentOffset.y;
+          if (currentScrollY < 20 || currentScrollY < lastScrollY.current - 8) {
+            onScrollVisibilityChange?.(true);
+          } else if (currentScrollY > lastScrollY.current + 8) {
+            onScrollVisibilityChange?.(false);
+          }
+          lastScrollY.current = currentScrollY;
+        }}
         contentContainerClassName="px-4 pb-[255px]"
         style={{ paddingTop: insets.top + 84 }}>
-        <View className="mb-4">
-          <Text className="text-[12px] font-bold uppercase tracking-[2px] text-[#F59E0B]">
-            Fulfilment
-          </Text>
-          <Text className="mt-1 text-[26px] font-black text-[#17191C]">
-            Orders
-          </Text>
-        </View>
+        
 
         <ScrollView
           horizontal
@@ -640,7 +670,9 @@ export default function Orders({
             <Text className="text-[18px] font-black text-[#17191C]">
               {updateModal?.status === 'Shipping'
                 ? 'Shipping details'
-                : 'Cancel order'}
+                : updateModal?.status === 'Cancelled'
+                  ? 'Cancel order'
+                  : 'Update order status'}
             </Text>
             <Text className="mt-1 text-[12px] text-[#94A3B8]">
               {updateModal ? formatOrderId(updateModal.order) : ''}
@@ -670,7 +702,7 @@ export default function Orders({
                   className="mt-3 h-[50px] rounded-[13px] border border-[#E2E8F0] bg-[#F8FAFC] px-4 text-[13px] text-[#17191C]"
                 />
               </>
-            ) : (
+            ) : updateModal?.status === 'Cancelled' ? (
               <TextInput
                 value={updateModal?.reason || ''}
                 onChangeText={reason =>
@@ -684,6 +716,12 @@ export default function Orders({
                 textAlignVertical="top"
                 className="mt-5 min-h-[100px] rounded-[13px] border border-[#E2E8F0] bg-[#F8FAFC] p-4 text-[13px] text-[#17191C]"
               />
+            ) : (
+              <View className="mt-5 rounded-[13px] border border-[#E2E8F0] bg-[#F8FAFC] p-4">
+                <Text className="text-[12px] font-bold text-[#334155]">
+                  Change this order to {updateModal?.status}.
+                </Text>
+              </View>
             )}
             <View className="mt-5 flex-row">
               <Pressable

@@ -6,6 +6,7 @@ const Icon = () => React.createElement(View);
 module.exports = {
   Bell: Icon,
   Armchair: Icon,
+  ChevronLeft: Icon,
   Clock: Icon,
   Ellipsis: Icon,
   Home: Icon,

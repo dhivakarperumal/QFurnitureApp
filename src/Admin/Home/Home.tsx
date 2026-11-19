@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -23,6 +23,7 @@ import api, { API_BASE_URL } from '../../api';
 
 type HomeProps = {
   onActionPress?: (label: string) => void;
+  onScrollVisibilityChange?: (visible: boolean) => void;
 };
 
 type DashboardProduct = {
@@ -287,8 +288,12 @@ const isActiveOffer = (offer: DashboardOffer, now: number) => {
   );
 };
 
-export default function Home({ onActionPress }: HomeProps) {
+export default function Home({
+  onActionPress,
+  onScrollVisibilityChange,
+}: HomeProps) {
   const insets = useSafeAreaInsets();
+  const lastScrollY = useRef(0);
   const [products, setProducts] = useState<DashboardProduct[]>([]);
   const [orders, setOrders] = useState<DashboardOrder[]>([]);
   const [customers, setCustomers] = useState<DashboardUser[]>([]);
@@ -555,6 +560,16 @@ export default function Home({ onActionPress }: HomeProps) {
   return (
     <ScrollView
       showsVerticalScrollIndicator={false}
+      scrollEventThrottle={16}
+      onScroll={event => {
+        const currentScrollY = event.nativeEvent.contentOffset.y;
+        if (currentScrollY < 20 || currentScrollY < lastScrollY.current - 8) {
+          onScrollVisibilityChange?.(true);
+        } else if (currentScrollY > lastScrollY.current + 8) {
+          onScrollVisibilityChange?.(false);
+        }
+        lastScrollY.current = currentScrollY;
+      }}
       contentContainerClassName="px-3 pb-[255px]"
       style={{ paddingTop: insets.top + 84 }}>
       <ImageBackground

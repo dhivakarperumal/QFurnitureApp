@@ -10,7 +10,9 @@ import {
 } from 'react-native';
 import Svg, {
   Circle,
+  ClipPath,
   Defs,
+  Image,
   LinearGradient,
   Path,
   Rect,
@@ -29,6 +31,7 @@ export type BottomBarProps = {
   onItemPress?: (item: BottomBarItem) => void;
   onAddPress?: () => void;
   badgeCount?: number;
+  visible?: boolean;
   className?: string;
   style?: StyleProp<ViewStyle>;
 };
@@ -53,7 +56,7 @@ const rightNavigationItems: ReadonlyArray<NavigationItem> = [
 /* -------------------------------------------------------------------------- */
 
 function HomeIcon({ active }: { active: boolean }) {
-  const color = active ? '#FF6A00' : '#404B5A';
+  const color = active ? '#FFFFFF' : '#F7F7F7';
 
   return (
     <Svg width={25} height={25} viewBox="0 0 28 28" fill="none">
@@ -84,7 +87,7 @@ function HomeIcon({ active }: { active: boolean }) {
 }
 
 function ProductsIcon({ active }: { active: boolean }) {
-  const color = active ? '#FF6A00' : '#404B5A';
+  const color = active ? '#FFFFFF' : '#F7F7F7';
 
   return (
     <Svg width={27} height={27} viewBox="0 0 28 28" fill="none">
@@ -118,7 +121,7 @@ function ProductsIcon({ active }: { active: boolean }) {
 }
 
 function OrdersIcon({ active }: { active: boolean }) {
-  const color = active ? '#FF6A00' : '#404B5A';
+  const color = active ? '#FFFFFF' : '#F7F7F7';
 
   return (
     <Svg width={25} height={25} viewBox="0 0 28 28" fill="none">
@@ -187,7 +190,7 @@ function OrdersIcon({ active }: { active: boolean }) {
 }
 
 function MoreIcon({ active }: { active: boolean }) {
-  const color = active ? '#FF6A00' : '#404B5A';
+  const color = active ? '#FFFFFF' : '#F7F7F7';
 
   return (
     <Svg width={25} height={25} viewBox="0 0 28 28" fill="none">
@@ -262,6 +265,7 @@ export default function Bottombar({
   onItemPress,
   onAddPress,
   badgeCount = 0,
+  visible = true,
   className,
   style,
 }: BottomBarProps) {
@@ -331,7 +335,7 @@ export default function Bottombar({
             style={[
               styles.tabLabel,
               {
-                color: isActive ? '#FF6A00' : '#64748B',
+                color: isActive ? '#FFFFFF' : '#F7F7F7',
                 fontWeight: isActive ? '700' : '500',
               },
             ]}>
@@ -342,7 +346,7 @@ export default function Bottombar({
           <View
             style={[
               styles.activeDot,
-              { backgroundColor: isActive ? '#FF6A00' : 'transparent' },
+              { backgroundColor: isActive ? '#FFFFFF' : 'transparent' },
             ]}
           />
         </View>
@@ -353,7 +357,14 @@ export default function Bottombar({
   return (
     <View
       pointerEvents="box-none"
-      style={[styles.outerContainer, style]}
+      style={[
+        styles.outerContainer,
+        {
+          opacity: visible ? 1 : 0,
+          transform: [{ translateY: visible ? 0 : totalHeight }],
+        },
+        style,
+      ]}
       className={className}>
       <View style={[styles.barContainer, { width: barWidth, height: totalHeight }]}>
         {/* Full-Width SVG Background, Center Wave Cutout & Orange Glow */}
@@ -362,6 +373,23 @@ export default function Bottombar({
           height={totalHeight}
           pointerEvents="none"
           style={StyleSheet.absoluteFill}>
+          <Defs>
+            <ClipPath id="bottomBarClip">
+              <Path d={barPath} />
+            </ClipPath>
+          </Defs>
+
+          {/* Bottom-bar artwork */}
+          <Image
+            href={require('../../Assert/images/topheader1.png')}
+            x={0}
+            y={0}
+            width={barWidth}
+            height={totalHeight}
+            preserveAspectRatio="xMidYMid slice"
+            clipPath="url(#bottomBarClip)"
+          />
+
           {/* Ambient Glow Paths */}
           <Path
             d={contourPath}
@@ -377,9 +405,6 @@ export default function Bottombar({
             strokeOpacity={0.35}
             fill="none"
           />
-
-          {/* Solid White Body with Scoop Cutout */}
-          <Path d={barPath} fill="#FFFFFF" />
 
           {/* Sharp Orange Contour Stroke */}
           <Path d={contourPath} stroke="#FF7A00" strokeWidth={2.4} fill="none" />

@@ -14,6 +14,8 @@ import TopHeader from './src/Admin/Navigation/TopHeader';
 import Home from './src/Admin/Home/Home';
 import Products from './src/Admin/Products/Products';
 import Orders from './src/Admin/Order/Orders';
+import OrdersDetails from './src/Admin/Order/OrdersDetails';
+import type { Order } from './src/Admin/Order/Orders';
 import Login from './src/Auth/Login';
 import Register from './src/Auth/Register';
 import { clearTokenCache, setTokenCache } from './src/api';
@@ -34,9 +36,16 @@ function AppContent() {
   const [authenticated, setAuthenticated] = useState(false);
   const [checkingSession, setCheckingSession] = useState(true);
   const [authScreen, setAuthScreen] = useState<'login' | 'register'>('login');
+  const [productDetailsOpen, setProductDetailsOpen] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [activeItem, setActiveItem] = useState<
     'Home' | 'Products' | 'Orders' | 'More'
   >('Home');
+  const [bottomBarVisible, setBottomBarVisible] = useState(true);
+
+  useEffect(() => {
+    setBottomBarVisible(true);
+  }, [activeItem, productDetailsOpen, selectedOrder]);
 
   useEffect(() => {
     let mounted = true;
@@ -88,15 +97,18 @@ function AppContent() {
 
   return (
     <View className="flex-1 bg-white">
-      <TopHeader
-        onMenuPress={() => console.log('Menu')}
-        onNotificationPress={() => console.log('Notifications')}
-        onProfilePress={() => console.log('Profile')}
-        onLogoutPress={handleLogout}
-        onDrawerItemPress={item => setActiveItem(item)}
-      />
+      {!productDetailsOpen && !selectedOrder ? (
+        <TopHeader
+          onMenuPress={() => console.log('Menu')}
+          onNotificationPress={() => console.log('Notifications')}
+          onProfilePress={() => console.log('Profile')}
+          onLogoutPress={handleLogout}
+          onDrawerItemPress={item => setActiveItem(item)}
+        />
+      ) : null}
       {activeItem === 'Home' ? (
         <Home
+          onScrollVisibilityChange={setBottomBarVisible}
           onActionPress={action => {
             if (action === 'Add Product' || action === 'Categories' || action === 'Stock') {
               setActiveItem('Products');
@@ -106,9 +118,23 @@ function AppContent() {
           }}
         />
       ) : activeItem === 'Products' ? (
-        <Products onActionPress={action => console.log(action)} />
+        <Products
+          onScrollVisibilityChange={setBottomBarVisible}
+          onActionPress={action => console.log(action)}
+          onDetailsVisibilityChange={setProductDetailsOpen}
+        />
       ) : activeItem === 'Orders' ? (
-        <Orders />
+        selectedOrder ? (
+          <OrdersDetails
+            order={selectedOrder}
+            onBack={() => setSelectedOrder(null)}
+          />
+        ) : (
+          <Orders
+            onScrollVisibilityChange={setBottomBarVisible}
+            onOrderPress={order => setSelectedOrder(order)}
+          />
+        )
       ) : (
         <View className="flex-1 items-center justify-center">
           <View className="rounded-[18px] bg-[#FFF7E6] px-6 py-5">
@@ -123,6 +149,7 @@ function AppContent() {
         onItemPress={item => setActiveItem(item)}
         onAddPress={() => setActiveItem('Products')}
         badgeCount={5}
+        visible={bottomBarVisible && !productDetailsOpen && !selectedOrder}
       />
     </View>
   );
