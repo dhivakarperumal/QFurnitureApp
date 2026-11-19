@@ -28,7 +28,7 @@ import More from './src/Admin/More/More';
 import Profile from './src/Admin/More/Profile';
 import DrawerCustomers from './src/Admin/Navigation/DrawerCustomers';
 import DrawerSalesReports from './src/Admin/Navigation/DrawerSalesReports';
-import DrawerOffersBanners from './src/Admin/Navigation/DrawerOffersBanners';
+import BannerScreen from './src/Admin/More/Banner';
 import DrawerSettings from './src/Admin/Navigation/DrawerSettings';
 import KeepAliveScreen from './src/Admin/Navigation/KeepAliveScreen';
 import { signOutGoogle } from './src/services/googleAuth';
@@ -58,7 +58,7 @@ function AppContent() {
     'customers' | 'reports' | 'offers' | 'settings' | null
   >(null);
   const [moreInitialScreen, setMoreInitialScreen] = useState<
-    'menu' | 'categories' | 'users' | 'stock'
+    'menu' | 'categories' | 'users' | 'stock' | 'offers'
   >('menu');
   const [moreScreenRequestId, setMoreScreenRequestId] = useState(0);
   const [createBillOpen, setCreateBillOpen] = useState(false);
@@ -328,7 +328,7 @@ function AppContent() {
         <DrawerSalesReports onBackPress={closeDrawerScreen} />
       </KeepAliveScreen>
       <KeepAliveScreen active={drawerScreen === 'offers'}>
-        <DrawerOffersBanners onBackPress={closeDrawerScreen} />
+        <BannerScreen onBackPress={closeDrawerScreen} />
       </KeepAliveScreen>
       <KeepAliveScreen active={drawerScreen === 'settings'}>
         <DrawerSettings onBackPress={closeDrawerScreen} />

@@ -4,6 +4,7 @@ import {
   Boxes,
   ChevronRight,
   LayoutGrid,
+  Megaphone,
   MessageSquare,
   UserRound,
   UsersRound,
@@ -15,11 +16,12 @@ import ReviewScreen from './Review';
 import StockDetails from './StockDetails';
 import Usermanagement from './Usermanagement';
 import KeepAliveScreen from '../Navigation/KeepAliveScreen';
+import BannerScreen from './Banner';
 
 type MoreProps = {
   onScrollVisibilityChange?: (visible: boolean) => void;
   onDetailsVisibilityChange?: (visible: boolean) => void;
-  initialScreen?: 'menu' | 'categories' | 'users' | 'stock';
+  initialScreen?: 'menu' | 'categories' | 'users' | 'stock' | 'offers';
   screenRequestId?: number;
 };
 
@@ -35,6 +37,7 @@ export default function More({
   const [stockOpen, setStockOpen] = React.useState(false);
   const [profileOpen, setProfileOpen] = React.useState(false);
   const [reviewsOpen, setReviewsOpen] = React.useState(false);
+  const [offersOpen, setOffersOpen] = React.useState(false);
 
   React.useEffect(() => {
     if (!initialScreen || screenRequestId === 0) return;
@@ -43,6 +46,7 @@ export default function More({
     setStockOpen(initialScreen === 'stock');
     setProfileOpen(false);
     setReviewsOpen(false);
+    setOffersOpen(initialScreen === 'offers');
     onDetailsVisibilityChange?.(initialScreen !== 'menu');
     onScrollVisibilityChange?.(true);
   }, [
@@ -112,8 +116,25 @@ export default function More({
     onScrollVisibilityChange?.(true);
   };
 
+  const openOffers = () => {
+    setOffersOpen(true);
+    onDetailsVisibilityChange?.(true);
+    onScrollVisibilityChange?.(true);
+  };
+
+  const closeOffers = () => {
+    setOffersOpen(false);
+    onDetailsVisibilityChange?.(false);
+    onScrollVisibilityChange?.(true);
+  };
+
   const detailOpen =
-    categoriesOpen || usersOpen || stockOpen || profileOpen || reviewsOpen;
+    categoriesOpen ||
+    usersOpen ||
+    stockOpen ||
+    profileOpen ||
+    reviewsOpen ||
+    offersOpen;
   return (
     <View className="flex-1">
       <KeepAliveScreen active={!detailOpen}>
@@ -213,6 +234,25 @@ export default function More({
         </View>
         <ChevronRight size={21} color="#94A3B8" />
       </Pressable>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Open offers and banners"
+        onPress={openOffers}
+        className="mt-3 flex-row items-center rounded-[18px] border border-[#FCE6D7] bg-white p-4 shadow-sm elevation-[2]"
+      >
+        <View className="h-[52px] w-[52px] items-center justify-center rounded-[14px] bg-[#FFF1D6]">
+          <Megaphone size={25} color="#F97316" strokeWidth={2} />
+        </View>
+        <View className="ml-3 flex-1">
+          <Text className="text-[15px] font-black text-[#17191C]">
+            Offers & Banners
+          </Text>
+          <Text className="mt-1 text-[11px] text-[#64748B]">
+            Manage promotional offers and banners
+          </Text>
+        </View>
+        <ChevronRight size={21} color="#94A3B8" />
+      </Pressable>
         </ScrollView>
       </KeepAliveScreen>
       <KeepAliveScreen active={categoriesOpen}>
@@ -244,6 +284,9 @@ export default function More({
           onScrollVisibilityChange={onScrollVisibilityChange}
           onBackPress={closeReviews}
         />
+      </KeepAliveScreen>
+      <KeepAliveScreen active={offersOpen}>
+        <BannerScreen onBackPress={closeOffers} />
       </KeepAliveScreen>
     </View>
   );
