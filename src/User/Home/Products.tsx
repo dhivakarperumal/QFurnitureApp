@@ -17,7 +17,7 @@ export default function Products({
   onAddToCart,
 }: ProductsProps) {
   const { width } = useWindowDimensions();
-  const cardWidth = (width - 44) / 2;
+  const cardWidth = (width - 40) / 2;
 
   return (
     <View className="mt-8">

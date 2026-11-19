@@ -31,7 +31,7 @@ export default function Category({
   const [contentWidth, setContentWidth] = useState(0);
   const [viewportWidth, setViewportWidth] = useState(0);
   const [isUserScrolling, setIsUserScrolling] = useState(false);
-  const categoryWidth = viewportWidth > 0 ? (viewportWidth - 12) / 2 : 112;
+  const categoryWidth = viewportWidth > 0 ? (viewportWidth - 24) / 3 : 112;
   const categoryStep = categoryWidth + 12;
   const snapOffsets = categories.map((_, index) => index * categoryStep);
 

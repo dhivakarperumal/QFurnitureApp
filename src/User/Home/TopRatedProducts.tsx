@@ -18,7 +18,7 @@ export default function TopRatedProducts({
   onAddToCart,
 }: TopRatedProductsProps) {
   const { width } = useWindowDimensions();
-  const cardWidth = (width - 44) / 2;
+  const cardWidth = (width - 40) / 2;
   const topRatedProducts = useMemo(
     () =>
       [...products]
