@@ -1,5 +1,5 @@
 import React from 'react';
-import { Image, Pressable, Text, View } from 'react-native';
+import { Image, ImageBackground, Pressable, Text, View } from 'react-native';
 import { Heart, UserRound } from 'lucide-react-native';
 import type { StoreTab } from './types';
 
@@ -15,17 +15,25 @@ export default function Header({
   onProfilePress,
 }: HeaderProps) {
   return (
-    <View className="h-[58px] flex-row items-center justify-between px-4">
+    <ImageBackground
+      source={require('../Assert/images/topheader1.png')}
+      resizeMode="cover"
+      className="h-[58px] flex-row items-center justify-between overflow-hidden rounded-[22px] px-3 shadow-md">
+      <View
+        pointerEvents="none"
+        className="absolute inset-0 bg-[#F45B00]/75"
+      />
       <View className="flex-row items-center">
         <Image
           source={require('../Assert/images/appicon.png')}
           accessibilityLabel="Q Living Furniture"
           resizeMode="contain"
-          className="h-[42px] w-[42px]"
+          className="h-[44px] w-[44px] rounded-[12px] bg-white"
         />
-        <View className="ml-2">
-          <Text className="text-[16px] font-black italic text-[#1E432C]">Q Living</Text>
-          <Text className="text-[8px] font-bold uppercase tracking-[1.8px] text-[#634D3B]">
+        <View className="mx-3 h-[40px] w-px bg-white/45" />
+        <View>
+          <Text className="text-[17px] font-black italic text-white">Q Living</Text>
+          <Text className="text-[8px] font-bold uppercase tracking-[2.4px] text-white/90">
             Furniture
           </Text>
         </View>
@@ -36,11 +44,11 @@ export default function Header({
           accessibilityLabel="Open favorites"
           accessibilityState={{ selected: activeTab === 'Favorites' }}
           onPress={onFavoritesPress}
-          className="mr-2 h-[42px] w-[42px] items-center justify-center rounded-full bg-white">
+          className="mr-2 h-[42px] w-[42px] items-center justify-center rounded-full bg-white/15">
           <Heart
-            size={21}
-            color={activeTab === 'Favorites' ? '#F97316' : '#351D0E'}
-            fill={activeTab === 'Favorites' ? '#F97316' : 'transparent'}
+            size={22}
+            color="#FFFFFF"
+            fill={activeTab === 'Favorites' ? '#FFFFFF' : 'transparent'}
           />
         </Pressable>
         <Pressable
@@ -48,13 +56,10 @@ export default function Header({
           accessibilityLabel="Open profile"
           accessibilityState={{ selected: activeTab === 'Profile' }}
           onPress={onProfilePress}
-          className="h-[42px] w-[42px] items-center justify-center rounded-full bg-white">
-          <UserRound
-            size={21}
-            color={activeTab === 'Profile' ? '#F97316' : '#351D0E'}
-          />
+          className="h-[42px] w-[42px] items-center justify-center rounded-full bg-white/15">
+          <UserRound size={22} color="#FFFFFF" />
         </Pressable>
       </View>
-    </View>
+    </ImageBackground>
   );
 }
