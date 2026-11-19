@@ -119,7 +119,10 @@ function StatePicker({ value, onChange }: StatePickerProps) {
         <View className="flex-1 justify-end bg-black/40">
           <View
             className="rounded-t-[24px] bg-white overflow-hidden"
-            style={{ maxHeight: '70%' }}
+            style={{
+              maxHeight: '70%',
+              paddingBottom: Math.max(insets.bottom, 24),
+            }}
           >
             <View className="flex-row items-center justify-between border-b border-[#F0E7DE] px-5 py-4">
               <Text className="text-[16px] font-black text-[#351D0E]">Select State</Text>
@@ -130,7 +133,7 @@ function StatePicker({ value, onChange }: StatePickerProps) {
                 <X size={16} color="#351D0E" />
               </Pressable>
             </View>
-            <ScrollView contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 16) }}>
+            <ScrollView contentContainerStyle={{ paddingBottom: 8 }}>
               {all.map(s => (
                 <Pressable
                   key={s}
