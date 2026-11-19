@@ -2,15 +2,17 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Alert,
   ActivityIndicator,
+  KeyboardAvoidingView,
   Modal,
   Pressable,
+  Platform,
   RefreshControl,
   ScrollView,
   Text,
   TextInput,
   View,
 } from 'react-native';
-import { Eye, Printer } from 'lucide-react-native';
+import { ChevronDown, Eye, Printer, X } from 'lucide-react-native';
 import RNPrint from 'react-native-print';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api, { invalidateApiResponseCache } from '../../api';
@@ -85,6 +87,23 @@ const statusColors: Record<string, { background: string; color: string }> = {
   Shipped: { background: '#FEF3C7', color: '#B45309' },
   New: { background: '#F1F5F9', color: '#64748B' },
 };
+
+function getAvailableStatuses(currentStatus: OrderStatus): OrderStatus[] {
+  const flow: OrderStatus[] = [
+    'Order Placed',
+    'Packing',
+    'Shipping',
+    'Out for Delivery',
+    'Delivered',
+  ];
+  const currentIndex = flow.indexOf(currentStatus);
+  return currentIndex === -1
+    ? [currentStatus, ...flow, 'Cancelled']
+    : [
+        ...flow.slice(currentIndex),
+        ...(currentIndex < 2 ? ['Cancelled' as const] : []),
+      ];
+}
 
 function formatOrderId(order: Order) {
   return order.order_id || `ORD${String(order.id).padStart(4, '0')}`;
@@ -256,6 +275,7 @@ export default function Orders({
     setSavingStatus(true);
     try {
       await api.put(`/orders/${order.id}/status`, updateData);
+      setUpdateModal(null);
       await fetchOrders();
     } catch (error) {
       console.error('Status Sync Error:', error);
@@ -266,8 +286,9 @@ export default function Orders({
   };
 
   const submitStatusUpdate = () => {
-    if (!updateModal) return;
+    if (!updateModal || savingStatus) return;
     const { order, status, tracking, courier, reason } = updateModal;
+    if (status === (order.status || 'New')) return;
     const updateData: Record<string, string> = { status };
     if (status === 'Shipping') {
       if (!tracking.trim() || !courier.trim()) {
@@ -289,7 +310,6 @@ export default function Orders({
       updateData.cancelled_at = new Date().toISOString();
     }
     setLoadError(null);
-    setUpdateModal(null);
     performStatusUpdate(order, updateData);
   };
 
@@ -366,54 +386,19 @@ export default function Orders({
     }
   };
 
-  const renderStatusSelector = (order: Order) => {
+  const renderStatusButton = (order: Order) => {
     const currentStatus = order.status || 'New';
-    const flow: OrderStatus[] = [
-      'Order Placed',
-      'Packing',
-      'Shipping',
-      'Out for Delivery',
-      'Delivered',
-    ];
-    const currentIndex = flow.indexOf(currentStatus);
-    const options =
-      currentIndex === -1
-        ? [currentStatus, ...flow, 'Cancelled']
-        : [
-            ...flow.slice(currentIndex),
-            ...(currentIndex < 2 ? ['Cancelled' as const] : []),
-          ];
     return (
-      <View>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {[...new Set(options)].map(option => {
-            const optionColors = statusColors[option] || statusColors.New;
-            const isCurrentStatus = option === currentStatus;
-            return (
-              <Pressable
-                key={option}
-                disabled={savingStatus || isCurrentStatus}
-                onPress={() => openStatusUpdate(order, option)}
-                className="mr-2 rounded-full border px-3 py-2"
-                style={{
-                  backgroundColor: optionColors.background,
-                  borderColor: isCurrentStatus
-                    ? optionColors.color
-                    : optionColors.background,
-                }}>
-                <Text
-                  className="text-[10px] font-bold"
-                  style={{ color: optionColors.color }}>
-                  {isCurrentStatus ? `✓ ${option}` : option}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
-        <Text className="mt-2 text-[10px] text-[#94A3B8]">
-          Current status: {currentStatus}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Update status for ${formatOrderId(order)}. Current status ${currentStatus}`}
+        onPress={() => openStatusUpdate(order, currentStatus)}
+        className="mr-2 h-[44px] flex-1 flex-row items-center justify-center rounded-[13px] bg-[#FFF1E6] px-2">
+        <Text className="mr-1 text-[10px] font-bold text-[#C2410C]">
+          Update
         </Text>
-      </View>
+        <ChevronDown size={14} color="#C2410C" />
+      </Pressable>
     );
   };
 
@@ -520,13 +505,6 @@ export default function Orders({
             </View>
           </View>
 
-          <View className="rounded-[15px] border border-[#F1F0ED] bg-[#FCFBF9] p-3">
-            <Text className="mb-2 text-[8px] font-bold uppercase tracking-[1.1px] text-[#94A3B8]">
-              Update order status
-            </Text>
-            {renderStatusSelector(order)}
-          </View>
-
           <View className="mt-4 flex-row items-center">
             <Pressable
               onPress={() => openOrder(order)}
@@ -538,6 +516,7 @@ export default function Orders({
                 View order
               </Text>
             </Pressable>
+            {renderStatusButton(order)}
             <Pressable
               onPress={() => printOrder(order)}
               accessibilityRole="button"
@@ -795,88 +774,186 @@ export default function Orders({
 
       <Modal
         transparent
-        animationType="fade"
+        animationType="slide"
         visible={updateModal !== null}
-        onRequestClose={() => setUpdateModal(null)}>
-        <View className="flex-1 items-center justify-center bg-[#17191C]/70 px-5">
-          <View className="w-full rounded-[24px] bg-white p-5">
-            <Text className="text-[18px] font-black text-[#17191C]">
-              {updateModal?.status === 'Shipping'
-                ? 'Shipping details'
-                : updateModal?.status === 'Cancelled'
-                  ? 'Cancel order'
-                  : 'Update order status'}
-            </Text>
-            <Text className="mt-1 text-[12px] text-[#94A3B8]">
-              {updateModal ? formatOrderId(updateModal.order) : ''}
-            </Text>
-            {updateModal?.status === 'Shipping' ? (
-              <>
-                <TextInput
-                  value={updateModal.tracking}
-                  onChangeText={tracking =>
-                    setUpdateModal(current =>
-                      current ? { ...current, tracking } : current,
-                    )
-                  }
-                  placeholder="Tracking / AWB number"
-                  placeholderTextColor="#94A3B8"
-                  className="mt-5 h-[50px] rounded-[13px] border border-[#E2E8F0] bg-[#F8FAFC] px-4 text-[13px] text-[#17191C]"
-                />
-                <TextInput
-                  value={updateModal.courier}
-                  onChangeText={courier =>
-                    setUpdateModal(current =>
-                      current ? { ...current, courier } : current,
-                    )
-                  }
-                  placeholder="Courier name"
-                  placeholderTextColor="#94A3B8"
-                  className="mt-3 h-[50px] rounded-[13px] border border-[#E2E8F0] bg-[#F8FAFC] px-4 text-[13px] text-[#17191C]"
-                />
-              </>
-            ) : updateModal?.status === 'Cancelled' ? (
-              <TextInput
-                value={updateModal?.reason || ''}
-                onChangeText={reason =>
-                  setUpdateModal(current =>
-                    current ? { ...current, reason } : current,
-                  )
-                }
-                placeholder="Reason for cancellation"
-                placeholderTextColor="#94A3B8"
-                multiline
-                textAlignVertical="top"
-                className="mt-5 min-h-[100px] rounded-[13px] border border-[#E2E8F0] bg-[#F8FAFC] p-4 text-[13px] text-[#17191C]"
-              />
-            ) : (
-              <View className="mt-5 rounded-[13px] border border-[#E2E8F0] bg-[#F8FAFC] p-4">
-                <Text className="text-[12px] font-bold text-[#334155]">
-                  Change this order to {updateModal?.status}.
-                </Text>
-              </View>
-            )}
-            <View className="mt-5 flex-row">
-              <Pressable
-                onPress={() => setUpdateModal(null)}
-                className="mr-2 h-[48px] flex-1 items-center justify-center rounded-[14px] border border-[#E2E8F0]">
-                <Text className="text-[12px] font-bold text-[#64748B]">Cancel</Text>
-              </Pressable>
-              <Pressable
-                disabled={savingStatus}
-                onPress={submitStatusUpdate}
-                className="h-[48px] flex-1 items-center justify-center rounded-[14px] bg-[#17191C]">
-                {savingStatus ? (
-                  <ActivityIndicator color="white" />
-                ) : (
-                  <Text className="text-[12px] font-bold text-white">
-                    Update Status
+        onRequestClose={() => {
+          if (!savingStatus) setUpdateModal(null);
+        }}>
+        <KeyboardAvoidingView
+          className="flex-1"
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <View className="flex-1 justify-end">
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Close status update"
+              disabled={savingStatus}
+              onPress={() => setUpdateModal(null)}
+              className="absolute inset-0 bg-[#17191C]/55"
+            />
+            <View
+              className="max-h-[92%] rounded-t-[28px] bg-white px-5 pt-3"
+              style={{ paddingBottom: Math.max(insets.bottom, 16) }}>
+              <View className="mb-4 h-[4px] w-[40px] self-center rounded-full bg-[#E2E8F0]" />
+              <View className="mb-4 flex-row items-start justify-between">
+                <View className="flex-1">
+                  <Text className="text-[18px] font-black text-[#17191C]">
+                    Update order status
                   </Text>
-                )}
-              </Pressable>
+                  <Text className="mt-1 text-[11px] text-[#64748B]">
+                    {updateModal ? formatOrderId(updateModal.order) : ''}
+                  </Text>
+                </View>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Close status update"
+                  disabled={savingStatus}
+                  onPress={() => setUpdateModal(null)}
+                  className="ml-3 h-[36px] w-[36px] items-center justify-center rounded-full bg-[#F1F5F9]">
+                  <X size={18} color="#475569" />
+                </Pressable>
+              </View>
+
+              {updateModal ? (
+                <ScrollView
+                  keyboardShouldPersistTaps="handled"
+                  showsVerticalScrollIndicator={false}
+                  contentContainerClassName="pb-4">
+                  <Text className="mb-2 text-[9px] font-bold uppercase tracking-[1px] text-[#94A3B8]">
+                    Select a status
+                  </Text>
+                  <View className="mb-4 flex-row flex-wrap">
+                    {getAvailableStatuses(
+                      updateModal.order.status || 'New',
+                    ).map(status => {
+                      const colors = statusColors[status] || statusColors.New;
+                      const selected = updateModal.status === status;
+                      const isCurrentStatus =
+                        (updateModal.order.status || 'New') === status;
+                      const statusChipStyle = {
+                        backgroundColor: selected
+                          ? colors.background
+                          : '#FFFFFF',
+                        borderColor: selected ? colors.color : '#E2E8F0',
+                      };
+                      const statusLabelStyle = {
+                        color: selected ? colors.color : '#64748B',
+                      };
+                      return (
+                        <Pressable
+                          key={status}
+                          disabled={savingStatus || isCurrentStatus}
+                          onPress={() =>
+                            setUpdateModal(current =>
+                              current
+                                ? {
+                                    ...current,
+                                    status,
+                                    tracking: '',
+                                    courier: '',
+                                    reason: '',
+                                  }
+                                : current,
+                            )
+                          }
+                          className="mb-2 mr-2 rounded-full border px-3 py-2"
+                          style={statusChipStyle}>
+                          <Text
+                            className="text-[10px] font-bold"
+                            style={statusLabelStyle}>
+                            {selected ? `✓ ${status}` : status}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+
+                  {updateModal.status === 'Shipping' ? (
+                    <>
+                      <TextInput
+                        value={updateModal.tracking}
+                        onChangeText={tracking =>
+                          setUpdateModal(current =>
+                            current ? { ...current, tracking } : current,
+                          )
+                        }
+                        placeholder="Tracking / AWB number"
+                        placeholderTextColor="#94A3B8"
+                        className="h-[50px] rounded-[13px] border border-[#E2E8F0] bg-[#F8FAFC] px-4 text-[13px] text-[#17191C]"
+                      />
+                      <TextInput
+                        value={updateModal.courier}
+                        onChangeText={courier =>
+                          setUpdateModal(current =>
+                            current ? { ...current, courier } : current,
+                          )
+                        }
+                        placeholder="Courier name"
+                        placeholderTextColor="#94A3B8"
+                        className="mt-3 h-[50px] rounded-[13px] border border-[#E2E8F0] bg-[#F8FAFC] px-4 text-[13px] text-[#17191C]"
+                      />
+                    </>
+                  ) : updateModal.status === 'Cancelled' ? (
+                    <TextInput
+                      value={updateModal.reason}
+                      onChangeText={reason =>
+                        setUpdateModal(current =>
+                          current ? { ...current, reason } : current,
+                        )
+                      }
+                      placeholder="Reason for cancellation"
+                      placeholderTextColor="#94A3B8"
+                      multiline
+                      textAlignVertical="top"
+                      className="min-h-[100px] rounded-[13px] border border-[#E2E8F0] bg-[#F8FAFC] p-4 text-[13px] text-[#17191C]"
+                    />
+                  ) : (
+                    <View className="rounded-[13px] border border-[#E2E8F0] bg-[#F8FAFC] p-4">
+                      <Text className="text-[12px] font-semibold text-[#475569]">
+                        Confirm this order status change.
+                      </Text>
+                    </View>
+                  )}
+                </ScrollView>
+              ) : null}
+
+              <View className="flex-row border-t border-[#F1F5F9] pt-3">
+                <Pressable
+                  disabled={savingStatus}
+                  onPress={() => setUpdateModal(null)}
+                  className="mr-2 h-[48px] flex-1 items-center justify-center rounded-[14px] border border-[#E2E8F0]">
+                  <Text className="text-[12px] font-bold text-[#64748B]">
+                    Cancel
+                  </Text>
+                </Pressable>
+                <Pressable
+                  disabled={
+                    savingStatus ||
+                    !updateModal ||
+                    updateModal.status ===
+                      (updateModal.order.status || 'New')
+                  }
+                  onPress={submitStatusUpdate}
+                  className={[
+                    'h-[48px] flex-1 items-center justify-center rounded-[14px]',
+                    savingStatus ||
+                    !updateModal ||
+                    updateModal.status ===
+                      (updateModal.order.status || 'New')
+                      ? 'bg-[#D6D3D1]'
+                      : 'bg-[#C2410C]',
+                  ].join(' ')}>
+                  {savingStatus ? (
+                    <ActivityIndicator color="white" />
+                  ) : (
+                    <Text className="text-[12px] font-bold text-white">
+                      Update status
+                    </Text>
+                  )}
+                </Pressable>
+              </View>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       <Modal
