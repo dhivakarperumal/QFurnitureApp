@@ -148,7 +148,7 @@ const toNumber = (value?: string | number) => {
 };
 
 export default function Orders({
-  statusFilter = 'All',
+  statusFilter = 'Order Placed',
   onOrderPress,
   onScrollVisibilityChange,
 }: OrdersProps) {
@@ -165,6 +165,7 @@ export default function Orders({
   );
   const [viewMode, setViewMode] = useState<'cards' | 'list'>('cards');
   const [currentPage, setCurrentPage] = useState(1);
+  const [statusFilterVisible, setStatusFilterVisible] = useState(false);
   const [updateModal, setUpdateModal] = useState<UpdateModalData | null>(null);
   const [savingStatus, setSavingStatus] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -415,7 +416,9 @@ export default function Orders({
         className="mb-4 overflow-hidden rounded-[22px] border border-[#E9E4DC] bg-white shadow-sm elevation-[3]">
         <View className="h-[4px]" style={{ backgroundColor: statusColor.color }} />
         <View className="p-4">
-          <View className="mb-4 flex-row items-start justify-between">
+          <View
+            className="-mx-4 -mt-4 mb-4 flex-row items-start justify-between border-b border-[#F1E8DE] px-4 py-3"
+            style={{ backgroundColor: statusColor.background }}>
             <Pressable
               accessibilityRole="button"
               onPress={() => openOrder(order)}
@@ -449,8 +452,6 @@ export default function Orders({
               </Text>
             </View>
           </View>
-
-          <View className="mb-4 h-px bg-[#F1F0ED]" />
 
           <Pressable
             accessibilityRole="button"
@@ -628,27 +629,21 @@ export default function Orders({
             )}
           </View>
 
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {orderStatuses.map(item => (
-              <Pressable
-                key={item}
-                onPress={() => setActiveStatus(item)}
-                className={[
-                  'mr-2 h-[36px] justify-center rounded-full border px-3',
-                  activeStatus === item
-                    ? 'border-[#17191C] bg-[#17191C]'
-                    : 'border-[#E2E8F0] bg-white',
-                ].join(' ')}>
-                <Text
-                  className={[
-                    'text-[10px] font-bold',
-                    activeStatus === item ? 'text-white' : 'text-[#64748B]',
-                  ].join(' ')}>
-                  {item}
-                </Text>
-              </Pressable>
-            ))}
-          </ScrollView>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Filter orders by status. Selected: ${activeStatus}`}
+            onPress={() => setStatusFilterVisible(true)}
+            className="h-[54px] flex-row items-center justify-between rounded-[13px] border border-[#E2E8F0] bg-white px-3">
+            <View>
+              <Text className="text-[8px] font-bold uppercase tracking-[1px] text-[#94A3B8]">
+                Filter by status
+              </Text>
+              <Text className="mt-1 text-[11px] font-bold text-[#17191C]">
+                {activeStatus}
+              </Text>
+            </View>
+            <ChevronDown size={17} color="#64748B" />
+          </Pressable>
 
           <View className="mt-3 flex-row items-center justify-between">
             <Text className="text-[11px] font-semibold text-[#94A3B8]">
@@ -771,6 +766,63 @@ export default function Orders({
           </View>
         )}
       </ScrollView>
+
+      <Modal
+        transparent
+        animationType="slide"
+        visible={statusFilterVisible}
+        onRequestClose={() => setStatusFilterVisible(false)}>
+        <View className="flex-1 justify-end">
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Close status filter"
+            onPress={() => setStatusFilterVisible(false)}
+            className="absolute inset-0 bg-[#17191C]/55"
+          />
+          <View
+            className="rounded-t-[26px] bg-white px-5 pt-3"
+            style={{ paddingBottom: Math.max(insets.bottom, 16) }}>
+            <View className="mb-4 h-[4px] w-[40px] self-center rounded-full bg-[#E2E8F0]" />
+            <Text className="mb-1 text-[17px] font-black text-[#17191C]">
+              Filter orders
+            </Text>
+            <Text className="mb-4 text-[11px] text-[#64748B]">
+              Choose an order status to view.
+            </Text>
+            {orderStatuses.map(status => (
+              <Pressable
+                key={status}
+                accessibilityRole="button"
+                accessibilityState={{ selected: activeStatus === status }}
+                onPress={() => {
+                  setActiveStatus(status);
+                  setStatusFilterVisible(false);
+                }}
+                className={[
+                  'mb-2 min-h-[46px] flex-row items-center justify-between rounded-[12px] border px-3',
+                  activeStatus === status
+                    ? 'border-[#F97316] bg-[#FFF7ED]'
+                    : 'border-[#E2E8F0] bg-white',
+                ].join(' ')}>
+                <Text
+                  className={[
+                    'text-[12px] font-semibold',
+                    activeStatus === status
+                      ? 'text-[#C2410C]'
+                      : 'text-[#475569]',
+                  ].join(' ')}>
+                  {status}
+                </Text>
+                {activeStatus === status ? (
+                  <Text className="text-[13px] font-black text-[#C2410C]">
+                    ✓
+                  </Text>
+                ) : null}
+              </Pressable>
+            ))}
+          </View>
+        </View>
+      </Modal>
 
       <Modal
         transparent
