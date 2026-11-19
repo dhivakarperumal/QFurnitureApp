@@ -57,13 +57,18 @@ type PickupLocation = {
 };
 
 type CheckoutQuote = {
-  quote_id?: string | number;
   subtotal: number | string;
   gst_rate?: number | string;
   gst_amount: number | string;
   discount_amount?: number | string;
   shipping_amount?: number | string;
   total_amount: number | string;
+};
+
+type GstSettings = {
+  gst_enabled: boolean;
+  gst_rate: number;
+  tax_mode: 'Tax Exclusive' | 'Tax Inclusive';
 };
 
 type Coordinates = {
@@ -88,6 +93,83 @@ const emptyAddress: AddressDraft = {
 function amount(value: number | string | undefined) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
+}
+
+function roundCurrency(value: number) {
+  return Math.round((value + Number.EPSILON) * 100) / 100;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function parseGstSettings(data: unknown): GstSettings {
+  if (!isRecord(data)) {
+    throw new Error('The GST settings response was invalid.');
+  }
+
+  const settings = isRecord(data.settings) ? data.settings : data;
+  const enabledValue = settings.gst_enabled;
+  const gstEnabled =
+    enabledValue === true ||
+    enabledValue === 1 ||
+    enabledValue === 'true';
+  const gstDisabled =
+    enabledValue === false ||
+    enabledValue === 0 ||
+    enabledValue === 'false';
+  const rateValue = settings.gst_rate;
+  const rate =
+    typeof rateValue === 'number' || typeof rateValue === 'string'
+      ? amount(rateValue)
+      : null;
+  const rawTaxMode = (
+    typeof settings.tax_mode === 'string' ? settings.tax_mode : ''
+  )
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_-]+/g, '');
+  const taxMode =
+    rawTaxMode === 'taxexclusive'
+      ? 'Tax Exclusive'
+      : rawTaxMode === 'taxinclusive'
+      ? 'Tax Inclusive'
+      : null;
+
+  if (
+    (!gstEnabled && !gstDisabled) ||
+    rate === null ||
+    rate < 0 ||
+    rate > 100 ||
+    !taxMode
+  ) {
+    throw new Error('The GST settings response was invalid.');
+  }
+
+  return {
+    gst_enabled: gstEnabled,
+    gst_rate: rate,
+    tax_mode: taxMode,
+  };
+}
+
+function cartSubtotal(items: StoreCartItem[]) {
+  let subtotal = 0;
+
+  for (const item of items) {
+    const price = amount(item.price);
+    const quantity = amount(item.quantity);
+    const lineTotal = item.total_price != null
+      ? amount(item.total_price)
+      : price !== null && quantity !== null
+      ? price * quantity
+      : null;
+
+    if (lineTotal === null || lineTotal < 0) return null;
+    subtotal += lineTotal;
+  }
+
+  return roundCurrency(subtotal);
 }
 
 function responseMessage(error: unknown) {
@@ -172,10 +254,9 @@ export default function Checkout({
   >(null);
   const [pickupLoading, setPickupLoading] = useState(false);
   const [pickupError, setPickupError] = useState('');
-  const [quote, setQuote] = useState<CheckoutQuote | null>(null);
-  const [quotedRequestKey, setQuotedRequestKey] = useState<string | null>(null);
-  const [quoteLoading, setQuoteLoading] = useState(false);
-  const [quoteError, setQuoteError] = useState('');
+  const [gstSettings, setGstSettings] = useState<GstSettings | null>(null);
+  const [gstSettingsLoading, setGstSettingsLoading] = useState(true);
+  const [gstSettingsError, setGstSettingsError] = useState('');
   const [savingAddress, setSavingAddress] = useState(false);
   const [addressModalOpen, setAddressModalOpen] = useState(false);
   const [addressDraft, setAddressDraft] = useState<AddressDraft>(emptyAddress);
@@ -187,7 +268,6 @@ export default function Checkout({
   const [pendingPaymentOrderId, setPendingPaymentOrderId] = useState<
     string | number | null
   >(null);
-  const quoteRequest = useRef(0);
 
   const loadAddresses = useCallback(async () => {
     setAddressesLoading(true);
@@ -217,6 +297,26 @@ export default function Checkout({
   useEffect(() => {
     loadAddresses();
   }, [loadAddresses]);
+
+  useEffect(() => {
+    let active = true;
+    api
+      .get<unknown>('/settings/gst')
+      .then(({ data }) => {
+        const settings = parseGstSettings(data);
+        if (active) setGstSettings(settings);
+      })
+      .catch(error => {
+        if (active) setGstSettingsError(responseMessage(error));
+      })
+      .finally(() => {
+        if (active) setGstSettingsLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (fulfillment !== 'pickup') return;
@@ -265,68 +365,33 @@ export default function Checkout({
     [fulfillment, items, selectedAddressId, selectedPickupId],
   );
 
-  useEffect(() => {
-    const requestId = ++quoteRequest.current;
-    setQuote(null);
-    setQuotedRequestKey(null);
-    setQuoteError('');
-    const hasDestination =
-      fulfillment === 'delivery'
-        ? selectedAddressId != null
-        : selectedPickupId != null;
-    if (!items.length || !hasDestination) {
-      setQuoteLoading(false);
-      return;
-    }
+  const subtotal = useMemo(() => cartSubtotal(items), [items]);
+  const quote = useMemo<CheckoutQuote | null>(() => {
+    if (!gstSettings || subtotal === null) return null;
 
-    setQuoteLoading(true);
-    api
-      .post<CheckoutQuote | { quote?: CheckoutQuote }>(
-        '/checkout/quote',
-        quoteRequestBody,
-      )
-      .then(({ data }) => {
-        const result: CheckoutQuote | undefined =
-          'quote' in data ? data.quote : (data as CheckoutQuote);
-        if (!result) {
-          throw new Error('The checkout quote response was empty.');
-        }
-        const subtotal = amount(result?.subtotal);
-        const tax = amount(result?.gst_amount);
-        const total = amount(result?.total_amount);
-        if (subtotal === null || tax === null || total === null) {
-          throw new Error(
-            'The checkout quote did not include backend tax and total amounts.',
-          );
-        }
-        if (quoteRequest.current === requestId) {
-          setQuote(result);
-          setQuotedRequestKey(JSON.stringify(quoteRequestBody));
-        }
-      })
-      .catch(error => {
-        if (quoteRequest.current === requestId) {
-          setQuoteError(
-            `${responseMessage(
-              error,
-            )} GST and the final total must be confirmed by the server.`,
-          );
-        }
-      })
-      .finally(() => {
-        if (quoteRequest.current === requestId) setQuoteLoading(false);
-      });
+    const gstRate = gstSettings.gst_enabled ? gstSettings.gst_rate : 0;
+    const taxInclusive = gstSettings.tax_mode === 'Tax Inclusive';
+    const gstAmount = gstSettings.gst_enabled
+      ? roundCurrency(
+          taxInclusive
+            ? (subtotal * gstRate) / (100 + gstRate)
+            : (subtotal * gstRate) / 100,
+        )
+      : 0;
 
-    return () => {
-      quoteRequest.current += 1;
+    return {
+      subtotal,
+      gst_rate: gstRate,
+      gst_amount: gstAmount,
+      total_amount: roundCurrency(
+        taxInclusive ? subtotal : subtotal + gstAmount,
+      ),
     };
-  }, [
-    fulfillment,
-    items.length,
-    quoteRequestBody,
-    selectedAddressId,
-    selectedPickupId,
-  ]);
+  }, [gstSettings, subtotal]);
+  const quoteLoading = gstSettingsLoading;
+  const quoteError =
+    gstSettingsError ||
+    (subtotal === null ? 'Cart prices are invalid. Please refresh your cart.' : '');
 
   const requestLocation = async () => {
     if (Platform.OS === 'android') {
