@@ -2,27 +2,19 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  Image,
   Pressable,
   ScrollView,
   Text,
   View,
 } from 'react-native';
-import {
-  Armchair,
-  Heart,
-  Minus,
-  Plus,
-  ShoppingCart,
-  Trash2,
-} from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '../api';
 import Header from './Header';
 import Home from './Home/Home';
-import ProductCard from './ProductCard';
 import Shop from './Shop/Shop';
 import Tabs from './Tabs';
+import Cart from './Cart/Cart';
+import Favorites from './Favorites/Favorites';
 import type {
   StoreBanner,
   StoreCartItem,
@@ -32,10 +24,7 @@ import type {
   StoreTab,
 } from './types';
 import {
-  formatPrice,
-  mediaUrl,
   productCategory,
-  productImage,
 } from './utils';
 import AccountScreen, { type AccountSubScreen } from './Account/AccountScreen';
 import ProfileScreen from './Account/ProfileScreen';
@@ -328,20 +317,17 @@ export default function Storefront({
     }
   };
 
-  const renderProductGrid = (products: StoreProduct[]) => (
-    <View className="flex-row flex-wrap justify-between">
-      {products.map(product => (
-        <ProductCard
-          key={product.id}
-          product={product}
-          favorite={favoriteIds.includes(String(product.id))}
-          compact
-          onFavoritePress={toggleFavorite}
-          onAddToCart={addToCart}
-        />
-      ))}
-    </View>
-  );
+  const retryCart = () => {
+    loadCart().catch(error => {
+      if (__DEV__) console.warn('[Storefront] Could not reload cart:', error);
+    });
+  };
+
+  const retryFavorites = () => {
+    loadFavorites().catch(error => {
+      if (__DEV__) console.warn('[Storefront] Could not reload favorites:', error);
+    });
+  };
 
   const renderTabContent = () => {
     if (activeTab === 'Home') {
@@ -392,140 +378,31 @@ export default function Storefront({
 
     if (activeTab === 'Favorites') {
       return (
-        <View className="px-4 pt-5">
-          <Text className="mb-4 text-[25px] font-black text-[#351D0E]">Your favorites</Text>
-          {favoritesLoading ? (
-            <ActivityIndicator color="#F97316" />
-          ) : favoritesError ? (
-            <View className="items-center rounded-[20px] bg-white px-6 py-8">
-              <Text className="text-center text-[13px] text-[#8B2D20]">{favoritesError}</Text>
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => loadFavorites().catch(error => {
-                  if (__DEV__) console.warn('[Storefront] Could not reload favorites:', error);
-                })}
-                className="mt-4 rounded-full bg-[#F97316] px-4 py-2">
-                <Text className="text-[12px] font-bold text-white">Try again</Text>
-              </Pressable>
-            </View>
-          ) : favoriteProducts.length ? renderProductGrid(favoriteProducts) : (
-            <View className="items-center rounded-[20px] bg-white px-6 py-10">
-              <Heart size={34} color="#F97316" />
-              <Text className="mt-3 text-[15px] font-bold text-[#351D0E]">No favorites yet</Text>
-              <Text className="mt-1 text-center text-[13px] text-[#8B735E]">
-                Tap the heart on furniture you love.
-              </Text>
-            </View>
-          )}
-        </View>
+        <Favorites
+          favorites={favoriteProducts}
+          favoriteIds={favoriteIds}
+          loading={favoritesLoading}
+          error={favoritesError}
+          onRetry={retryFavorites}
+          onFavoritePress={toggleFavorite}
+          onAddToCart={addToCart}
+        />
       );
     }
 
     if (activeTab === 'Cart') {
       return (
-        <View className="px-4 pt-5">
-          <Text className="mb-4 text-[25px] font-black text-[#351D0E]">Your cart</Text>
-          {cartLoading ? (
-            <ActivityIndicator color="#F97316" />
-          ) : cartError ? (
-            <View className="items-center rounded-[20px] bg-white px-6 py-8">
-              <Text className="text-center text-[13px] text-[#8B2D20]">{cartError}</Text>
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => loadCart().catch(error => {
-                  if (__DEV__) console.warn('[Storefront] Could not reload cart:', error);
-                })}
-                className="mt-4 rounded-full bg-[#F97316] px-4 py-2">
-                <Text className="text-[12px] font-bold text-white">Try again</Text>
-              </Pressable>
-            </View>
-          ) : cartItems.length ? (
-            <>
-              {cartItems.map(item => {
-                const imageUri = mediaUrl(item.image) ?? productImage(item);
-                const itemQuantity = Number(item.quantity);
-                const busy = pendingCartIds.includes(String(item.id));
-                return (
-                <View key={item.id} className="mb-3 flex-row items-center rounded-[16px] bg-white p-3">
-                  {imageUri ? (
-                    <Image
-                      source={{ uri: imageUri }}
-                      className="h-[72px] w-[72px] rounded-[12px]"
-                      resizeMode="cover"
-                    />
-                  ) : (
-                    <View className="h-[72px] w-[72px] items-center justify-center rounded-[12px] bg-[#F1E5D7]">
-                      <Armchair size={30} color="#A78A70" />
-                    </View>
-                  )}
-                  <View className="ml-3 flex-1">
-                    <Text numberOfLines={2} className="text-[13px] font-bold text-[#351D0E]">
-                      {item.name}
-                    </Text>
-                    <Text className="mt-1 text-[13px] text-[#634D3B]">
-                      {formatPrice(Number(item.price))} · Qty {itemQuantity}
-                    </Text>
-                    {item.variant_color || item.variant_size ? (
-                      <Text numberOfLines={1} className="mt-1 text-[10px] text-[#8B735E]">
-                        {[item.variant_color, item.variant_size].filter(Boolean).join(' · ')}
-                      </Text>
-                    ) : null}
-                    <Text className="mt-1 text-[12px] font-bold text-[#351D0E]">
-                      {formatPrice(Number(item.total_price ?? Number(item.price) * itemQuantity))}
-                    </Text>
-                  </View>
-                  <View className="items-center">
-                    <View className="mb-2 flex-row items-center">
-                      <Pressable
-                        accessibilityRole="button"
-                        accessibilityLabel={`Decrease ${item.name} quantity`}
-                        disabled={busy || itemQuantity <= 1}
-                        onPress={() => updateCartQuantity(item, itemQuantity - 1)}
-                        className="h-[30px] w-[30px] items-center justify-center rounded-full bg-[#FFF0E1] disabled:opacity-40">
-                        <Minus size={15} color="#B94719" />
-                      </Pressable>
-                      <Text className="mx-2 min-w-[16px] text-center text-[12px] font-bold text-[#351D0E]">
-                        {itemQuantity}
-                      </Text>
-                      <Pressable
-                        accessibilityRole="button"
-                        accessibilityLabel={`Increase ${item.name} quantity`}
-                        disabled={busy}
-                        onPress={() => updateCartQuantity(item, itemQuantity + 1)}
-                        className="h-[30px] w-[30px] items-center justify-center rounded-full bg-[#FFF0E1] disabled:opacity-40">
-                        <Plus size={15} color="#B94719" />
-                      </Pressable>
-                    </View>
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel={`Remove ${item.name} from cart`}
-                      disabled={busy}
-                      onPress={() => removeFromCart(item)}
-                      className="h-[30px] w-[30px] items-center justify-center rounded-full disabled:opacity-40">
-                      <Trash2 size={16} color="#8B735E" />
-                    </Pressable>
-                  </View>
-                </View>
-                );
-              })}
-              <View className="mt-2 flex-row items-center justify-between rounded-[16px] bg-white p-4">
-                <Text className="text-[14px] font-bold text-[#351D0E]">Subtotal</Text>
-                <Text className="text-[17px] font-black text-[#351D0E]">{formatPrice(cartTotal)}</Text>
-              </View>
-            </>
-          ) : (
-            <View className="items-center rounded-[20px] bg-white px-6 py-10">
-              <ShoppingCart size={36} color="#F97316" />
-              <Text className="mt-3 text-[15px] font-bold text-[#351D0E]">Your cart is empty</Text>
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => setActiveTab('Explore')}
-                className="mt-4 rounded-full bg-[#F97316] px-5 py-3">
-                <Text className="text-[13px] font-bold text-white">Explore furniture</Text>
-              </Pressable>
-            </View>
-          )}
-        </View>
+        <Cart
+          items={cartItems}
+          total={cartTotal}
+          loading={cartLoading}
+          error={cartError}
+          pendingItemIds={pendingCartIds}
+          onRetry={retryCart}
+          onQuantityChange={updateCartQuantity}
+          onRemove={removeFromCart}
+          onExplorePress={() => setActiveTab('Explore')}
+        />
       );
     }
 
