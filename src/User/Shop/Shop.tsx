@@ -11,6 +11,8 @@ import {
 } from 'react-native';
 import {
   Armchair,
+  ChevronDown,
+  ChevronUp,
   Check,
   LayoutGrid,
   SlidersHorizontal,
@@ -33,6 +35,40 @@ const roomFilters: RoomFilter[] = [
   { name: 'Dining Room', slug: 'dining-room' },
   { name: 'Outdoor', slug: 'outdoor' },
 ];
+
+type FilterSectionKey = 'category' | 'price' | 'rating' | 'sort' | 'availability';
+
+type FilterSectionProps = {
+  title: string;
+  expanded: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+};
+
+function FilterSection({
+  title,
+  expanded,
+  onToggle,
+  children,
+}: FilterSectionProps) {
+  return (
+    <View className="border-b border-[#EAE4DA]">
+      <Pressable
+        accessibilityRole="button"
+        accessibilityState={{ expanded }}
+        onPress={onToggle}
+        className="h-[52px] flex-row items-center justify-between">
+        <Text className="text-[15px] font-bold text-[#351D0E]">{title}</Text>
+        {expanded ? (
+          <ChevronUp size={19} color="#8B735E" />
+        ) : (
+          <ChevronDown size={19} color="#8B735E" />
+        )}
+      </Pressable>
+      {expanded ? <View className="pb-3">{children}</View> : null}
+    </View>
+  );
+}
 
 type ShopProps = {
   categories: StoreCategory[];
@@ -67,6 +103,15 @@ export default function Shop({
   const [onSale, setOnSale] = useState(false);
   const [inStockOnly, setInStockOnly] = useState(false);
   const [sortOrder, setSortOrder] = useState<SortOrder>('featured');
+  const [expandedFilterSections, setExpandedFilterSections] = useState<
+    Record<FilterSectionKey, boolean>
+  >({
+    category: true,
+    price: true,
+    rating: true,
+    sort: true,
+    availability: true,
+  });
 
   useEffect(() => {
     if (!filtersVisible) return;
@@ -121,6 +166,13 @@ export default function Shop({
     setSortOrder('featured');
     onCategoryChange('');
     onSearchChange('');
+  };
+
+  const toggleFilterSection = (section: FilterSectionKey) => {
+    setExpandedFilterSections(current => ({
+      ...current,
+      [section]: !current[section],
+    }));
   };
 
   const activeRoom = roomFilters.find(
@@ -301,88 +353,123 @@ export default function Shop({
           />
           <Animated.View
             style={{ transform: [{ translateX: filtersTranslateX }] }}
-            className="h-full w-full bg-[#FCFAF7] px-5 pb-8 pt-5">
-            <View className="mb-4 flex-row items-center justify-between">
-              <View>
+            className="h-full w-full bg-[#FCFAF7]">
+            <View className="flex-row items-center border-b border-[#E7DCCF] bg-white px-4 pb-4 pt-5">
+              <View className="mr-2 h-[42px] w-[42px] items-center justify-center rounded-[14px] bg-[#EAF4F0]">
+                <SlidersHorizontal size={20} color="#176B58" />
+              </View>
+              <View className="flex-1">
                 <Text className="text-[20px] font-black text-[#351D0E]">Filters</Text>
-                <Text className="mt-1 text-[12px] text-[#8B735E]">
-                  Refine your furniture search
+                <Text className="text-[12px] text-[#8B735E]">
+                  Refine your product selection
                 </Text>
               </View>
               <Pressable
                 accessibilityRole="button"
+                onPress={resetFilters}
+                className="mr-2 h-[38px] items-center justify-center rounded-full border border-[#E7DCCF] px-3">
+                <Text className="text-[12px] font-bold text-[#8A642D]">Clear All</Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
                 accessibilityLabel="Close filters"
                 onPress={() => setFiltersVisible(false)}
-                className="h-[38px] w-[38px] items-center justify-center rounded-full bg-white">
+                className="h-[38px] w-[38px] items-center justify-center rounded-full border border-[#E7DCCF] bg-white">
                 <X size={20} color="#351D0E" />
               </Pressable>
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false}>
-              <Text className="mb-2 text-[13px] font-bold text-[#351D0E]">Category</Text>
-              <View className="mb-4">
+            <ScrollView
+              className="flex-1 px-4"
+              showsVerticalScrollIndicator={false}>
+              <FilterSection
+                title="Category"
+                expanded={expandedFilterSections.category}
+                onToggle={() => toggleFilterSection('category')}>
                 <Pressable
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: !selectedCategory }}
                   onPress={() => onCategoryChange('')}
-                  className={`mb-2 w-full rounded-[12px] px-4 py-3 ${
-                    !selectedCategory ? 'bg-[#F97316]' : 'bg-white'
+                  className="min-h-[44px] flex-row items-center">
+                  <View className={`mr-3 h-[20px] w-[20px] items-center justify-center rounded-full border ${
+                    !selectedCategory ? 'border-[#F97316]' : 'border-[#CDBBA8]'
                   }`}>
-                  <Text className={`text-[13px] ${!selectedCategory ? 'font-bold text-white' : 'text-[#634D3B]'}`}>
-                    All
-                  </Text>
+                    {!selectedCategory ? <View className="h-[10px] w-[10px] rounded-full bg-[#F97316]" /> : null}
+                  </View>
+                  <Text className="text-[14px] text-[#634D3B]">All categories</Text>
                 </Pressable>
                 {categories.map(category => {
                   const active = selectedCategory === category.name;
                   return (
                     <Pressable
                       key={category.catId ?? category.id ?? category.name}
+                      accessibilityRole="radio"
+                      accessibilityState={{ selected: active }}
                       onPress={() => onCategoryChange(active ? '' : category.name)}
-                      className={`mb-2 w-full rounded-[12px] px-4 py-3 ${
-                        active ? 'bg-[#F97316]' : 'bg-white'
+                      className="min-h-[44px] flex-row items-center">
+                      <View className={`mr-3 h-[20px] w-[20px] items-center justify-center rounded-full border ${
+                        active ? 'border-[#F97316]' : 'border-[#CDBBA8]'
                       }`}>
-                      <Text className={`text-[13px] ${active ? 'font-bold text-white' : 'text-[#634D3B]'}`}>
+                        {active ? <View className="h-[10px] w-[10px] rounded-full bg-[#F97316]" /> : null}
+                      </View>
+                      <Text className="flex-1 text-[14px] text-[#634D3B]">
                         {category.name}
                       </Text>
                     </Pressable>
                   );
                 })}
-              </View>
+              </FilterSection>
 
-              <Text className="mb-2 text-[13px] font-bold text-[#351D0E]">Maximum price</Text>
-              <TextInput
-                accessibilityLabel="Maximum price"
-                value={maxPrice}
-                onChangeText={value => setMaxPrice(value.replace(/[^\d]/g, ''))}
-                placeholder="No limit"
-                placeholderTextColor="#9A8B7D"
-                keyboardType="number-pad"
-                className="mb-4 h-[46px] rounded-[12px] border border-[#E7DCCF] bg-white px-4 text-[14px] text-[#351D0E]"
-              />
-              {maxPrice ? (
-                <Text className="mb-4 mt-[-10px] text-[11px] text-[#8B735E]">
-                  Up to {formatPrice(Number(maxPrice))}
-                </Text>
-              ) : null}
+              <FilterSection
+                title="Price Range"
+                expanded={expandedFilterSections.price}
+                onToggle={() => toggleFilterSection('price')}>
+                <TextInput
+                  accessibilityLabel="Maximum price"
+                  value={maxPrice}
+                  onChangeText={value => setMaxPrice(value.replace(/[^\d]/g, ''))}
+                  placeholder="No limit"
+                  placeholderTextColor="#9A8B7D"
+                  keyboardType="number-pad"
+                  className="h-[46px] rounded-[12px] border border-[#E7DCCF] bg-white px-4 text-[14px] text-[#351D0E]"
+                />
+                {maxPrice ? (
+                  <Text className="mt-2 text-[12px] text-[#8B735E]">
+                    Up to {formatPrice(Number(maxPrice))}
+                  </Text>
+                ) : null}
+              </FilterSection>
 
-              <Text className="mb-2 text-[13px] font-bold text-[#351D0E]">Customer rating</Text>
-              <View className="mb-4">
-                {[0, 3, 4].map(rating => (
-                  <Pressable
-                    key={rating}
-                    onPress={() => setMinRating(rating)}
-                    className={`mb-2 w-full rounded-full px-4 py-3 ${
-                      minRating === rating ? 'bg-[#F97316]' : 'bg-white'
-                    }`}>
-                    <Text className={`text-[12px] ${
-                      minRating === rating ? 'font-bold text-white' : 'text-[#634D3B]'
-                    }`}>
-                      {rating ? `${rating}★ & up` : 'Any'}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
+              <FilterSection
+                title="Rating"
+                expanded={expandedFilterSections.rating}
+                onToggle={() => toggleFilterSection('rating')}>
+                {[0, 3, 4].map(rating => {
+                  const active = minRating === rating;
+                  return (
+                    <Pressable
+                      key={rating}
+                      accessibilityRole="radio"
+                      accessibilityState={{ selected: active }}
+                      onPress={() => setMinRating(rating)}
+                      className="min-h-[44px] flex-row items-center">
+                      <View className={`mr-3 h-[20px] w-[20px] items-center justify-center rounded-full border ${
+                        active ? 'border-[#F97316]' : 'border-[#CDBBA8]'
+                      }`}>
+                        {active ? <View className="h-[10px] w-[10px] rounded-full bg-[#F97316]" /> : null}
+                      </View>
+                      <Text className="text-[14px] text-[#634D3B]">
+                        {rating ? `${rating}★ and above` : 'Any rating'}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </FilterSection>
 
-              <Text className="mb-2 text-[13px] font-bold text-[#351D0E]">Sort by</Text>
-              <View className="mb-4">
+              <FilterSection
+                title="Sort by"
+                expanded={expandedFilterSections.sort}
+                onToggle={() => toggleFilterSection('sort')}>
                 {([
                   ['featured', 'Featured'],
                   ['price-low', 'Price: Low to High'],
@@ -393,59 +480,59 @@ export default function Shop({
                   return (
                     <Pressable
                       key={value}
+                      accessibilityRole="radio"
+                      accessibilityState={{ selected: active }}
                       onPress={() => setSortOrder(value)}
-                      className={`mb-2 w-full rounded-full px-4 py-3 ${
-                        active ? 'bg-[#F97316]' : 'bg-white'
+                      className="min-h-[44px] flex-row items-center">
+                      <View className={`mr-3 h-[20px] w-[20px] items-center justify-center rounded-full border ${
+                        active ? 'border-[#F97316]' : 'border-[#CDBBA8]'
                       }`}>
-                      <Text className={`text-[12px] ${
-                        active ? 'font-bold text-white' : 'text-[#634D3B]'
-                      }`}>
-                        {label}
-                      </Text>
+                        {active ? <View className="h-[10px] w-[10px] rounded-full bg-[#F97316]" /> : null}
+                      </View>
+                      <Text className="text-[14px] text-[#634D3B]">{label}</Text>
                     </Pressable>
                   );
                 })}
-              </View>
+              </FilterSection>
 
-              <Pressable
-                accessibilityRole="checkbox"
-                accessibilityState={{ checked: onSale }}
-                onPress={() => setOnSale(value => !value)}
-                className="mb-3 flex-row items-center">
-                <View className={`mr-2 h-[20px] w-[20px] items-center justify-center rounded border ${
-                  onSale ? 'border-[#F97316] bg-[#F97316]' : 'border-[#CDBBA8] bg-white'
-                }`}>
-                  {onSale ? <Check size={14} color="#FFFFFF" /> : null}
-                </View>
-                <Text className="text-[13px] text-[#351D0E]">On sale</Text>
-              </Pressable>
-              <Pressable
-                accessibilityRole="checkbox"
-                accessibilityState={{ checked: inStockOnly }}
-                onPress={() => setInStockOnly(value => !value)}
-                className="mb-5 flex-row items-center">
-                <View className={`mr-2 h-[20px] w-[20px] items-center justify-center rounded border ${
-                  inStockOnly ? 'border-[#F97316] bg-[#F97316]' : 'border-[#CDBBA8] bg-white'
-                }`}>
-                  {inStockOnly ? <Check size={14} color="#FFFFFF" /> : null}
-                </View>
-                <Text className="text-[13px] text-[#351D0E]">In stock</Text>
-              </Pressable>
+              <FilterSection
+                title="Availability"
+                expanded={expandedFilterSections.availability}
+                onToggle={() => toggleFilterSection('availability')}>
+                <Pressable
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: onSale }}
+                  onPress={() => setOnSale(value => !value)}
+                  className="min-h-[44px] flex-row items-center">
+                  <View className={`mr-3 h-[20px] w-[20px] items-center justify-center rounded border ${
+                    onSale ? 'border-[#F97316] bg-[#F97316]' : 'border-[#CDBBA8] bg-white'
+                  }`}>
+                    {onSale ? <Check size={14} color="#FFFFFF" /> : null}
+                  </View>
+                  <Text className="text-[14px] text-[#634D3B]">On sale</Text>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: inStockOnly }}
+                  onPress={() => setInStockOnly(value => !value)}
+                  className="min-h-[44px] flex-row items-center">
+                  <View className={`mr-3 h-[20px] w-[20px] items-center justify-center rounded border ${
+                    inStockOnly ? 'border-[#F97316] bg-[#F97316]' : 'border-[#CDBBA8] bg-white'
+                  }`}>
+                    {inStockOnly ? <Check size={14} color="#FFFFFF" /> : null}
+                  </View>
+                  <Text className="text-[14px] text-[#634D3B]">In stock</Text>
+                </Pressable>
+              </FilterSection>
             </ScrollView>
 
-            <View className="mt-2 flex-row">
-              <Pressable
-                accessibilityRole="button"
-                onPress={resetFilters}
-                className="mr-3 h-[48px] flex-1 items-center justify-center rounded-full border border-[#E7DCCF] bg-white">
-                <Text className="text-[13px] font-bold text-[#634D3B]">Clear all</Text>
-              </Pressable>
+            <View className="border-t border-[#EAE4DA] bg-white px-4 py-4">
               <Pressable
                 accessibilityRole="button"
                 onPress={() => setFiltersVisible(false)}
-                className="h-[48px] flex-1 items-center justify-center rounded-full bg-[#F97316]">
-                <Text className="text-[13px] font-bold text-white">
-                  Show {filteredProducts.length} items
+                className="h-[54px] w-full items-center justify-center rounded-[16px] bg-[#075B4B]">
+                <Text className="text-[16px] font-bold text-white">
+                  Show {filteredProducts.length} products
                 </Text>
               </Pressable>
             </View>
