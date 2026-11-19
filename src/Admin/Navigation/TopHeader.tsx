@@ -24,7 +24,6 @@ import {
   LogOut,
   Menu,
   Package,
-  Pencil,
   Settings,
   ShieldCheck,
   ShoppingBag,
@@ -135,7 +134,6 @@ export default function TopHeader({
   const [userInitial, setUserInitial] = useState<string | null>(null);
   const [userName, setUserName] = useState('');
   const [userEmail, setUserEmail] = useState('');
-  const [userRole, setUserRole] = useState('Store Admin');
   const [notificationsVisible, setNotificationsVisible] = useState(false);
   const [todayOrders, setTodayOrders] = useState<HeaderOrder[]>([]);
   const [todayOrdersLoading, setTodayOrdersLoading] = useState(false);
@@ -210,15 +208,10 @@ export default function TopHeader({
         'email' in user && typeof user.email === 'string'
           ? user.email.trim()
           : '';
-      const role =
-        'role' in user && typeof user.role === 'string'
-          ? user.role.trim()
-          : 'Store Admin';
       const initial = Array.from(name)[0]?.toLocaleUpperCase();
       if (mounted) {
         setUserName(name);
         setUserEmail(email);
-        setUserRole(role || 'Store Admin');
         if (initial) setUserInitial(initial);
       }
     };
@@ -467,11 +460,12 @@ export default function TopHeader({
           <View
             style={{
               width: Math.min(windowWidth * 0.78, 340),
-              paddingTop: insets.top,
               paddingBottom: insets.bottom,
             }}
             className="overflow-hidden rounded-r-[22px] bg-white">
-            <View className="bg-[#E95305] px-4 pb-4 pt-3">
+            <View
+              className="bg-[#E95305] px-4 pb-4"
+              style={{ paddingTop: insets.top + 12 }}>
               <View className="mb-4 flex-row items-center">
                 <View className="h-[42px] w-[42px] items-center justify-center overflow-hidden rounded-[12px] bg-white">
                   <Image
@@ -480,47 +474,22 @@ export default function TopHeader({
                     resizeMode="contain"
                   />
                 </View>
-                <Text
-                  numberOfLines={1}
-                  className="ml-2 flex-1 text-[19px] font-black text-white">
-                  {shopName.replace(/\s+Furniture$/i, 'Furn')}
-                </Text>
-                <View className="rounded-[7px] border border-white/60 px-2 py-1">
-                  <Text className="text-[10px] font-bold text-white">Admin</Text>
+                <View className="ml-2 flex-1">
+                  <Text
+                    numberOfLines={1}
+                    className="text-[19px] font-black text-white">
+                    {shopName.replace(/\s+Furniture$/i, 'Furnitures Living')}
+                  </Text>
+                  <Text numberOfLines={1} className="mt-0.5 text-[10px] text-white/85">
+                    Store Admin Dashboard
+                  </Text>
                 </View>
                 <Pressable
                   accessibilityLabel="Close menu"
                   accessibilityRole="button"
                   onPress={() => setDrawerVisible(false)}
-                  className="ml-1 h-[36px] w-[30px] items-center justify-center">
+                  className="ml-1 h-[36px] w-[36px] items-center justify-center rounded-full bg-white/20">
                   <X size={20} color="#FFFFFF" strokeWidth={2.2} />
-                </Pressable>
-              </View>
-              <View className="flex-row items-center">
-                <View className="h-[52px] w-[52px] items-center justify-center rounded-full border-2 border-white/80 bg-white/95">
-                  <Text className="text-[22px] font-black text-[#C2410C]">
-                    {userInitial || 'A'}
-                  </Text>
-                </View>
-                <View className="ml-3 flex-1">
-                  <Text
-                    numberOfLines={1}
-                    className="text-[15px] font-black text-white">
-                    {userName || 'Admin'}
-                  </Text>
-                  <Text numberOfLines={1} className="mt-1 text-[11px] text-white">
-                    {userRole}
-                  </Text>
-                </View>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Edit profile"
-                  onPress={() => {
-                    setDrawerVisible(false);
-                    onProfilePress?.();
-                  }}
-                  className="h-[38px] w-[38px] items-center justify-center">
-                  <Pencil size={19} color="#FFFFFF" strokeWidth={2.2} />
                 </Pressable>
               </View>
             </View>
