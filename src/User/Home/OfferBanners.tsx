@@ -48,7 +48,7 @@ export default function OfferBanners({
         {imageUri ? (
           <Image
             source={{ uri: imageUri }}
-            style={StyleSheet.absoluteFillObject}
+            style={StyleSheet.absoluteFill}
             resizeMode="cover"
           />
         ) : null}
