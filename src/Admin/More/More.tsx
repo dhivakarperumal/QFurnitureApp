@@ -4,12 +4,14 @@ import {
   Boxes,
   ChevronRight,
   LayoutGrid,
+  MessageSquare,
   UserRound,
   UsersRound,
 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Categery from './Categery';
 import Profile from './Profile';
+import ReviewScreen from './Review';
 import StockDetails from './StockDetails';
 import Usermanagement from './Usermanagement';
 
@@ -27,6 +29,7 @@ export default function More({
   const [usersOpen, setUsersOpen] = React.useState(false);
   const [stockOpen, setStockOpen] = React.useState(false);
   const [profileOpen, setProfileOpen] = React.useState(false);
+  const [reviewsOpen, setReviewsOpen] = React.useState(false);
 
   const openCategories = () => {
     setCategoriesOpen(true);
@@ -76,6 +79,18 @@ export default function More({
     onScrollVisibilityChange?.(true);
   };
 
+  const openReviews = () => {
+    setReviewsOpen(true);
+    onDetailsVisibilityChange?.(true);
+    onScrollVisibilityChange?.(true);
+  };
+
+  const closeReviews = () => {
+    setReviewsOpen(false);
+    onDetailsVisibilityChange?.(false);
+    onScrollVisibilityChange?.(true);
+  };
+
   if (categoriesOpen) {
     return (
       <Categery
@@ -108,6 +123,15 @@ export default function More({
       <Profile
         onScrollVisibilityChange={onScrollVisibilityChange}
         onBackPress={closeProfile}
+      />
+    );
+  }
+
+  if (reviewsOpen) {
+    return (
+      <ReviewScreen
+        onScrollVisibilityChange={onScrollVisibilityChange}
+        onBackPress={closeReviews}
       />
     );
   }
@@ -188,6 +212,23 @@ export default function More({
           </Text>
           <Text className="mt-1 text-[11px] text-[#64748B]">
             View inventory and update product stock
+          </Text>
+        </View>
+        <ChevronRight size={21} color="#94A3B8" />
+      </Pressable>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Open reviews"
+        onPress={openReviews}
+        className="mt-3 flex-row items-center rounded-[18px] border border-[#FCE6D7] bg-white p-4 shadow-sm elevation-[2]"
+      >
+        <View className="h-[52px] w-[52px] items-center justify-center rounded-[14px] bg-[#FFF1D6]">
+          <MessageSquare size={25} color="#F97316" strokeWidth={2} />
+        </View>
+        <View className="ml-3 flex-1">
+          <Text className="text-[15px] font-black text-[#17191C]">Reviews</Text>
+          <Text className="mt-1 text-[11px] text-[#64748B]">
+            Moderate customer reviews and replies
           </Text>
         </View>
         <ChevronRight size={21} color="#94A3B8" />
