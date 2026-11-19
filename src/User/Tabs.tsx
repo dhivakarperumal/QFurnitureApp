@@ -1,5 +1,5 @@
 import React from 'react';
-import { ImageBackground, Pressable, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import {
   Gift,
   Home,
@@ -33,71 +33,63 @@ export default function Tabs({
   return (
     <View
       pointerEvents="box-none"
-      style={{ paddingBottom: Math.max(bottomInset + 8, 18) }}
+      style={{ paddingBottom: Math.max(bottomInset, 8) }}
       className="absolute bottom-0 left-0 right-0 px-3">
-      <View className="h-[76px] rounded-full border-2 border-[#F4A34B] shadow-[0_8px_24px_rgba(177,83,20,0.28)]">
-        <ImageBackground
-          source={require('../Assert/images/Cozy Mustard Armchair Living Room.png')}
-          resizeMode="cover"
-          className="flex-1 overflow-hidden rounded-full">
-          <View
-            pointerEvents="none"
-            className="absolute inset-0 bg-[#FFF6E9]/75"
-          />
-          <View className="flex-1 flex-row items-center px-1">
-            {tabs.map(({ name, icon: Icon, label }) => {
-              const active = activeTab === name;
-              if (name === 'Cart') {
-                return <View key={name} className="flex-1" />;
-              }
-
-              return (
+      <View className="h-[54px] flex-row items-center rounded-full border border-[#F2E8DF] bg-[#FFFEFC] px-1.5 shadow-md">
+        {tabs.map(({ name, icon: Icon, label }) => {
+          const active = activeTab === name;
+          if (name === 'Cart') {
+            return (
+              <View key={name} className="flex-1 items-center">
                 <Pressable
-                  key={name}
                   accessibilityRole="tab"
                   accessibilityState={{ selected: active }}
-                  accessibilityLabel={`${label} tab`}
-                  onPress={() => onTabPress(name)}
-                  className="h-full flex-1 items-center justify-center pt-1">
-                  <Icon
-                    size={28}
-                    color={active ? '#F97316' : '#1E432C'}
-                    fill={active && name === 'Home' ? '#F97316' : 'transparent'}
-                    strokeWidth={2.2}
-                  />
-                  <Text
-                    className={`mt-1 text-[12px] ${
-                      active
-                        ? 'font-bold text-[#F97316]'
-                        : 'font-semibold text-[#1E432C]'
-                    }`}>
-                    {label}
-                  </Text>
-                  {active ? (
-                    <View className="absolute bottom-[5px] h-[4px] w-[58%] rounded-full bg-[#F97316]" />
+                  accessibilityLabel={`Cart tab, ${cartCount} items`}
+                  onPress={() => onTabPress('Cart')}
+                  className="h-[44px] w-[50px] items-center justify-center rounded-[15px] bg-[#F97316] shadow-sm">
+                  <ShoppingCart size={21} color="#FFFFFF" strokeWidth={2.2} />
+                  {cartCount > 0 ? (
+                    <View className="absolute right-[-3px] top-[-4px] h-[16px] min-w-[16px] items-center justify-center rounded-full border border-white bg-[#F45112] px-1">
+                      <Text className="text-[9px] font-bold text-white">
+                        {cartCount}
+                      </Text>
+                    </View>
                   ) : null}
                 </Pressable>
-              );
-            })}
-          </View>
-        </ImageBackground>
-        <View
-          pointerEvents="box-none"
-          className="absolute inset-0 items-center">
-          <Pressable
-            accessibilityRole="tab"
-            accessibilityState={{ selected: activeTab === 'Cart' }}
-            accessibilityLabel={`Cart tab, ${cartCount} items`}
-            onPress={() => onTabPress('Cart')}
-            className="absolute top-[-4px] h-[84px] w-[84px] self-center items-center justify-center rounded-full border-[5px] border-[#FFF7E9] bg-[#F97316] shadow-lg">
-            <ShoppingCart size={38} color="#FFFFFF" strokeWidth={2.4} />
-            {cartCount > 0 ? (
-              <View className="absolute right-[-2px] top-[-1px] h-[28px] min-w-[28px] items-center justify-center rounded-full border-[3px] border-[#FFF7E9] bg-[#F45112] px-1">
-                <Text className="text-[13px] font-black text-white">{cartCount}</Text>
               </View>
-            ) : null}
-          </Pressable>
-        </View>
+            );
+          }
+
+          return (
+            <Pressable
+              key={name}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: active }}
+              accessibilityLabel={`${label} tab`}
+              onPress={() => onTabPress(name)}
+              className={`relative h-[38px] flex-1 items-center justify-center rounded-[15px] ${
+                active ? 'bg-[#FFF0E4]' : ''
+              }`}>
+              <Icon
+                size={17}
+                color={active ? '#F97316' : '#1E432C'}
+                fill={active && name === 'Home' ? '#F97316' : 'transparent'}
+                strokeWidth={2.2}
+              />
+              <Text
+                className={`mt-[2px] text-[8px] leading-[10px] ${
+                  active
+                    ? 'font-bold text-[#F97316]'
+                    : 'font-medium text-[#1E432C]'
+                }`}>
+                {label}
+              </Text>
+              {name === 'Combos' ? (
+                <View className="absolute bottom-[8px] right-[-1px] h-[20px] w-px bg-[#E8DDD1]" />
+              ) : null}
+            </Pressable>
+          );
+        })}
       </View>
     </View>
   );
