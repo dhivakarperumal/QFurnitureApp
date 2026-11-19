@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
 import Category from './Category';
+import CustomFurniture from './CustomFurniture';
 import Hero from './Hero';
 import OfferBanners from './OfferBanners';
 import Products from './Products';
+import ShopByRoom from './ShopByRoom';
+import TopRatedProducts from './TopRatedProducts';
 import type { StoreBanner, StoreCategory, StoreProduct } from '../types';
 
 type HomeProps = {
@@ -13,6 +16,8 @@ type HomeProps = {
   favorites: string[];
   onCategoryPress: (category: string) => void;
   onExplorePress: () => void;
+  onRoomPress: (roomSlug: string) => void;
+  onCustomFurniturePress: () => void;
   onFavoritePress: (productId: string) => void;
   onAddToCart: (productId: string) => void;
 };
@@ -25,6 +30,8 @@ export default function Home({
   favorites,
   onCategoryPress,
   onExplorePress,
+  onRoomPress,
+  onCustomFurniturePress,
   onFavoritePress,
   onAddToCart,
 }: HomeProps) {
@@ -49,6 +56,14 @@ export default function Home({
         onFavoritePress={onFavoritePress}
         onAddToCart={onAddToCart}
       />
+      <TopRatedProducts
+        products={products}
+        favorites={favorites}
+        onFavoritePress={onFavoritePress}
+        onAddToCart={onAddToCart}
+      />
+      <ShopByRoom onRoomPress={onRoomPress} />
+      <CustomFurniture onRequestPress={onCustomFurniturePress} />
       <OfferBanners banners={offerBanners} onShopPress={onExplorePress} />
     </>
   );

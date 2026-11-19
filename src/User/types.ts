@@ -21,6 +21,7 @@ export type StoreProduct = {
   selling_price?: number | string | null;
   offer_price?: number | string | null;
   mrp?: number | string | null;
+  rating?: number | string | null;
 };
 
 export type StoreBanner = {

@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Image,
   Pressable,
   ScrollView,
@@ -204,6 +205,17 @@ export default function Storefront({
             setActiveTab('Explore');
           }}
           onExplorePress={() => setActiveTab('Explore')}
+          onRoomPress={roomSlug => {
+            setSelectedCategory('');
+            setSearch(roomSlug.replace(/-/g, ' '));
+            setActiveTab('Explore');
+          }}
+          onCustomFurniturePress={() =>
+            Alert.alert(
+              'Custom furniture',
+              'Contact Q Living to discuss your design and request a quote.',
+            )
+          }
           onFavoritePress={toggleFavorite}
           onAddToCart={addToCart}
         />

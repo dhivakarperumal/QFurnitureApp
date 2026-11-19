@@ -1,8 +1,14 @@
 import React from 'react';
 import { Image, Pressable, Text, View } from 'react-native';
-import { Armchair, Heart, ShoppingCart } from 'lucide-react-native';
+import { Armchair, Heart, ShoppingCart, Star } from 'lucide-react-native';
 import type { StoreProduct } from './types';
-import { formatPrice, productCategory, productImage, productPrice } from './utils';
+import {
+  formatPrice,
+  productCategory,
+  productDiscountPercent,
+  productImage,
+  productPrice,
+} from './utils';
 
 type ProductCardProps = {
   product: StoreProduct;
@@ -22,8 +28,8 @@ export default function ProductCard({
   const id = String(product.id);
   const price = productPrice(product);
   const mrp = Number(product.mrp);
-  const discount =
-    mrp > price && price > 0 ? Math.round(((mrp - price) / mrp) * 100) : 0;
+  const discount = Math.round(productDiscountPercent(product));
+  const rating = Number(product.rating);
   const imageUri = productImage(product);
 
   return (
@@ -63,6 +69,14 @@ export default function ProductCard({
         <Text numberOfLines={2} className="mt-1 min-h-[40px] text-[14px] font-bold leading-5 text-[#351D0E]">
           {product.name}
         </Text>
+        {Number.isFinite(rating) && rating > 0 ? (
+          <View className="mt-1 flex-row items-center">
+            <Star size={13} color="#F97316" fill="#F97316" />
+            <Text className="ml-1 text-[11px] font-semibold text-[#634D3B]">
+              {rating.toFixed(1)}
+            </Text>
+          </View>
+        ) : null}
         <View className="mt-2 flex-row items-center justify-between">
           <View className="flex-1">
             <Text className="text-[16px] font-black text-[#351D0E]">{formatPrice(price)}</Text>

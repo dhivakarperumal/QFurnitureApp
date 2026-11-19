@@ -52,6 +52,12 @@ export function productPrice(product: StoreProduct) {
   return Number.isFinite(price) ? price : 0;
 }
 
+export function productDiscountPercent(product: StoreProduct) {
+  const mrp = Number(product.mrp) || 0;
+  const price = productPrice(product);
+  return mrp > price ? ((mrp - price) / mrp) * 100 : 0;
+}
+
 export function formatPrice(value: number) {
   return `₹${value.toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
 }
