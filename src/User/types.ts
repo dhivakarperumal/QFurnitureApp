@@ -1,4 +1,10 @@
-export type StoreTab = 'Home' | 'Explore' | 'Favorites' | 'Cart' | 'Profile';
+export type StoreTab =
+  | 'Home'
+  | 'Explore'
+  | 'Combos'
+  | 'Favorites'
+  | 'Cart'
+  | 'Profile';
 
 export type StoreCategory = {
   id?: number | string;

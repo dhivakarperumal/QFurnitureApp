@@ -13,6 +13,7 @@ import api from '../api';
 import Header from './Header';
 import Home from './Home/Home';
 import ComboDetails from './ComboDetails';
+import ComboOffers from './ComboOffers';
 import ProductDetails from './ProductDetails';
 import Shop from './Shop/Shop';
 import Tabs from './Tabs';
@@ -520,6 +521,17 @@ export default function Storefront({
           selectedCategory={selectedCategory}
           onSearchChange={setSearch}
           onCategoryChange={setSelectedCategory}
+          onFavoritePress={toggleFavorite}
+          onAddToCart={addToCart}
+          onProductPress={openItemDetails}
+        />
+      );
+    }
+
+    if (activeTab === 'Combos') {
+      return (
+        <ComboOffers
+          favorites={favoriteIds}
           onFavoritePress={toggleFavorite}
           onAddToCart={addToCart}
           onProductPress={openItemDetails}

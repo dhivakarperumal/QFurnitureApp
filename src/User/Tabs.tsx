@@ -5,6 +5,7 @@ import {
   Home,
   Search,
   ShoppingCart,
+  Tag,
   UserRound,
 } from 'lucide-react-native';
 import type { StoreTab } from './types';
@@ -19,6 +20,7 @@ type TabsProps = {
 const tabs = [
   { name: 'Home',      icon: Home },
   { name: 'Explore',   icon: Search },
+  { name: 'Combos',    icon: Tag },
   { name: 'Favorites', icon: Heart },
   { name: 'Cart',      icon: ShoppingCart },
   { name: 'Profile',   icon: UserRound },
@@ -44,10 +46,10 @@ export default function Tabs({
             accessibilityState={{ selected: active }}
             accessibilityLabel={`${label} tab`}
             onPress={() => onTabPress(name)}
-            className="min-w-[58px] items-center py-1">
+            className="min-w-0 flex-1 items-center py-1">
             <View className="relative">
               <Icon
-                size={23}
+                size={21}
                 color={active ? '#F97316' : '#351D0E'}
                 fill={active && name === 'Home' ? '#F97316' : 'transparent'}
               />
@@ -58,7 +60,7 @@ export default function Tabs({
               ) : null}
             </View>
             <Text
-              className={`mt-1 text-[10px] ${
+              className={`mt-1 text-[9px] ${
                 active ? 'font-bold text-[#F97316]' : 'text-[#351D0E]'
               }`}>
               {name === 'Profile' ? 'Account' : name}
