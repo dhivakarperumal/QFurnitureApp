@@ -73,6 +73,14 @@ type ReviewCatalogItem = ReviewProduct & {
   type: 'Product' | 'Combo';
 };
 
+type ReviewCatalogResponse = {
+  products?: ReviewProduct[];
+  combos?: ReviewProduct[];
+  pagination?: {
+    totalPages?: number | string;
+  };
+};
+
 type ReviewForm = {
   product_id: string;
   combo_id: string;
@@ -121,6 +129,40 @@ const modalStyles = StyleSheet.create({
 const toNumber = (value: number | string | undefined, fallback = 0) => {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const fetchAllReviewCatalogItems = async (
+  endpoint: '/products' | '/combos',
+  itemType: 'Product' | 'Combo',
+): Promise<ReviewCatalogItem[]> => {
+  const items: ReviewCatalogItem[] = [];
+  let totalPages = 1;
+  for (let page = 1; page <= totalPages; page += 1) {
+    const response = await api.get<ReviewCatalogResponse>(endpoint, {
+      params: {
+        page,
+        limit: 10,
+        search: '',
+        status: 'All',
+        ...(itemType === 'Product' ? { exclude_combo_products: true } : {}),
+      },
+    });
+    const pageItems =
+      itemType === 'Product' ? response.data.products : response.data.combos;
+    if (!Array.isArray(pageItems)) {
+      throw new Error(
+        `The ${itemType.toLowerCase()} response did not contain a valid item list.`,
+      );
+    }
+    items.push(...pageItems.map(item => ({ ...item, type: itemType })));
+    if (page === 1) {
+      totalPages = Math.max(
+        1,
+        toNumber(response.data.pagination?.totalPages, 1),
+      );
+    }
+  }
+  return items;
 };
 
 const resolveReviewImage = (image?: string | null) => {
@@ -253,37 +295,12 @@ export default function Review({
     setCatalogError(null);
     const loadCatalog = async () => {
       try {
-        const [productsResponse, combosResponse] = await Promise.all([
-          api.get<{ products?: ReviewProduct[] }>('/products', {
-            params: {
-              page: 1,
-              limit: 100,
-              exclude_combo_products: true,
-            },
-          }),
-          api.get<{ combos?: ReviewProduct[] }>('/combos', {
-            params: { page: 1, limit: 100 },
-          }),
+        const [products, combos] = await Promise.all([
+          fetchAllReviewCatalogItems('/products', 'Product'),
+          fetchAllReviewCatalogItems('/combos', 'Combo'),
         ]);
         if (!active) return;
-        if (!Array.isArray(productsResponse.data.products)) {
-          throw new Error(
-            'The product response did not contain a product list.',
-          );
-        }
-        if (!Array.isArray(combosResponse.data.combos)) {
-          throw new Error('The combo response did not contain a combo list.');
-        }
-        setCatalogItems([
-          ...productsResponse.data.products.map(product => ({
-            ...product,
-            type: 'Product' as const,
-          })),
-          ...combosResponse.data.combos.map(combo => ({
-            ...combo,
-            type: 'Combo' as const,
-          })),
-        ]);
+        setCatalogItems([...products, ...combos]);
       } catch (error: unknown) {
         if (!active) return;
         setCatalogError(
