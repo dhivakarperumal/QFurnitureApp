@@ -34,6 +34,13 @@ import {
 import api from '../../api';
 import type { StoreCartItem } from '../types';
 import { formatPrice } from '../utils';
+import {
+  calculateCartSubtotal,
+  calculateCheckoutQuote,
+  parseGstSettings,
+  type CheckoutQuote,
+  type GstSettings,
+} from './checkoutTax';
 
 type Address = {
   id: string | number;
@@ -55,21 +62,6 @@ type PickupLocation = {
   address: string;
 };
 
-type CheckoutQuote = {
-  subtotal: number | string;
-  gst_rate?: number | string;
-  gst_amount: number | string;
-  discount_amount?: number | string;
-  shipping_amount?: number | string;
-  total_amount: number | string;
-};
-
-type GstSettings = {
-  gst_enabled: boolean;
-  gst_rate: number;
-  tax_mode: 'Tax Exclusive' | 'Tax Inclusive';
-};
-
 type Coordinates = {
   latitude: number;
   longitude: number;
@@ -88,88 +80,6 @@ const emptyAddress: AddressDraft = {
   country: 'India',
   zip_code: '',
 };
-
-function amount(value: number | string | undefined) {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : null;
-}
-
-function roundCurrency(value: number) {
-  return Math.round((value + Number.EPSILON) * 100) / 100;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
-function parseGstSettings(data: unknown): GstSettings {
-  if (!isRecord(data)) {
-    throw new Error('The GST settings response was invalid.');
-  }
-
-  const settings = isRecord(data.settings) ? data.settings : data;
-  const enabledValue = settings.gst_enabled;
-  const gstEnabled =
-    enabledValue === true ||
-    enabledValue === 1 ||
-    enabledValue === 'true';
-  const gstDisabled =
-    enabledValue === false ||
-    enabledValue === 0 ||
-    enabledValue === 'false';
-  const rateValue = settings.gst_rate;
-  const rate =
-    typeof rateValue === 'number' || typeof rateValue === 'string'
-      ? amount(rateValue)
-      : null;
-  const rawTaxMode = (
-    typeof settings.tax_mode === 'string' ? settings.tax_mode : ''
-  )
-    .trim()
-    .toLowerCase()
-    .replace(/[\s_-]+/g, '');
-  const taxMode =
-    rawTaxMode === 'taxexclusive'
-      ? 'Tax Exclusive'
-      : rawTaxMode === 'taxinclusive'
-      ? 'Tax Inclusive'
-      : null;
-
-  if (
-    (!gstEnabled && !gstDisabled) ||
-    rate === null ||
-    rate < 0 ||
-    rate > 100 ||
-    !taxMode
-  ) {
-    throw new Error('The GST settings response was invalid.');
-  }
-
-  return {
-    gst_enabled: gstEnabled,
-    gst_rate: rate,
-    tax_mode: taxMode,
-  };
-}
-
-function cartSubtotal(items: StoreCartItem[]) {
-  let subtotal = 0;
-
-  for (const item of items) {
-    const price = amount(item.price);
-    const quantity = amount(item.quantity);
-    const lineTotal = item.total_price != null
-      ? amount(item.total_price)
-      : price !== null && quantity !== null
-      ? price * quantity
-      : null;
-
-    if (lineTotal === null || lineTotal < 0) return null;
-    subtotal += lineTotal;
-  }
-
-  return roundCurrency(subtotal);
-}
 
 function responseMessage(error: unknown) {
   if (
@@ -364,28 +274,10 @@ export default function Checkout({
     [fulfillment, items, selectedAddressId, selectedPickupId],
   );
 
-  const subtotal = useMemo(() => cartSubtotal(items), [items]);
+  const subtotal = useMemo(() => calculateCartSubtotal(items), [items]);
   const quote = useMemo<CheckoutQuote | null>(() => {
     if (!gstSettings || subtotal === null) return null;
-
-    const gstRate = gstSettings.gst_enabled ? gstSettings.gst_rate : 0;
-    const taxInclusive = gstSettings.tax_mode === 'Tax Inclusive';
-    const gstAmount = gstSettings.gst_enabled
-      ? roundCurrency(
-          taxInclusive
-            ? (subtotal * gstRate) / (100 + gstRate)
-            : (subtotal * gstRate) / 100,
-        )
-      : 0;
-
-    return {
-      subtotal,
-      gst_rate: gstRate,
-      gst_amount: gstAmount,
-      total_amount: roundCurrency(
-        taxInclusive ? subtotal : subtotal + gstAmount,
-      ),
-    };
+    return calculateCheckoutQuote(subtotal, gstSettings);
   }, [gstSettings, subtotal]);
   const quoteLoading = gstSettingsLoading;
   const quoteError =
@@ -903,15 +795,6 @@ export default function Checkout({
                 }
                 value={quote.gst_amount}
               />
-              {amount(quote.discount_amount) ? (
-                <SummaryLine
-                  label="Discount"
-                  value={-Number(quote.discount_amount)}
-                />
-              ) : null}
-              {quote.shipping_amount != null ? (
-                <SummaryLine label="Delivery" value={quote.shipping_amount} />
-              ) : null}
               <View className="mt-2 flex-row justify-between border-t border-[#F0E7DE] pt-3">
                 <Text className="text-[13px] font-black text-[#351D0E]">
                   Total
