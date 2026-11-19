@@ -6,6 +6,7 @@ import {
   LayoutGrid,
   Megaphone,
   MessageSquare,
+  Percent,
   Tag,
   UserRound,
   UsersRound,
@@ -19,6 +20,7 @@ import Usermanagement from './Usermanagement';
 import KeepAliveScreen from '../Navigation/KeepAliveScreen';
 import BannerScreen from './Banner';
 import Topheaderoffer from './Topheaderoffer';
+import Coupens from './Coupens';
 
 type MoreProps = {
   onScrollVisibilityChange?: (visible: boolean) => void;
@@ -41,6 +43,7 @@ export default function More({
   const [reviewsOpen, setReviewsOpen] = React.useState(false);
   const [offersOpen, setOffersOpen] = React.useState(false);
   const [offerManagementOpen, setOfferManagementOpen] = React.useState(false);
+  const [couponsOpen, setCouponsOpen] = React.useState(false);
 
   React.useEffect(() => {
     if (!initialScreen || screenRequestId === 0) return;
@@ -143,6 +146,18 @@ export default function More({
     onScrollVisibilityChange?.(true);
   };
 
+  const openCoupons = () => {
+    setCouponsOpen(true);
+    onDetailsVisibilityChange?.(true);
+    onScrollVisibilityChange?.(true);
+  };
+
+  const closeCoupons = () => {
+    setCouponsOpen(false);
+    onDetailsVisibilityChange?.(false);
+    onScrollVisibilityChange?.(true);
+  };
+
   const detailOpen =
     categoriesOpen ||
     usersOpen ||
@@ -150,7 +165,8 @@ export default function More({
     profileOpen ||
     reviewsOpen ||
     offersOpen ||
-    offerManagementOpen;
+    offerManagementOpen ||
+    couponsOpen;
   return (
     <View className="flex-1">
       <KeepAliveScreen active={!detailOpen}>
@@ -280,10 +296,29 @@ export default function More({
         </View>
         <View className="ml-3 flex-1">
           <Text className="text-[15px] font-black text-[#17191C]">
-            Offers
+            Top Header Offers
           </Text>
           <Text className="mt-1 text-[11px] text-[#64748B]">
             Manage discounts and website header offers
+          </Text>
+        </View>
+        <ChevronRight size={21} color="#94A3B8" />
+      </Pressable>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Open coupons"
+        onPress={openCoupons}
+        className="mt-3 flex-row items-center rounded-[18px] border border-[#FCE6D7] bg-white p-4 shadow-sm elevation-[2]"
+      >
+        <View className="h-[52px] w-[52px] items-center justify-center rounded-[14px] bg-[#FFF1D6]">
+          <Percent size={25} color="#F97316" strokeWidth={2} />
+        </View>
+        <View className="ml-3 flex-1">
+          <Text className="text-[15px] font-black text-[#17191C]">
+            Coupons
+          </Text>
+          <Text className="mt-1 text-[11px] text-[#64748B]">
+            Manage coupon codes and discounts
           </Text>
         </View>
         <ChevronRight size={21} color="#94A3B8" />
@@ -325,6 +360,9 @@ export default function More({
       </KeepAliveScreen>
       <KeepAliveScreen active={offerManagementOpen}>
         <Topheaderoffer onBackPress={closeOfferManagement} />
+      </KeepAliveScreen>
+      <KeepAliveScreen active={couponsOpen}>
+        <Coupens onBackPress={closeCoupons} />
       </KeepAliveScreen>
     </View>
   );
