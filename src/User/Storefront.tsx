@@ -80,12 +80,6 @@ export default function Storefront({
   const [pendingCartIds, setPendingCartIds] = useState<string[]>([]);
   const [accountSubScreen, setAccountSubScreen] = useState<AccountSubScreen>('menu');
 
-  // Reset account sub-screen when switching away from Profile tab
-  const handleTabPress = useCallback((tab: StoreTab) => {
-    if (tab !== 'Profile') setAccountSubScreen('menu');
-    setActiveTab(tab);
-  }, []);
-
   const loadStore = useCallback(async () => {
     setLoading(true);
     setLoadError(null);
@@ -167,6 +161,25 @@ export default function Storefront({
       setFavoritesLoading(false);
     }
   }, []);
+
+  const retryCart = useCallback(() => {
+    loadCart().catch(error => {
+      if (__DEV__) console.warn('[Storefront] Could not reload cart:', error);
+    });
+  }, [loadCart]);
+
+  const retryFavorites = useCallback(() => {
+    loadFavorites().catch(error => {
+      if (__DEV__) console.warn('[Storefront] Could not reload favorites:', error);
+    });
+  }, [loadFavorites]);
+
+  const handleTabPress = useCallback((tab: StoreTab) => {
+    if (tab !== 'Profile') setAccountSubScreen('menu');
+    setActiveTab(tab);
+    if (tab === 'Cart') retryCart();
+    if (tab === 'Favorites') retryFavorites();
+  }, [retryCart, retryFavorites]);
 
   useEffect(() => {
     loadCart().catch(error => {
@@ -317,18 +330,6 @@ export default function Storefront({
     }
   };
 
-  const retryCart = () => {
-    loadCart().catch(error => {
-      if (__DEV__) console.warn('[Storefront] Could not reload cart:', error);
-    });
-  };
-
-  const retryFavorites = () => {
-    loadFavorites().catch(error => {
-      if (__DEV__) console.warn('[Storefront] Could not reload favorites:', error);
-    });
-  };
-
   const renderTabContent = () => {
     if (activeTab === 'Home') {
       return (
@@ -429,8 +430,8 @@ export default function Storefront({
     <View style={{ paddingTop: insets.top }} className="flex-1 bg-[#FCFAF7]">
       <Header
         cartCount={cartCount}
-        onSearchPress={() => setActiveTab('Explore')}
-        onCartPress={() => setActiveTab('Cart')}
+        onSearchPress={() => handleTabPress('Explore')}
+        onCartPress={() => handleTabPress('Cart')}
       />
       {loading ? (
         <View className="flex-1 items-center justify-center">
