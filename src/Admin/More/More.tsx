@@ -6,6 +6,7 @@ import {
   LayoutGrid,
   Megaphone,
   MessageSquare,
+  Tag,
   UserRound,
   UsersRound,
 } from 'lucide-react-native';
@@ -17,6 +18,7 @@ import StockDetails from './StockDetails';
 import Usermanagement from './Usermanagement';
 import KeepAliveScreen from '../Navigation/KeepAliveScreen';
 import BannerScreen from './Banner';
+import Topheaderoffer from './Topheaderoffer';
 
 type MoreProps = {
   onScrollVisibilityChange?: (visible: boolean) => void;
@@ -38,6 +40,7 @@ export default function More({
   const [profileOpen, setProfileOpen] = React.useState(false);
   const [reviewsOpen, setReviewsOpen] = React.useState(false);
   const [offersOpen, setOffersOpen] = React.useState(false);
+  const [offerManagementOpen, setOfferManagementOpen] = React.useState(false);
 
   React.useEffect(() => {
     if (!initialScreen || screenRequestId === 0) return;
@@ -128,13 +131,26 @@ export default function More({
     onScrollVisibilityChange?.(true);
   };
 
+  const openOfferManagement = () => {
+    setOfferManagementOpen(true);
+    onDetailsVisibilityChange?.(true);
+    onScrollVisibilityChange?.(true);
+  };
+
+  const closeOfferManagement = () => {
+    setOfferManagementOpen(false);
+    onDetailsVisibilityChange?.(false);
+    onScrollVisibilityChange?.(true);
+  };
+
   const detailOpen =
     categoriesOpen ||
     usersOpen ||
     stockOpen ||
     profileOpen ||
     reviewsOpen ||
-    offersOpen;
+    offersOpen ||
+    offerManagementOpen;
   return (
     <View className="flex-1">
       <KeepAliveScreen active={!detailOpen}>
@@ -253,6 +269,25 @@ export default function More({
         </View>
         <ChevronRight size={21} color="#94A3B8" />
       </Pressable>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Open offers management"
+        onPress={openOfferManagement}
+        className="mt-3 flex-row items-center rounded-[18px] border border-[#FCE6D7] bg-white p-4 shadow-sm elevation-[2]"
+      >
+        <View className="h-[52px] w-[52px] items-center justify-center rounded-[14px] bg-[#FFF1D6]">
+          <Tag size={25} color="#F97316" strokeWidth={2} />
+        </View>
+        <View className="ml-3 flex-1">
+          <Text className="text-[15px] font-black text-[#17191C]">
+            Offers
+          </Text>
+          <Text className="mt-1 text-[11px] text-[#64748B]">
+            Manage discounts and website header offers
+          </Text>
+        </View>
+        <ChevronRight size={21} color="#94A3B8" />
+      </Pressable>
         </ScrollView>
       </KeepAliveScreen>
       <KeepAliveScreen active={categoriesOpen}>
@@ -287,6 +322,9 @@ export default function More({
       </KeepAliveScreen>
       <KeepAliveScreen active={offersOpen}>
         <BannerScreen onBackPress={closeOffers} />
+      </KeepAliveScreen>
+      <KeepAliveScreen active={offerManagementOpen}>
+        <Topheaderoffer onBackPress={closeOfferManagement} />
       </KeepAliveScreen>
     </View>
   );
