@@ -17,6 +17,7 @@ type ProductCardProps = {
   cardWidth?: number;
   onFavoritePress: (productId: string) => void;
   onAddToCart: (productId: string) => void;
+  onProductPress: (productId: string) => void;
 };
 
 export default function ProductCard({
@@ -26,6 +27,7 @@ export default function ProductCard({
   cardWidth,
   onFavoritePress,
   onAddToCart,
+  onProductPress,
 }: ProductCardProps) {
   const id = String(product.id);
   const price = productPrice(product);
@@ -43,13 +45,19 @@ export default function ProductCard({
         cardWidth ? '' : compact ? 'w-[48%]' : 'w-[258px]'
       }`}>
       <View className="relative h-[170px] overflow-hidden bg-[#F4E9DD]">
-        {imageUri ? (
-          <Image source={{ uri: imageUri }} className="h-full w-full" resizeMode="cover" />
-        ) : (
-          <View className="h-full items-center justify-center">
-            <Armchair size={46} color="#A78A70" strokeWidth={1.3} />
-          </View>
-        )}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`View ${product.name} details`}
+          onPress={() => onProductPress(id)}
+          className="h-full w-full">
+          {imageUri ? (
+            <Image source={{ uri: imageUri }} className="h-full w-full" resizeMode="cover" />
+          ) : (
+            <View className="h-full items-center justify-center">
+              <Armchair size={46} color="#A78A70" strokeWidth={1.3} />
+            </View>
+          )}
+        </Pressable>
         {discount > 0 ? (
           <View className="absolute left-3 top-3 rounded-full bg-[#187A45] px-3 py-1">
             <Text className="text-[11px] font-bold text-white">{discount}% OFF</Text>
@@ -71,9 +79,14 @@ export default function ProductCard({
         <Text className="text-[10px] font-bold uppercase tracking-[1.4px] text-[#A06E46]">
           {productCategory(product) || 'Furniture'}
         </Text>
-        <Text numberOfLines={2} className="mt-1 min-h-[40px] text-[14px] font-bold leading-5 text-[#351D0E]">
-          {product.name}
-        </Text>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => onProductPress(id)}
+          className="mt-1 min-h-[40px]">
+          <Text numberOfLines={2} className="text-[14px] font-bold leading-5 text-[#351D0E]">
+            {product.name}
+          </Text>
+        </Pressable>
         {Number.isFinite(rating) && rating > 0 ? (
           <View className="mt-1 flex-row items-center">
             <Star size={13} color="#F97316" fill="#F97316" />

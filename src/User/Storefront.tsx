@@ -11,6 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '../api';
 import Header from './Header';
 import Home from './Home/Home';
+import ItemDetails from './ItemDetails';
 import Shop from './Shop/Shop';
 import Tabs from './Tabs';
 import Cart from './Cart/Cart';
@@ -64,6 +65,10 @@ export default function Storefront({
 }) {
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<StoreTab>('Home');
+  const [detailTarget, setDetailTarget] = useState<{
+    itemId: string;
+    itemType: 'product' | 'combo';
+  } | null>(null);
   const [storeData, setStoreData] = useState(emptyStoreData);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -192,6 +197,7 @@ export default function Storefront({
 
   const handleTabPress = useCallback(
     (tab: StoreTab) => {
+      setDetailTarget(null);
       setCheckoutOpen(false);
       if (tab !== 'Profile') setAccountSubScreen('menu');
       setActiveTab(tab);
@@ -359,7 +365,37 @@ export default function Storefront({
     }
   };
 
+  const openItemDetails = (productId: string) => {
+    const itemType = productId.startsWith('combo-') ? 'combo' : 'product';
+    const rawId =
+      itemType === 'combo' ? productId.slice('combo-'.length) : productId;
+    const numericId = Number(rawId);
+    if (!Number.isSafeInteger(numericId) || numericId < 1) {
+      Alert.alert('Details unavailable', 'This item has an invalid ID.');
+      return;
+    }
+
+    setDetailTarget({ itemId: String(numericId), itemType });
+  };
+
   const renderTabContent = () => {
+    if (detailTarget) {
+      const actionId =
+        detailTarget.itemType === 'combo'
+          ? `combo-${detailTarget.itemId}`
+          : detailTarget.itemId;
+      return (
+        <ItemDetails
+          itemId={detailTarget.itemId}
+          itemType={detailTarget.itemType}
+          favorite={favoriteIds.includes(actionId)}
+          onBack={() => setDetailTarget(null)}
+          onFavoritePress={toggleFavorite}
+          onAddToCart={addToCart}
+        />
+      );
+    }
+
     if (activeTab === 'Home') {
       return (
         <Home
@@ -386,6 +422,7 @@ export default function Storefront({
           }
           onFavoritePress={toggleFavorite}
           onAddToCart={addToCart}
+          onProductPress={openItemDetails}
         />
       );
     }
@@ -402,6 +439,7 @@ export default function Storefront({
           onCategoryChange={setSelectedCategory}
           onFavoritePress={toggleFavorite}
           onAddToCart={addToCart}
+          onProductPress={openItemDetails}
         />
       );
     }
@@ -416,6 +454,7 @@ export default function Storefront({
           onRetry={retryFavorites}
           onFavoritePress={toggleFavorite}
           onAddToCart={addToCart}
+          onProductPress={openItemDetails}
         />
       );
     }
@@ -509,7 +548,11 @@ export default function Storefront({
         </View>
       ) : (
         <ScrollView
-          key={activeTab}
+          key={
+            detailTarget
+              ? `${detailTarget.itemType}-${detailTarget.itemId}`
+              : activeTab
+          }
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
           contentContainerClassName="pb-[115px]"

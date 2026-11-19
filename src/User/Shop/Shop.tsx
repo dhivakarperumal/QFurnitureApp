@@ -42,6 +42,7 @@ type ShopProps = {
   onCategoryChange: (category: string) => void;
   onFavoritePress: (productId: string) => void;
   onAddToCart: (productId: string) => void;
+  onProductPress: (productId: string) => void;
 };
 
 export default function Shop({
@@ -54,6 +55,7 @@ export default function Shop({
   onCategoryChange,
   onFavoritePress,
   onAddToCart,
+  onProductPress,
 }: ShopProps) {
   const [filtersVisible, setFiltersVisible] = useState(false);
   const [maxPrice, setMaxPrice] = useState('');
@@ -240,6 +242,7 @@ export default function Shop({
                   compact
                   onFavoritePress={onFavoritePress}
                   onAddToCart={onAddToCart}
+                  onProductPress={onProductPress}
                 />
               ))}
             </View>

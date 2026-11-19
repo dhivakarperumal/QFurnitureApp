@@ -35,12 +35,14 @@ type FeaturedCombosProps = {
   favorites: string[];
   onFavoritePress: (productId: string) => void;
   onAddToCart: (productId: string) => void;
+  onProductPress: (productId: string) => void;
 };
 
 export default function FeaturedCombos({
   favorites,
   onFavoritePress,
   onAddToCart,
+  onProductPress,
 }: FeaturedCombosProps) {
   const { width } = useWindowDimensions();
   const cardWidth = (width - 40) / 2;
@@ -135,6 +137,7 @@ export default function FeaturedCombos({
                 cardWidth={cardWidth}
                 onFavoritePress={onFavoritePress}
                 onAddToCart={onAddToCart}
+                onProductPress={onProductPress}
               />
             );
           })}

@@ -22,6 +22,7 @@ type HomeProps = {
   onCustomFurniturePress: () => void;
   onFavoritePress: (productId: string) => void;
   onAddToCart: (productId: string) => void;
+  onProductPress: (productId: string) => void;
 };
 
 export default function Home({
@@ -36,6 +37,7 @@ export default function Home({
   onCustomFurniturePress,
   onFavoritePress,
   onAddToCart,
+  onProductPress,
 }: HomeProps) {
   const [heroIndex, setHeroIndex] = useState(0);
 
@@ -73,17 +75,20 @@ export default function Home({
         favorites={favorites}
         onFavoritePress={onFavoritePress}
         onAddToCart={onAddToCart}
+        onProductPress={onProductPress}
       />
       <TopRatedProducts
         products={products}
         favorites={favorites}
         onFavoritePress={onFavoritePress}
         onAddToCart={onAddToCart}
+        onProductPress={onProductPress}
       />
       <FeaturedCombos
         favorites={favorites}
         onFavoritePress={onFavoritePress}
         onAddToCart={onAddToCart}
+        onProductPress={onProductPress}
       />
       <ShopByRoom onRoomPress={onRoomPress} />
       <CustomFurniture onRequestPress={onCustomFurniturePress} />

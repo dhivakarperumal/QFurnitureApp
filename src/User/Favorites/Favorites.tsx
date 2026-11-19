@@ -12,6 +12,7 @@ type FavoritesProps = {
   onRetry: () => void;
   onFavoritePress: (productId: string) => void;
   onAddToCart: (productId: string) => void;
+  onProductPress: (productId: string) => void;
 };
 
 export default function Favorites({
@@ -22,6 +23,7 @@ export default function Favorites({
   onRetry,
   onFavoritePress,
   onAddToCart,
+  onProductPress,
 }: FavoritesProps) {
   return (
     <View className="px-4 pt-5">
@@ -53,6 +55,7 @@ export default function Favorites({
                 compact
                 onFavoritePress={onFavoritePress}
                 onAddToCart={onAddToCart}
+                onProductPress={onProductPress}
               />
             );
           })}

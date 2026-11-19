@@ -9,6 +9,7 @@ type TopRatedProductsProps = {
   favorites: string[];
   onFavoritePress: (productId: string) => void;
   onAddToCart: (productId: string) => void;
+  onProductPress: (productId: string) => void;
 };
 
 export default function TopRatedProducts({
@@ -16,6 +17,7 @@ export default function TopRatedProducts({
   favorites,
   onFavoritePress,
   onAddToCart,
+  onProductPress,
 }: TopRatedProductsProps) {
   const { width } = useWindowDimensions();
   const cardWidth = (width - 40) / 2;
@@ -52,6 +54,7 @@ export default function TopRatedProducts({
             cardWidth={cardWidth}
             onFavoritePress={onFavoritePress}
             onAddToCart={onAddToCart}
+            onProductPress={onProductPress}
           />
         ))}
       </ScrollView>
