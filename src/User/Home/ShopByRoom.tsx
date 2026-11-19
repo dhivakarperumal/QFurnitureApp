@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Image,
   ImageSourcePropType,
@@ -6,6 +6,11 @@ import {
   ScrollView,
   Text,
   View,
+} from 'react-native';
+import type {
+  NativeScrollEvent,
+  NativeSyntheticEvent,
+  ScrollViewInstance,
 } from 'react-native';
 import { ArrowRight } from 'lucide-react-native';
 import api from '../../api';
@@ -59,7 +64,30 @@ type ShopByRoomProps = {
 };
 
 export default function ShopByRoom({ onRoomPress }: ShopByRoomProps) {
+  const scrollRef = useRef<ScrollViewInstance>(null);
+  const scrollPositionRef = useRef(0);
   const [rooms, setRooms] = useState(ALL_ROOMS);
+  const [viewportWidth, setViewportWidth] = useState(0);
+  const [isUserScrolling, setIsUserScrolling] = useState(false);
+  const roomWidth = viewportWidth > 0 ? (viewportWidth - 24) / 3 : 112;
+  const roomStep = roomWidth + 12;
+  const carouselRooms =
+    rooms.length > 3 ? [...rooms, ...rooms.slice(0, 2)] : rooms;
+
+  useEffect(() => {
+    if (rooms.length <= 3 || !viewportWidth || isUserScrolling) return;
+
+    const intervalId = setInterval(() => {
+      const nextPosition = scrollPositionRef.current + roomStep;
+      const loopPosition = roomStep * rooms.length;
+      const targetPosition = nextPosition >= loopPosition ? 0 : nextPosition;
+
+      scrollRef.current?.scrollTo({ x: targetPosition, animated: true });
+      scrollPositionRef.current = targetPosition;
+    }, 3000);
+
+    return () => clearInterval(intervalId);
+  }, [isUserScrolling, roomStep, rooms.length, viewportWidth]);
 
   useEffect(() => {
     let active = true;
@@ -74,6 +102,8 @@ export default function ShopByRoom({ onRoomPress }: ShopByRoomProps) {
             .map(room => room.slug),
         );
         if (active) {
+          scrollPositionRef.current = 0;
+          scrollRef.current?.scrollTo({ x: 0, animated: false });
           setRooms(ALL_ROOMS.filter(room => roomsWithProducts.has(room.slug)));
         }
       })
@@ -104,27 +134,50 @@ export default function ShopByRoom({ onRoomPress }: ShopByRoomProps) {
           <ArrowRight size={15} color="#8B4B1F" />
         </Pressable>
       </View>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="px-4">
-        {rooms.map(room => (
-          <Pressable
-            key={room.slug}
-            accessibilityRole="button"
-            accessibilityLabel={`Shop ${room.name}`}
-            onPress={() => onRoomPress(room.slug)}
-            className="relative mr-3 h-[90px] w-[145px] overflow-hidden rounded-[14px] bg-[#EEE4D8]">
-            <Image source={room.image} className="h-full w-full" resizeMode="cover" />
-            <View className="absolute inset-0 bg-black/30" />
-            <View className="absolute bottom-2 left-3 right-2 flex-row items-center justify-between">
-              <Text numberOfLines={1} className="mr-1 flex-1 text-[12px] font-bold text-white">
-                {room.name}
-              </Text>
-              <View className="h-[24px] w-[24px] items-center justify-center rounded-full bg-white">
-                <ArrowRight size={13} color="#9B4E17" />
+      <View className="mx-4">
+        <ScrollView
+          ref={scrollRef}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          onLayout={event => setViewportWidth(event.nativeEvent.layout.width)}
+          onScroll={event => {
+            scrollPositionRef.current = event.nativeEvent.contentOffset.x;
+          }}
+          scrollEventThrottle={16}
+          onScrollBeginDrag={() => setIsUserScrolling(true)}
+          onScrollEndDrag={() => setIsUserScrolling(false)}
+          onMomentumScrollEnd={(
+            event: NativeSyntheticEvent<NativeScrollEvent>,
+          ) => {
+            scrollPositionRef.current = event.nativeEvent.contentOffset.x;
+            setIsUserScrolling(false);
+          }}
+          snapToInterval={roomStep}
+          snapToAlignment="start"
+          decelerationRate="fast"
+          disableIntervalMomentum>
+          {carouselRooms.map((room, index) => (
+            <Pressable
+              key={`${room.slug}-${index}`}
+              accessibilityRole="button"
+              accessibilityLabel={`Shop ${room.name}`}
+              onPress={() => onRoomPress(room.slug)}
+              style={{ width: roomWidth }}
+              className="relative mr-3 h-[90px] overflow-hidden rounded-[14px] bg-[#EEE4D8]">
+              <Image source={room.image} className="h-full w-full" resizeMode="cover" />
+              <View className="absolute inset-0 bg-black/30" />
+              <View className="absolute bottom-2 left-2 right-2 flex-row items-center justify-between">
+                <Text numberOfLines={1} className="mr-1 flex-1 text-[11px] font-bold text-white">
+                  {room.name}
+                </Text>
+                <View className="h-[22px] w-[22px] items-center justify-center rounded-full bg-white">
+                  <ArrowRight size={12} color="#9B4E17" />
+                </View>
               </View>
-            </View>
-          </Pressable>
-        ))}
-      </ScrollView>
+            </Pressable>
+          ))}
+        </ScrollView>
+      </View>
     </View>
   );
 }
