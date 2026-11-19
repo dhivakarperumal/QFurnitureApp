@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import Category from './Category';
 import CustomFurniture from './CustomFurniture';
+import FeaturedCombos from './FeaturedCombos';
 import Hero from './Hero';
 import OfferBanners from './OfferBanners';
 import Products from './Products';
@@ -75,6 +76,11 @@ export default function Home({
       />
       <TopRatedProducts
         products={products}
+        favorites={favorites}
+        onFavoritePress={onFavoritePress}
+        onAddToCart={onAddToCart}
+      />
+      <FeaturedCombos
         favorites={favorites}
         onFavoritePress={onFavoritePress}
         onAddToCart={onAddToCart}
