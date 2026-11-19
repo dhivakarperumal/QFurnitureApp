@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native';
 import { Check, CheckCircle2, Eye, EyeOff, KeyRound } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '../../api';
 import { SubScreenHeader } from './AccountScreen';
 

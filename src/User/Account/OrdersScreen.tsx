@@ -16,6 +16,7 @@ import {
   Truck,
   XCircle,
 } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '../../api';
 import { SubScreenHeader } from './AccountScreen';
 import { mediaUrl } from '../utils';

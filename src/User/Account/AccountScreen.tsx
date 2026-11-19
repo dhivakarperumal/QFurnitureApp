@@ -19,6 +19,7 @@ import {
   UserRound,
 } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '../../api';
 import { mediaUrl } from '../utils';
 
@@ -67,6 +68,7 @@ export default function AccountScreen({
   onLogoutPress,
   onSubScreenChange,
 }: AccountScreenProps) {
+  const insets = useSafeAreaInsets();
   const [profile, setProfile] = useState<UserProfile>({
     name: '',
     email: '',
@@ -133,7 +135,7 @@ export default function AccountScreen({
   };
 
   return (
-    <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="pb-6">
+    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 100) }}>
       {/* Hero Banner */}
       <View className="relative overflow-hidden bg-[#FDECD9] pb-8 pt-5 px-5">
         {/* Decorative blobs */}

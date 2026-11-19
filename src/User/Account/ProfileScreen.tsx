@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Camera, Check, UserRound, X } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '../../api';
 import { mediaUrl } from '../utils';
 import { SubScreenHeader } from './AccountScreen';
@@ -75,6 +76,7 @@ function InputField({
 }
 
 export default function ProfileScreen({ onBack }: ProfileScreenProps) {
+  const insets = useSafeAreaInsets();
   const [profile, setProfile] = useState<Profile>({
     name: '',
     email: '',

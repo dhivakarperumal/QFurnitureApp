@@ -8,7 +8,14 @@ import {
   Text,
   View,
 } from 'react-native';
-import { Armchair, Heart, ShoppingCart, X } from 'lucide-react-native';
+import {
+  Armchair,
+  Heart,
+  Minus,
+  Plus,
+  ShoppingCart,
+  Trash2,
+} from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '../api';
 import Header from './Header';
@@ -16,8 +23,20 @@ import Home from './Home/Home';
 import ProductCard from './ProductCard';
 import Shop from './Shop/Shop';
 import Tabs from './Tabs';
-import type { StoreBanner, StoreCategory, StoreProduct, StoreTab } from './types';
-import { formatPrice, productCategory, productImage, productPrice } from './utils';
+import type {
+  StoreBanner,
+  StoreCartItem,
+  StoreCategory,
+  StoreFavorite,
+  StoreProduct,
+  StoreTab,
+} from './types';
+import {
+  formatPrice,
+  mediaUrl,
+  productCategory,
+  productImage,
+} from './utils';
 import AccountScreen, { type AccountSubScreen } from './Account/AccountScreen';
 import ProfileScreen from './Account/ProfileScreen';
 import AddressesScreen from './Account/AddressesScreen';
@@ -62,8 +81,14 @@ export default function Storefront({
   const [loadError, setLoadError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
-  const [favorites, setFavorites] = useState<string[]>([]);
-  const [cart, setCart] = useState<Record<string, number>>({});
+  const [favoriteItems, setFavoriteItems] = useState<StoreFavorite[]>([]);
+  const [favoritesLoading, setFavoritesLoading] = useState(true);
+  const [favoritesError, setFavoritesError] = useState<string | null>(null);
+  const [pendingFavoriteIds, setPendingFavoriteIds] = useState<string[]>([]);
+  const [cartItems, setCartItems] = useState<StoreCartItem[]>([]);
+  const [cartLoading, setCartLoading] = useState(true);
+  const [cartError, setCartError] = useState<string | null>(null);
+  const [pendingCartIds, setPendingCartIds] = useState<string[]>([]);
   const [accountSubScreen, setAccountSubScreen] = useState<AccountSubScreen>('menu');
 
   // Reset account sub-screen when switching away from Profile tab
@@ -120,7 +145,62 @@ export default function Storefront({
     loadStore();
   }, [loadStore]);
 
-  const cartCount = Object.values(cart).reduce((total, count) => total + count, 0);
+  const loadCart = useCallback(async () => {
+    setCartLoading(true);
+    setCartError(null);
+    try {
+      const { data } = await api.get<StoreCartItem[]>('/cart');
+      if (!Array.isArray(data)) {
+        throw new Error('The cart response did not contain a cart list.');
+      }
+      setCartItems(data);
+    } catch (error) {
+      setCartError(errorMessage(error));
+      throw error;
+    } finally {
+      setCartLoading(false);
+    }
+  }, []);
+
+  const loadFavorites = useCallback(async () => {
+    setFavoritesLoading(true);
+    setFavoritesError(null);
+    try {
+      const { data } = await api.get<StoreFavorite[]>('/favorites');
+      if (!Array.isArray(data)) {
+        throw new Error('The favorites response did not contain a favorites list.');
+      }
+      setFavoriteItems(data);
+    } catch (error) {
+      setFavoritesError(errorMessage(error));
+      throw error;
+    } finally {
+      setFavoritesLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadCart().catch(error => {
+      if (__DEV__) console.warn('[Storefront] Could not load the cart:', error);
+    });
+    loadFavorites().catch(error => {
+      if (__DEV__) console.warn('[Storefront] Could not load favorites:', error);
+    });
+  }, [loadCart, loadFavorites]);
+
+  const favoriteIds = useMemo(
+    () =>
+      favoriteItems.map(item =>
+        item.item_type === 'combo'
+          ? `combo-${item.combo_id ?? String(item.id).replace(/^combo-/, '')}`
+          : String(item.product_id ?? item.id),
+      ),
+    [favoriteItems],
+  );
+  const cartCount = cartItems.reduce(
+    (total, item) => total + Number(item.quantity || 0),
+    0,
+  );
 
   const visibleProducts = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -135,31 +215,117 @@ export default function Storefront({
     });
   }, [search, selectedCategory, storeData.products]);
 
-  const favoriteProducts = storeData.products.filter(product =>
-    favorites.includes(String(product.id)),
-  );
-  const cartProducts = storeData.products.filter(
-    product => (cart[String(product.id)] ?? 0) > 0,
-  );
-  const cartTotal = cartProducts.reduce(
-    (total, product) =>
-      total + productPrice(product) * (cart[String(product.id)] ?? 0),
+  const favoriteProducts = favoriteItems;
+  const cartTotal = cartItems.reduce(
+    (total, item) =>
+      total +
+      Number(item.total_price ?? Number(item.price) * Number(item.quantity)),
     0,
   );
 
-  const toggleFavorite = (productId: string) => {
-    setFavorites(current =>
-      current.includes(productId)
-        ? current.filter(id => id !== productId)
-        : [...current, productId],
+  const toggleFavorite = async (productId: string) => {
+    if (pendingFavoriteIds.includes(productId)) return;
+    const savedFavorite = favoriteItems.find(item =>
+      item.item_type === 'combo'
+        ? `combo-${item.combo_id ?? String(item.id).replace(/^combo-/, '')}` === productId
+        : String(item.product_id ?? item.id) === productId,
     );
+    const isCombo = savedFavorite?.item_type === 'combo' || productId.startsWith('combo-');
+    const numericId = Number(
+      isCombo ? productId.replace(/^combo-/, '') : productId,
+    );
+    if (!Number.isSafeInteger(numericId) || numericId < 1) {
+      Alert.alert('Favorites unavailable', 'This item has an invalid ID.');
+      return;
+    }
+
+    setPendingFavoriteIds(current => [...current, productId]);
+    try {
+      if (savedFavorite) {
+        await api.delete(
+          isCombo ? `/favorites/combos/${numericId}` : `/favorites/${numericId}`,
+        );
+      } else if (isCombo) {
+        await api.post(`/favorites/combos/${numericId}`);
+      } else {
+        await api.post('/favorites', { product_id: numericId });
+      }
+      await loadFavorites();
+    } catch (error) {
+      Alert.alert('Favorites could not be updated', errorMessage(error));
+    } finally {
+      setPendingFavoriteIds(current =>
+        current.filter(id => id !== productId),
+      );
+    }
   };
 
-  const addToCart = (productId: string) => {
-    setCart(current => ({
-      ...current,
-      [productId]: (current[productId] ?? 0) + 1,
-    }));
+  const addToCart = async (productId: string) => {
+    if (pendingCartIds.includes(productId)) return;
+    setPendingCartIds(current => [...current, productId]);
+    try {
+      if (productId.startsWith('combo-')) {
+        const comboId = Number(productId.replace(/^combo-/, ''));
+        if (!Number.isSafeInteger(comboId) || comboId < 1) {
+          throw new Error('This item has an invalid ID.');
+        }
+        await api.post('/cart', { combo_id: comboId, quantity: 1 });
+      } else {
+        const product = storeData.products.find(
+          item => String(item.id) === productId,
+        ) ?? favoriteItems.find(item => String(item.id) === productId);
+        const numericProductId = Number(product?.product_id ?? product?.id);
+        if (!product || !Number.isSafeInteger(numericProductId) || numericProductId < 1) {
+          throw new Error('This product is no longer available.');
+        }
+        const variants = product.variants ?? [];
+        const variant = variants[0];
+        const variantColor =
+          variant?.colorName ?? variant?.color ?? variant?.colour ?? 'Default';
+        const variantSize =
+          variant?.size ?? variant?.selectedSizes?.[0] ?? (variants.length ? 'Free Size' : '');
+
+        await api.post('/cart', {
+          product_id: numericProductId,
+          variant_color: variantColor,
+          variant_size: variantSize,
+          quantity: 1,
+        });
+      }
+      await loadCart();
+    } catch (error) {
+      Alert.alert('Could not add to cart', errorMessage(error));
+    } finally {
+      setPendingCartIds(current => current.filter(id => id !== productId));
+    }
+  };
+
+  const updateCartQuantity = async (item: StoreCartItem, quantity: number) => {
+    const itemId = String(item.id);
+    if (pendingCartIds.includes(itemId)) return;
+    setPendingCartIds(current => [...current, itemId]);
+    try {
+      await api.put(`/cart/${item.id}`, { quantity });
+      await loadCart();
+    } catch (error) {
+      Alert.alert('Cart could not be updated', errorMessage(error));
+    } finally {
+      setPendingCartIds(current => current.filter(id => id !== itemId));
+    }
+  };
+
+  const removeFromCart = async (item: StoreCartItem) => {
+    const itemId = String(item.id);
+    if (pendingCartIds.includes(itemId)) return;
+    setPendingCartIds(current => [...current, itemId]);
+    try {
+      await api.delete(`/cart/${item.id}`);
+      await loadCart();
+    } catch (error) {
+      Alert.alert('Cart item could not be removed', errorMessage(error));
+    } finally {
+      setPendingCartIds(current => current.filter(id => id !== itemId));
+    }
   };
 
   const renderProductGrid = (products: StoreProduct[]) => (
@@ -168,7 +334,7 @@ export default function Storefront({
         <ProductCard
           key={product.id}
           product={product}
-          favorite={favorites.includes(String(product.id))}
+          favorite={favoriteIds.includes(String(product.id))}
           compact
           onFavoritePress={toggleFavorite}
           onAddToCart={addToCart}
@@ -185,7 +351,7 @@ export default function Storefront({
           products={storeData.products}
           heroBanners={storeData.heroBanners}
           offerBanners={storeData.offerBanners}
-          favorites={favorites}
+          favorites={favoriteIds}
           onCategoryPress={category => {
             setSelectedCategory(category);
             setActiveTab('Explore');
@@ -213,7 +379,7 @@ export default function Storefront({
         <Shop
           categories={storeData.categories}
           products={visibleProducts}
-          favorites={favorites}
+          favorites={favoriteIds}
           search={search}
           selectedCategory={selectedCategory}
           onSearchChange={setSearch}
@@ -228,7 +394,21 @@ export default function Storefront({
       return (
         <View className="px-4 pt-5">
           <Text className="mb-4 text-[25px] font-black text-[#351D0E]">Your favorites</Text>
-          {favoriteProducts.length ? renderProductGrid(favoriteProducts) : (
+          {favoritesLoading ? (
+            <ActivityIndicator color="#F97316" />
+          ) : favoritesError ? (
+            <View className="items-center rounded-[20px] bg-white px-6 py-8">
+              <Text className="text-center text-[13px] text-[#8B2D20]">{favoritesError}</Text>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => loadFavorites().catch(error => {
+                  if (__DEV__) console.warn('[Storefront] Could not reload favorites:', error);
+                })}
+                className="mt-4 rounded-full bg-[#F97316] px-4 py-2">
+                <Text className="text-[12px] font-bold text-white">Try again</Text>
+              </Pressable>
+            </View>
+          ) : favoriteProducts.length ? renderProductGrid(favoriteProducts) : (
             <View className="items-center rounded-[20px] bg-white px-6 py-10">
               <Heart size={34} color="#F97316" />
               <Text className="mt-3 text-[15px] font-bold text-[#351D0E]">No favorites yet</Text>
@@ -245,13 +425,31 @@ export default function Storefront({
       return (
         <View className="px-4 pt-5">
           <Text className="mb-4 text-[25px] font-black text-[#351D0E]">Your cart</Text>
-          {cartProducts.length ? (
+          {cartLoading ? (
+            <ActivityIndicator color="#F97316" />
+          ) : cartError ? (
+            <View className="items-center rounded-[20px] bg-white px-6 py-8">
+              <Text className="text-center text-[13px] text-[#8B2D20]">{cartError}</Text>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => loadCart().catch(error => {
+                  if (__DEV__) console.warn('[Storefront] Could not reload cart:', error);
+                })}
+                className="mt-4 rounded-full bg-[#F97316] px-4 py-2">
+                <Text className="text-[12px] font-bold text-white">Try again</Text>
+              </Pressable>
+            </View>
+          ) : cartItems.length ? (
             <>
-              {cartProducts.map(product => (
-                <View key={product.id} className="mb-3 flex-row items-center rounded-[16px] bg-white p-3">
-                  {productImage(product) ? (
+              {cartItems.map(item => {
+                const imageUri = mediaUrl(item.image) ?? productImage(item);
+                const itemQuantity = Number(item.quantity);
+                const busy = pendingCartIds.includes(String(item.id));
+                return (
+                <View key={item.id} className="mb-3 flex-row items-center rounded-[16px] bg-white p-3">
+                  {imageUri ? (
                     <Image
-                      source={{ uri: productImage(product) }}
+                      source={{ uri: imageUri }}
                       className="h-[72px] w-[72px] rounded-[12px]"
                       resizeMode="cover"
                     />
@@ -262,29 +460,54 @@ export default function Storefront({
                   )}
                   <View className="ml-3 flex-1">
                     <Text numberOfLines={2} className="text-[13px] font-bold text-[#351D0E]">
-                      {product.name}
+                      {item.name}
                     </Text>
                     <Text className="mt-1 text-[13px] text-[#634D3B]">
-                      {formatPrice(productPrice(product))} · Qty {cart[String(product.id)]}
+                      {formatPrice(Number(item.price))} · Qty {itemQuantity}
+                    </Text>
+                    {item.variant_color || item.variant_size ? (
+                      <Text numberOfLines={1} className="mt-1 text-[10px] text-[#8B735E]">
+                        {[item.variant_color, item.variant_size].filter(Boolean).join(' · ')}
+                      </Text>
+                    ) : null}
+                    <Text className="mt-1 text-[12px] font-bold text-[#351D0E]">
+                      {formatPrice(Number(item.total_price ?? Number(item.price) * itemQuantity))}
                     </Text>
                   </View>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={`Remove one ${product.name} from cart`}
-                    onPress={() =>
-                      setCart(current => {
-                        const next = { ...current };
-                        const id = String(product.id);
-                        if (next[id] <= 1) delete next[id];
-                        else next[id] -= 1;
-                        return next;
-                      })
-                    }
-                    className="h-[36px] w-[36px] items-center justify-center rounded-full bg-[#FFF0E1]">
-                    <X size={18} color="#634D3B" />
-                  </Pressable>
+                  <View className="items-center">
+                    <View className="mb-2 flex-row items-center">
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel={`Decrease ${item.name} quantity`}
+                        disabled={busy || itemQuantity <= 1}
+                        onPress={() => updateCartQuantity(item, itemQuantity - 1)}
+                        className="h-[30px] w-[30px] items-center justify-center rounded-full bg-[#FFF0E1] disabled:opacity-40">
+                        <Minus size={15} color="#B94719" />
+                      </Pressable>
+                      <Text className="mx-2 min-w-[16px] text-center text-[12px] font-bold text-[#351D0E]">
+                        {itemQuantity}
+                      </Text>
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel={`Increase ${item.name} quantity`}
+                        disabled={busy}
+                        onPress={() => updateCartQuantity(item, itemQuantity + 1)}
+                        className="h-[30px] w-[30px] items-center justify-center rounded-full bg-[#FFF0E1] disabled:opacity-40">
+                        <Plus size={15} color="#B94719" />
+                      </Pressable>
+                    </View>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={`Remove ${item.name} from cart`}
+                      disabled={busy}
+                      onPress={() => removeFromCart(item)}
+                      className="h-[30px] w-[30px] items-center justify-center rounded-full disabled:opacity-40">
+                      <Trash2 size={16} color="#8B735E" />
+                    </Pressable>
+                  </View>
                 </View>
-              ))}
+                );
+              })}
               <View className="mt-2 flex-row items-center justify-between rounded-[16px] bg-white p-4">
                 <Text className="text-[14px] font-bold text-[#351D0E]">Subtotal</Text>
                 <Text className="text-[17px] font-black text-[#351D0E]">{formatPrice(cartTotal)}</Text>
@@ -348,7 +571,8 @@ export default function Storefront({
         </View>
       ) : activeTab === 'Profile' ? (
         // Account screens manage their own scroll — render directly without wrapper
-        <View className="flex-1 pb-[65px]">
+        // paddingBottom accounts for the absolute-positioned tab bar (~65px) + home indicator
+        <View className="flex-1" style={{ paddingBottom: Math.max(insets.bottom + 65, 90) }}>
           {renderTabContent()}
         </View>
       ) : (

@@ -98,6 +98,7 @@ export default function Register({ onLoginPress }: RegisterProps) {
         className="flex-1 bg-transparent">
         <ScrollView
           keyboardShouldPersistTaps="handled"
+          contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 16) }}
           contentContainerClassName="flex-grow justify-center px-6 py-8">
           <View
             style={{ backgroundColor: colors.surface }}

@@ -485,7 +485,10 @@ export default function AddressesScreen({ onBack }: AddressesScreenProps) {
           </Pressable>
         </View>
       ) : (
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="px-4 py-5 pb-10">
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 20, paddingBottom: Math.max(insets.bottom, 100) }}
+        >
           {addresses.map(address => {
             const isDefault = Boolean(Number(address.is_default));
             const isHome = address.label?.toLowerCase() === 'home';

@@ -10,13 +10,23 @@ export type StoreCategory = {
 
 export type StoreProduct = {
   id: number | string;
+  product_id?: number | string | null;
+  combo_id?: number | string | null;
+  item_type?: 'product' | 'combo';
   name: string;
   status?: string;
   product_type?: string;
   category?: string | { name?: string };
   category_name?: string;
   images?: string[] | string | null;
-  variants?: Array<{ image?: string | null }>;
+  variants?: Array<{
+    image?: string | null;
+    colorName?: string;
+    color?: string;
+    colour?: string;
+    size?: string;
+    selectedSizes?: string[];
+  }>;
   main_image_index?: number | string | null;
   selling_price?: number | string | null;
   offer_price?: number | string | null;
@@ -25,6 +35,20 @@ export type StoreProduct = {
   available_stock?: number | string | null;
   total_stock?: number | string | null;
   stock?: number | string | null;
+  image?: string | null;
+};
+
+export type StoreFavorite = StoreProduct & {
+  created_at?: string;
+};
+
+export type StoreCartItem = StoreProduct & {
+  quantity: number | string;
+  price: number | string;
+  total_price?: number | string;
+  image?: string | null;
+  variant_color?: string | null;
+  variant_size?: string | null;
 };
 
 export type StoreBanner = {
