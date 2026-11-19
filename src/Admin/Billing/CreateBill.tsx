@@ -22,6 +22,7 @@ import {
   ShoppingBag,
   Trash2,
   UserRound,
+  X,
 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api, { API_BASE_URL } from '../../api';
@@ -356,6 +357,7 @@ export default function CreateBill({
   const [choiceModal, setChoiceModal] = useState<'payment' | 'status' | null>(
     null,
   );
+  const [summaryVisible, setSummaryVisible] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -1124,26 +1126,6 @@ export default function CreateBill({
                 </Text>
               </View>
             )}
-
-            <CartSummary
-              cart={cart}
-              totals={totals}
-              form={form}
-              gstSettings={gstSettings}
-              gstError={gstError}
-              gstRate={gstRate}
-              includeGst={includeGst}
-              pricingError={pricingError}
-              onQuantityChange={changeQuantity}
-              onDiscountTypeChange={discount_type =>
-                updateForm('discount_type', discount_type)
-              }
-              onDiscountValueChange={discount_value =>
-                updateForm('discount_value', discount_value)
-              }
-              onToggleGst={setIncludeGst}
-              onRetryGst={() => setGstReloadKey(value => value + 1)}
-            />
           </>
         ) : (
           <>
@@ -1375,10 +1357,15 @@ export default function CreateBill({
       >
         {step === 1 ? (
           <>
-            <View className="mb-2 flex-row items-center justify-between">
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Preview order summary"
+              onPress={() => setSummaryVisible(true)}
+              className="mb-2 flex-row items-center justify-between"
+            >
               <View className="flex-1 pr-3">
                 <Text className="text-[9px] font-bold text-[#64748B]">
-                  Cart preview ·{' '}
+                  Order summary ·{' '}
                   {cart.reduce((sum, item) => sum + item.quantity, 0)} item(s)
                 </Text>
                 <Text
@@ -1390,14 +1377,21 @@ export default function CreateBill({
                         .slice(0, 2)
                         .map(item => `${item.name} ×${item.quantity}`)
                         .join(' · ')
-                    : 'Add products or combos to create a bill'}
+                    : 'Tap to preview your bill'}
                   {cart.length > 2 ? ` · +${cart.length - 2} more` : ''}
                 </Text>
               </View>
-              <Text className="text-[14px] font-black text-[#17191C]">
-                {formatCurrency(totals.total_amount)}
-              </Text>
-            </View>
+              <View className="flex-row items-center">
+                <Text className="mr-2 text-[14px] font-black text-[#17191C]">
+                  {formatCurrency(totals.total_amount)}
+                </Text>
+                <ChevronDown
+                  size={17}
+                  color="#9A3412"
+                  style={{ transform: [{ rotate: '180deg' }] }}
+                />
+              </View>
+            </Pressable>
             <Pressable
               accessibilityRole="button"
               disabled={cart.length === 0 || !gstSettings}
@@ -1447,6 +1441,81 @@ export default function CreateBill({
           </>
         )}
       </View>
+
+      <Modal
+        visible={summaryVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setSummaryVisible(false)}
+      >
+        <View className="flex-1 justify-end bg-black/60">
+          <View className="max-h-[90%] rounded-t-[22px] bg-[#F7F8FA]">
+            <View className="flex-row items-center justify-between border-b border-[#E2E8F0] bg-white px-5 py-4">
+              <View>
+                <Text className="text-[14px] font-black text-[#17191C]">
+                  Order Summary
+                </Text>
+                <Text className="mt-1 text-[9px] text-[#64748B]">
+                  {cart.reduce((sum, item) => sum + item.quantity, 0)} item(s) ·{' '}
+                  {formatCurrency(totals.total_amount)}
+                </Text>
+              </View>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Close order summary"
+                onPress={() => setSummaryVisible(false)}
+                className="h-[34px] w-[34px] items-center justify-center rounded-full bg-[#F1F5F9]"
+              >
+                <X size={17} color="#64748B" />
+              </Pressable>
+            </View>
+            <ScrollView
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+              className="shrink"
+              contentContainerClassName="px-4 pt-3 pb-1"
+            >
+              <CartSummary
+                cart={cart}
+                totals={totals}
+                form={form}
+                gstSettings={gstSettings}
+                gstError={gstError}
+                gstRate={gstRate}
+                includeGst={includeGst}
+                pricingError={pricingError}
+                onQuantityChange={changeQuantity}
+                onDiscountTypeChange={discount_type =>
+                  updateForm('discount_type', discount_type)
+                }
+                onDiscountValueChange={discount_value =>
+                  updateForm('discount_value', discount_value)
+                }
+                onToggleGst={setIncludeGst}
+                onRetryGst={() => setGstReloadKey(value => value + 1)}
+              />
+            </ScrollView>
+            <View
+              className="border-t border-[#E2E8F0] bg-white px-4 pt-3"
+              style={{ paddingBottom: Math.max(insets.bottom, 12) }}
+            >
+              <Pressable
+                accessibilityRole="button"
+                disabled={cart.length === 0 || !gstSettings}
+                onPress={() => {
+                  setSummaryVisible(false);
+                  setStep(2);
+                }}
+                className="h-[44px] flex-row items-center justify-center rounded-[11px] bg-[#9A3412] disabled:opacity-50"
+              >
+                <Text className="text-[10px] font-black text-white">
+                  Next · Customer details
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       <Modal
         visible={variantProduct !== null}
@@ -1687,7 +1756,6 @@ function CartSummary({
   onToggleGst: (value: boolean) => void;
   onRetryGst: () => void;
 }) {
-  const [discountModal, setDiscountModal] = useState(false);
   return (
     <View className="mb-3 rounded-[16px] bg-[#5B2C12] p-4">
       <View className="mb-3 flex-row items-center justify-between">
@@ -1840,17 +1908,33 @@ function CartSummary({
         <Text className="mr-2 flex-1 text-[9px] font-bold text-white/80">
           Discount
         </Text>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Choose discount type"
-          onPress={() => setDiscountModal(true)}
-          className="mr-2 flex-row items-center rounded-[8px] border border-white/20 px-2 py-1.5"
-        >
-          <Text className="mr-1 text-[8px] font-bold text-white">
-            {form.discount_type === 'percentage' ? 'Percent' : 'Fixed ₹'}
-          </Text>
-          <ChevronDown size={12} color="#FFFFFF" />
-        </Pressable>
+        <View className="mr-2 flex-row rounded-[8px] border border-white/20 p-0.5">
+          {[
+            { label: '%', value: 'percentage' as const },
+            { label: '₹', value: 'fixed' as const },
+          ].map(option => (
+            <Pressable
+              key={option.value}
+              accessibilityRole="button"
+              accessibilityLabel={
+                option.value === 'percentage'
+                  ? 'Percentage discount'
+                  : 'Fixed discount'
+              }
+              accessibilityState={{
+                selected: form.discount_type === option.value,
+              }}
+              onPress={() => onDiscountTypeChange(option.value)}
+              className={`rounded-[6px] px-2 py-1 ${
+                form.discount_type === option.value ? 'bg-white/20' : ''
+              }`}
+            >
+              <Text className="text-[8px] font-bold text-white">
+                {option.label}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
         <TextInput
           value={form.discount_value}
           onChangeText={onDiscountValueChange}
@@ -1881,18 +1965,6 @@ function CartSummary({
           {formatCurrency(totals.total_amount)}
         </Text>
       </View>
-
-      <ChoiceModal
-        visible={discountModal}
-        title="Discount type"
-        options={['percentage', 'fixed']}
-        selected={form.discount_type}
-        onSelect={value => {
-          onDiscountTypeChange(value as BillForm['discount_type']);
-          setDiscountModal(false);
-        }}
-        onClose={() => setDiscountModal(false)}
-      />
     </View>
   );
 }
