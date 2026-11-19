@@ -1,5 +1,5 @@
 import React from 'react';
-import { Image, Pressable, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { ArrowRight } from 'lucide-react-native';
 import type { StoreBanner } from '../types';
 import { mediaUrl } from '../utils';
@@ -23,7 +23,11 @@ export default function Hero({
   return (
     <View className="relative mx-4 mt-2 min-h-[310px] justify-center overflow-hidden rounded-[26px] bg-[#F2E0CC] px-5 py-6">
       {imageUri ? (
-        <Image source={{ uri: imageUri }} className="absolute inset-0 h-full w-full" resizeMode="contain" />
+        <Image
+          source={{ uri: imageUri }}
+          style={StyleSheet.absoluteFill}
+          resizeMode="cover"
+        />
       ) : null}
       <View pointerEvents="none" className="absolute inset-0 bg-white/25" />
       <View className="w-[70%]">
