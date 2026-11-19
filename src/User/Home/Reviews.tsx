@@ -2,9 +2,7 @@ import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
-  ScrollView,
   Text,
-  useWindowDimensions,
   View,
 } from 'react-native';
 import { Star } from 'lucide-react-native';
@@ -103,12 +101,21 @@ function errorMessage(error: unknown) {
 }
 
 export default function Reviews() {
-  const { width } = useWindowDimensions();
-  const cardWidth = width - 80;
   const [reviews, setReviews] = useState<CustomerReview[]>([]);
+  const [activeIndex, setActiveIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
+
+  useEffect(() => {
+    if (reviews.length < 2) return;
+
+    const intervalId = setInterval(() => {
+      setActiveIndex(index => (index + 1) % reviews.length);
+    }, 4500);
+
+    return () => clearInterval(intervalId);
+  }, [reviews.length]);
 
   useEffect(() => {
     let active = true;
@@ -119,7 +126,10 @@ export default function Reviews() {
       try {
         const { data } = await api.get<unknown>('/reviews/published');
         const nextReviews = parseReviews(data);
-        if (active) setReviews(nextReviews);
+        if (active) {
+          setReviews(nextReviews);
+          setActiveIndex(0);
+        }
       } catch (requestError) {
         console.error('Could not load customer reviews:', requestError);
         if (active) setError(errorMessage(requestError));
@@ -158,41 +168,81 @@ export default function Reviews() {
           </Pressable>
         </View>
       ) : reviews.length ? (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerClassName="pr-9"
-          snapToInterval={cardWidth + 12}
-          snapToAlignment="start"
-          decelerationRate="fast"
-          disableIntervalMomentum>
-          {reviews.map(review => (
-            <View
-              key={review.id}
-              style={{ width: cardWidth }}
-              className="mr-3 min-h-[150px] rounded-[18px] border border-[#F0E7DE] bg-white p-4">
-              <View className="mb-2 flex-row items-center">
-                <Star size={16} color="#F97316" fill="#F97316" />
-                <Text className="ml-1 text-[12px] font-bold text-[#634D3B]">
-                  {review.rating.toFixed(1)}
+        <View className="px-4">
+          {(() => {
+            const review = reviews[activeIndex];
+            return (
+              <View
+                key={review.id}
+                className="overflow-hidden rounded-[22px] border border-[#F0E7DE] bg-white p-5">
+                <View className="mb-4 flex-row items-center justify-between">
+                  <View className="flex-row items-center">
+                    <View className="h-10 w-10 items-center justify-center rounded-full bg-[#FFF0E1]">
+                      <Star size={17} color="#F97316" fill="#F97316" />
+                    </View>
+                    <Text className="ml-3 text-[10px] font-black uppercase tracking-[1.4px] text-[#A06E46]">
+                      Customer review
+                    </Text>
+                  </View>
+                  <View className="flex-row items-center rounded-full bg-[#FFF0E1] px-3 py-2">
+                    <Star size={13} color="#F97316" fill="#F97316" />
+                    <Text className="ml-1 text-[12px] font-black text-[#634D3B]">
+                      {review.rating.toFixed(1)}
+                    </Text>
+                  </View>
+                </View>
+                <Text
+                  numberOfLines={5}
+                  className="text-[15px] leading-6 text-[#49392D]">
+                  “{review.text}”
                 </Text>
+                <View className="my-4 h-px bg-[#F0E7DE]" />
+                <View className="flex-row items-end justify-between">
+                  <View className="mr-3 flex-1">
+                    <Text
+                      numberOfLines={1}
+                      className="text-[13px] font-black text-[#351D0E]">
+                      {review.customerName}
+                    </Text>
+                    {review.productName ? (
+                      <Text
+                        numberOfLines={1}
+                        className="mt-1 text-[11px] text-[#8B735E]">
+                        {review.productName}
+                      </Text>
+                    ) : null}
+                  </View>
+                  <View className="flex-row">
+                    {Array.from({ length: 5 }, (_, index) => (
+                      <Star
+                        key={index}
+                        size={12}
+                        color={index < Math.round(review.rating) ? '#F97316' : '#E5D8CB'}
+                        fill={index < Math.round(review.rating) ? '#F97316' : 'transparent'}
+                      />
+                    ))}
+                  </View>
+                </View>
               </View>
-              <Text numberOfLines={4} className="text-[13px] leading-5 text-[#49392D]">
-                “{review.text}”
-              </Text>
-              <View className="mt-auto pt-3">
-                <Text numberOfLines={1} className="text-[12px] font-bold text-[#351D0E]">
-                  {review.customerName}
-                </Text>
-                {review.productName ? (
-                  <Text numberOfLines={1} className="mt-1 text-[10px] text-[#8B735E]">
-                    {review.productName}
-                  </Text>
-                ) : null}
-              </View>
+            );
+          })()}
+          {reviews.length > 1 ? (
+            <View className="mt-4 flex-row justify-center">
+              {reviews.map((review, index) => (
+                <Pressable
+                  key={review.id}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Show customer review ${index + 1}`}
+                  accessibilityState={{ selected: activeIndex === index }}
+                  onPress={() => setActiveIndex(index)}
+                  className={`mx-1 h-2 rounded-full ${
+                    activeIndex === index ? 'w-6 bg-[#F97316]' : 'w-2 bg-[#E5D8CB]'
+                  }`}
+                />
+              ))}
             </View>
-          ))}
-        </ScrollView>
+          ) : null}
+        </View>
       ) : (
         <Text className="px-4 py-3 text-[13px] text-[#8B735E]">
           No customer reviews yet.
