@@ -1,8 +1,7 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Image,
   Pressable,
-  ScrollView,
   Text,
   useWindowDimensions,
   View,
@@ -21,7 +20,21 @@ export default function OfferBanners({
   onShopPress,
 }: OfferBannersProps) {
   const { width } = useWindowDimensions();
-  const cardWidth = width - 56;
+  const cardWidth = width - 32;
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  useEffect(() => {
+    if (banners.length < 2) {
+      setActiveIndex(0);
+      return;
+    }
+
+    const intervalId = setInterval(() => {
+      setActiveIndex(index => (index + 1) % banners.length);
+    }, 4500);
+
+    return () => clearInterval(intervalId);
+  }, [banners.length]);
 
   const renderBanner = (banner: StoreBanner | undefined, key: string) => {
     const imageUri = mediaUrl(banner?.mobile_image ?? banner?.desktop_image);
@@ -73,20 +86,12 @@ export default function OfferBanners({
           Collections &amp; offers
         </Text>
       </View>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerClassName="pr-3"
-        snapToInterval={cardWidth + 12}
-        snapToAlignment="start"
-        decelerationRate="fast"
-        disableIntervalMomentum>
-        {banners.length
-          ? banners.map((banner, index) =>
-              renderBanner(banner, String(banner.id ?? index)),
-            )
-          : renderBanner(undefined, 'empty-offer-banner')}
-      </ScrollView>
+      {banners.length
+        ? renderBanner(
+            banners[activeIndex],
+            String(banners[activeIndex]?.id ?? activeIndex),
+          )
+        : renderBanner(undefined, 'empty-offer-banner')}
     </View>
   );
 }
