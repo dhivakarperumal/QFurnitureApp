@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Alert,
   ActivityIndicator,
+  Image,
   KeyboardAvoidingView,
   Modal,
   Pressable,
@@ -15,7 +16,10 @@ import {
 import { ChevronDown, Eye, Printer, X } from 'lucide-react-native';
 import RNPrint from 'react-native-print';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import api, { invalidateApiResponseCache } from '../../api';
+import api, {
+  API_BASE_URL,
+  invalidateApiResponseCache,
+} from '../../api';
 
 type OrderStatus =
   | 'Order Placed'
@@ -35,6 +39,11 @@ type OrderItem = {
   product_name?: string;
   quantity?: number | string;
   price?: number | string;
+  image?: string;
+  images?: string[] | string;
+  variants?: Array<{ images?: string[] | string }> | string;
+  variant_color?: string;
+  variant_size?: string;
 };
 
 export type Order = {
@@ -50,6 +59,25 @@ export type Order = {
   created_at?: string;
   updated_at?: string;
   items?: OrderItem[];
+};
+
+type PrintableOrder = Order & {
+  address?: string;
+  customer_address?: string;
+  street_address?: string;
+  city?: string;
+  district?: string;
+  state?: string;
+  zip_code?: string;
+  country?: string;
+  subtotal?: number | string;
+  gst_rate?: number | string;
+  gst_amount?: number | string;
+  discount_type?: string;
+  discount_value?: number | string;
+  discount_amount?: number | string;
+  shipping_amount?: number | string;
+  shipping_fee?: number | string;
 };
 
 type OrdersProps = {
@@ -147,6 +175,255 @@ const toNumber = (value?: string | number) => {
   return Number.isFinite(amount) ? amount : 0;
 };
 
+const escapeHtml = (value: unknown) =>
+  String(value ?? '').replace(/[&<>"']/g, character => {
+    const entities: Record<string, string> = {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;',
+    };
+    return entities[character] || character;
+  });
+
+const firstImage = (value?: string[] | string) => {
+  if (Array.isArray(value)) return value.find(image => image.trim()) || '';
+  if (!value?.trim()) return '';
+  try {
+    const parsed: unknown = JSON.parse(value);
+    if (Array.isArray(parsed)) {
+      return typeof parsed[0] === 'string' ? parsed[0] : '';
+    }
+    if (typeof parsed === 'string') return parsed;
+  } catch {
+    return value;
+  }
+  return value;
+};
+
+const resolveOrderItemImage = (item: OrderItem) => {
+  let value = item.image || firstImage(item.images);
+  if (!value && item.variants) {
+    let variants = item.variants;
+    if (typeof variants === 'string') {
+      try {
+        variants = JSON.parse(variants) as Array<{
+          images?: string[] | string;
+        }>;
+      } catch {
+        variants = [];
+      }
+    }
+    value = variants[0] ? firstImage(variants[0].images) : '';
+  }
+  if (!value) return '';
+  if (/^(https?:|data:)/i.test(value)) return value;
+  const origin = API_BASE_URL.replace(/\/api\/?$/, '');
+  const cleanPath = value.replace(/\\/g, '/');
+  return `${origin}${cleanPath.startsWith('/') ? '' : '/'}${cleanPath}`;
+};
+
+const formatInvoiceDate = (value?: string) => {
+  if (!value) return 'Unavailable';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'Unavailable';
+  return date.toLocaleString('en-IN', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+};
+
+const getPrintableError = (error: unknown) =>
+  typeof error === 'object' &&
+  error !== null &&
+  'message' in error &&
+  typeof error.message === 'string'
+    ? error.message
+    : 'Could not load or print this order invoice.';
+
+const buildOrderInvoiceHtml = (order: PrintableOrder, logoUri: string) => {
+  const items = Array.isArray(order.items) ? order.items : [];
+  const itemSubtotal = items.reduce(
+    (sum, item) =>
+      sum + (Number(item.quantity) || 1) * toNumber(item.price),
+    0,
+  );
+  const subtotal =
+    order.subtotal == null ? itemSubtotal : toNumber(order.subtotal);
+  const gstRate = toNumber(order.gst_rate);
+  const gstAmount =
+    order.gst_amount == null
+      ? (subtotal * gstRate) / 100
+      : toNumber(order.gst_amount);
+  const discountAmount = toNumber(order.discount_amount);
+  const shippingAmount = toNumber(order.shipping_amount ?? order.shipping_fee);
+  const totalAmount =
+    order.total_amount == null
+      ? subtotal + gstAmount - discountAmount + shippingAmount
+      : toNumber(order.total_amount);
+  const address = [
+    order.street_address || order.address || order.customer_address,
+    order.city,
+    order.district,
+    order.state,
+    order.zip_code,
+    order.country,
+  ]
+    .filter(Boolean)
+    .join(', ');
+
+  const itemRows = items
+    .map((item, index) => {
+      const quantity = Number(item.quantity) || 1;
+      const image = resolveOrderItemImage(item);
+      const variation = [
+        item.variant_size ? `Size: ${item.variant_size}` : '',
+        item.variant_color ? `Color: ${item.variant_color}` : '',
+      ]
+        .filter(Boolean)
+        .join(' | ');
+      const productDetails = image
+        ? `<img class="product-image" src="${escapeHtml(image)}" alt="${escapeHtml(item.product_name || 'Product')}" />`
+        : '<div class="product-image product-placeholder">QF</div>';
+
+      return `
+        <tr>
+          <td class="number-cell">${index + 1}</td>
+          <td>
+            <div class="product-cell">
+              ${productDetails}
+              <div class="product-copy">
+                <strong>${escapeHtml(item.product_name || 'Product')}</strong>
+                ${variation ? `<small>${escapeHtml(variation)}</small>` : ''}
+              </div>
+            </div>
+          </td>
+          <td class="center">${quantity}</td>
+          <td class="money">${formatCurrency(item.price)}</td>
+          <td class="money">${formatCurrency(quantity * toNumber(item.price))}</td>
+        </tr>
+      `;
+    })
+    .join('');
+
+  const discountLabel =
+    order.discount_type === 'percentage' && order.discount_value != null
+      ? `Discount (${escapeHtml(order.discount_value)}%)`
+      : 'Discount';
+  const gstLabel =
+    gstRate > 0
+      ? `GST (${escapeHtml(gstRate)}% before discount)`
+      : 'GST';
+
+  return `
+    <!doctype html>
+    <html>
+      <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <style>
+          @page { size: A4; margin: 14mm 12mm; }
+          * { box-sizing: border-box; }
+          body { margin: 0; color: #343A46; font-family: Arial, Helvetica, sans-serif; font-size: 10px; }
+          .invoice { width: 100%; }
+          .top { display: flex; align-items: center; justify-content: space-between; padding: 8px 0 16px; border-bottom: 3px solid #3B82F6; }
+          .brand-logo { display: block; width: 88px; height: 88px; object-fit: contain; }
+          .invoice-heading { color: #2F5FA9; font-size: 25px; font-weight: 900; text-align: right; }
+          .invoice-number { margin-top: 5px; color: #5B6472; font-size: 11px; font-weight: 700; text-align: right; }
+          .info-grid { display: flex; justify-content: space-between; gap: 28px; margin: 28px 0 36px; }
+          .info-column { width: 50%; }
+          .section-title { margin: 0 0 12px; color: #596273; font-size: 10px; font-weight: 900; letter-spacing: 1.6px; }
+          .info-line { margin: 0 0 6px; line-height: 1.45; }
+          .info-line strong { color: #333A46; }
+          .status-value { margin-left: 8px; color: #2563EB; font-size: 9px; font-weight: 900; text-transform: uppercase; }
+          .manifest-title { margin: 0 0 12px; color: #596273; font-size: 10px; font-weight: 900; letter-spacing: 1.6px; }
+          table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+          thead { display: table-header-group; }
+          th, td { border: 1px solid #D9E0E9; padding: 8px; vertical-align: middle; }
+          th { background: #F7F9FC; color: #374151; font-size: 10px; font-weight: 800; text-align: left; }
+          th:first-child, .number-cell { width: 9%; text-align: center; }
+          th:nth-child(2) { width: 43%; }
+          th:nth-child(3), .center { width: 12%; text-align: center; }
+          th:nth-child(4), th:nth-child(5) { width: 18%; text-align: right; }
+          tbody tr { page-break-inside: avoid; break-inside: avoid; }
+          .product-cell { display: flex; align-items: center; gap: 9px; min-height: 48px; }
+          .product-image { display: block; width: 46px; height: 46px; flex: 0 0 46px; border: 1px solid #D9E0E9; border-radius: 5px; object-fit: cover; }
+          .product-placeholder { display: flex; align-items: center; justify-content: center; background: #FFF7ED; color: #C2410C; font-size: 12px; font-weight: 900; }
+          .product-copy strong { display: block; color: #303744; font-size: 10px; line-height: 1.35; }
+          .product-copy small { display: block; margin-top: 4px; color: #7A8290; font-size: 8px; line-height: 1.35; }
+          .money { text-align: right; white-space: nowrap; }
+          .totals { width: 46%; min-width: 250px; margin: 22px 0 0 auto; padding-top: 15px; border-top: 2px solid #EDF1F5; page-break-inside: avoid; break-inside: avoid; }
+          .total-row { display: flex; justify-content: space-between; gap: 16px; margin: 0 0 9px; color: #596273; font-size: 10px; }
+          .total-row strong { color: #343A46; text-align: right; }
+          .grand-total { margin-top: 13px; color: #1F2937; font-size: 15px; font-weight: 900; }
+          .grand-total strong { color: #2F5FA9; font-size: 19px; }
+          .footer { margin-top: 44px; padding-top: 20px; border-top: 1px solid #EDF1F5; color: #6B7280; text-align: center; page-break-inside: avoid; break-inside: avoid; }
+          .footer strong { display: block; margin-bottom: 8px; color: #374151; }
+          .shop-contact { color: #5B6472; }
+          @media print { .invoice { page-break-after: auto; } }
+        </style>
+      </head>
+      <body>
+        <main class="invoice">
+          <header class="top">
+            <div class="brand">
+              <img class="brand-logo" src="${escapeHtml(logoUri)}" alt="Living Furniture" />
+            </div>
+            <div>
+              <div class="invoice-heading">INVOICE</div>
+              <div class="invoice-number">${escapeHtml(formatOrderId(order))}</div>
+            </div>
+          </header>
+          <section class="info-grid">
+            <div class="info-column">
+              <h2 class="section-title">CUSTOMER INFO</h2>
+              <p class="info-line"><strong>Name:</strong> ${escapeHtml(order.customer_name || 'Guest Customer')}</p>
+              <p class="info-line"><strong>Email:</strong> ${escapeHtml(order.customer_email || 'N/A')}</p>
+              <p class="info-line"><strong>Phone:</strong> ${escapeHtml(order.customer_phone || 'N/A')}</p>
+              <p class="info-line"><strong>Address:</strong> ${escapeHtml(address || 'N/A')}</p>
+              ${order.country ? `<p class="info-line"><strong>Country:</strong> ${escapeHtml(order.country)}</p>` : ''}
+            </div>
+            <div class="info-column">
+              <h2 class="section-title">ORDER INFO</h2>
+              <p class="info-line"><strong>Shop:</strong> Q Furnitures</p>
+              <p class="info-line shop-contact">78/3, Chetty Street, Tirupattur,<br />Near AVS Mahal and Jain Temple, 635601<br />Ph: +91 7010575375</p>
+              <p class="info-line"><strong>Status:</strong><span class="status-value">${escapeHtml(order.status || 'New')}</span></p>
+              <p class="info-line"><strong>Payment:</strong> ${escapeHtml(order.payment_method || 'N/A')}</p>
+              <p class="info-line"><strong>Date:</strong> ${escapeHtml(formatInvoiceDate(order.created_at))}</p>
+            </div>
+          </section>
+          <section>
+            <h2 class="manifest-title">ITEM MANIFEST</h2>
+            <table>
+              <thead>
+                <tr><th>#</th><th>Product Details</th><th>Qty</th><th>Price</th><th>Total</th></tr>
+              </thead>
+              <tbody>
+                ${itemRows || '<tr><td colspan="5" class="center">No item details available</td></tr>'}
+              </tbody>
+            </table>
+          </section>
+          <section class="totals">
+            <div class="total-row"><span>Subtotal:</span><strong>${formatCurrency(subtotal)}</strong></div>
+            <div class="total-row"><span>${gstLabel}:</span><strong>${formatCurrency(gstAmount)}</strong></div>
+            <div class="total-row"><span>${discountLabel}:</span><strong>- ${formatCurrency(discountAmount)}</strong></div>
+            <div class="total-row"><span>Shipping:</span><strong>${formatCurrency(shippingAmount)}</strong></div>
+            <div class="total-row grand-total"><span>Total Amount:</span><strong>${formatCurrency(totalAmount)}</strong></div>
+          </section>
+          <footer class="footer">
+            <strong>Thank you for shopping with Q Furnitures!</strong>
+            <span>For any support, please contact us at support@qfurnitures.in</span>
+          </footer>
+        </main>
+      </body>
+    </html>
+  `;
+};
+
 export default function Orders({
   statusFilter = 'Order Placed',
   onOrderPress,
@@ -163,12 +440,14 @@ export default function Orders({
   const [activeStatus, setActiveStatus] = useState<'All' | OrderStatus>(
     statusFilter,
   );
-  const [viewMode, setViewMode] = useState<'cards' | 'list'>('cards');
   const [currentPage, setCurrentPage] = useState(1);
   const [statusFilterVisible, setStatusFilterVisible] = useState(false);
   const [updateModal, setUpdateModal] = useState<UpdateModalData | null>(null);
   const [savingStatus, setSavingStatus] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [printingOrderId, setPrintingOrderId] = useState<number | string | null>(
+    null,
+  );
 
   const fetchOrders = useCallback(async (refresh = false) => {
     if (refresh) {
@@ -323,67 +602,27 @@ export default function Orders({
   };
 
   const printOrder = async (order: Order) => {
-    const html = `
-      <html>
-        <head>
-          <meta charset="utf-8" />
-          <style>
-            body { font-family: Arial, sans-serif; padding: 24px; color: #17191C; }
-            .header { display: flex; justify-content: space-between; border-bottom: 3px solid #F97316; padding-bottom: 16px; }
-            .title { font-size: 28px; font-weight: bold; color: #F97316; }
-            .section { margin-top: 24px; }
-            .grid { display: flex; justify-content: space-between; gap: 24px; }
-            .box { width: 48%; }
-            table { width: 100%; border-collapse: collapse; margin-top: 12px; }
-            th { background: #FFF7ED; color: #9A3412; font-size: 12px; }
-            th, td { border: 1px solid #E2E8F0; padding: 10px; text-align: left; }
-            .total { margin-top: 20px; text-align: right; font-size: 18px; font-weight: bold; }
-            .muted { color: #64748B; font-size: 12px; }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <div>
-              <div class="title">Q Furnitures</div>
-              <div class="muted">Tax Invoice</div>
-            </div>
-            <div style="text-align:right">
-              <strong>${formatOrderId(order)}</strong>
-              <div class="muted">${formatDate(order.created_at)}</div>
-            </div>
-          </div>
-          <div class="section grid">
-            <div class="box">
-              <strong>Customer</strong>
-              <p>${order.customer_name || 'Guest Customer'}<br/>${order.customer_phone || 'Unavailable'}<br/>${order.customer_email || 'Unavailable'}</p>
-            </div>
-            <div class="box" style="text-align:right">
-              <strong>Order Details</strong>
-              <p>Status: ${order.status || 'New'}<br/>Payment: ${order.payment_method || 'Not specified'}</p>
-            </div>
-          </div>
-          <div class="section">
-            <strong>Order Items</strong>
-            <table>
-              <thead>
-                <tr><th>#</th><th>Product</th><th>Quantity</th><th>Amount</th></tr>
-              </thead>
-              <tbody>
-                ${(order.items || []).map((item, index) =>
-                  `<tr><td>${index + 1}</td><td>${item.product_name || 'Product'}</td><td>${item.quantity || 1}</td><td>${formatCurrency(toNumber(item.quantity || 1) * toNumber(item.price))}</td></tr>`
-                ).join('') || '<tr><td colspan="4">No item details available</td></tr>'}
-              </tbody>
-            </table>
-          </div>
-          <div class="total">Total: ${formatCurrency(order.total_amount)}</div>
-          <p class="muted" style="margin-top:40px;text-align:center">Thank you for shopping with Q Furnitures</p>
-        </body>
-      </html>
-    `;
+    setPrintingOrderId(order.id);
     try {
-      await RNPrint.print({ html });
-    } catch (error) {
-      console.error('Print/share invoice error:', error);
+      const logoUri = Image.resolveAssetSource(
+        require('../../Assert/images/appicon.png'),
+      )?.uri;
+      if (!logoUri) {
+        throw new Error('The invoice logo could not be loaded.');
+      }
+      const response = await api.get<PrintableOrder>(`/orders/${order.id}`);
+      if (!response.data || typeof response.data !== 'object') {
+        throw new Error('The order details response was invalid.');
+      }
+      const printableOrder = { ...order, ...response.data };
+      await RNPrint.print({
+        html: buildOrderInvoiceHtml(printableOrder, logoUri),
+      });
+    } catch (error: unknown) {
+      if (__DEV__) console.warn('[Orders] Could not print invoice:', error);
+      Alert.alert('Invoice unavailable', getPrintableError(error));
+    } finally {
+      setPrintingOrderId(null);
     }
   };
 
@@ -417,8 +656,7 @@ export default function Orders({
         <View className="h-[4px]" style={{ backgroundColor: statusColor.color }} />
         <View className="p-4">
           <View
-            className="-mx-4 -mt-4 mb-4 flex-row items-start justify-between border-b border-[#F1E8DE] px-4 py-3"
-            style={{ backgroundColor: statusColor.background }}>
+            className="-mx-4 -mt-4 mb-4 flex-row items-start justify-between border-b border-[#F1E8DE] bg-[#FFF9F2] px-4 py-3">
             <Pressable
               accessibilityRole="button"
               onPress={() => openOrder(order)}
@@ -519,11 +757,16 @@ export default function Orders({
             </Pressable>
             {renderStatusButton(order)}
             <Pressable
+              disabled={printingOrderId === order.id}
               onPress={() => printOrder(order)}
               accessibilityRole="button"
               accessibilityLabel={`Print invoice ${formatOrderId(order)}`}
-              className="h-[44px] w-[48px] items-center justify-center rounded-[13px] border border-[#E2E8F0] bg-white">
-              <Printer size={18} color="#475569" strokeWidth={2} />
+              className="h-[44px] w-[48px] items-center justify-center rounded-[13px] border border-[#E2E8F0] bg-white disabled:opacity-50">
+              {printingOrderId === order.id ? (
+                <ActivityIndicator size="small" color="#475569" />
+              ) : (
+                <Printer size={18} color="#475569" strokeWidth={2} />
+              )}
             </Pressable>
           </View>
         </View>
@@ -649,26 +892,6 @@ export default function Orders({
             <Text className="text-[11px] font-semibold text-[#94A3B8]">
               {filteredOrders.length} order{filteredOrders.length === 1 ? '' : 's'}
             </Text>
-            <View className="flex-row rounded-[10px] bg-[#EDF1F3] p-1">
-              <Pressable
-                accessibilityLabel="Card view"
-                onPress={() => setViewMode('cards')}
-                className={[
-                  'h-[34px] w-[40px] items-center justify-center rounded-[8px]',
-                  viewMode === 'cards' ? 'bg-white' : '',
-                ].join(' ')}>
-                <Text className="text-[16px] text-[#17191C]">▦</Text>
-              </Pressable>
-              <Pressable
-                accessibilityLabel="Compact list view"
-                onPress={() => setViewMode('list')}
-                className={[
-                  'h-[34px] w-[40px] items-center justify-center rounded-[8px]',
-                  viewMode === 'list' ? 'bg-white' : '',
-                ].join(' ')}>
-                <Text className="text-[17px] text-[#17191C]">☷</Text>
-              </Pressable>
-            </View>
           </View>
         </View>
 
@@ -702,40 +925,8 @@ export default function Orders({
               Try another status or search.
             </Text>
           </View>
-        ) : viewMode === 'cards' ? (
-          pageOrders.map(renderOrderCard)
         ) : (
-          <View className="overflow-hidden rounded-[18px] border border-[#ECE8DF] bg-white">
-            {pageOrders.map(order => {
-              const statusColor =
-                statusColors[order.status || 'New'] || statusColors.New;
-              return (
-                <Pressable
-                  key={order.id}
-                  onPress={() => openOrder(order)}
-                  className="flex-row items-center border-b border-[#F1F5F9] px-3 py-4">
-                  <View className="flex-1">
-                    <Text className="text-[12px] font-black text-[#17191C]">
-                      {formatOrderId(order)}
-                    </Text>
-                    <Text className="mt-1 text-[10px] text-[#64748B]">
-                      {order.customer_name || 'Guest Customer'}
-                    </Text>
-                  </View>
-                  <View className="items-end">
-                    <Text className="text-[12px] font-black text-[#17191C]">
-                      {formatCurrency(order.total_amount)}
-                    </Text>
-                    <Text
-                      className="mt-1 text-[9px] font-bold"
-                      style={{ color: statusColor.color }}>
-                      {order.status || 'New'}
-                    </Text>
-                  </View>
-                </Pressable>
-              );
-            })}
-          </View>
+          pageOrders.map(renderOrderCard)
         )}
 
         {!loading && filteredOrders.length > 0 && (
