@@ -816,9 +816,10 @@ export default function CreateBill({
         onBackPress={onBackPress}
       />
       <ScrollView
+        className="flex-1"
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
-        contentContainerClassName="px-4 pb-[180px]"
+        contentContainerClassName="px-4 pb-4"
         style={{ paddingTop: insets.top + 72 }}
       >
         <View className="mb-3 flex-row items-center justify-between">
@@ -1143,16 +1144,6 @@ export default function CreateBill({
               onToggleGst={setIncludeGst}
               onRetryGst={() => setGstReloadKey(value => value + 1)}
             />
-            <Pressable
-              accessibilityRole="button"
-              disabled={cart.length === 0 || !gstSettings}
-              onPress={() => setStep(2)}
-              className="mb-3 h-[48px] flex-row items-center justify-center rounded-[12px] bg-[#9A3412] disabled:opacity-50"
-            >
-              <Text className="text-[11px] font-black text-white">
-                Next · Customer details
-              </Text>
-            </Pressable>
           </>
         ) : (
           <>
@@ -1374,32 +1365,88 @@ export default function CreateBill({
               onToggleGst={setIncludeGst}
               onRetryGst={() => setGstReloadKey(value => value + 1)}
             />
-            <Pressable
-              accessibilityRole="button"
-              disabled={submitting || !gstSettings}
-              onPress={submitOrder}
-              className="mb-3 h-[48px] flex-row items-center justify-center rounded-[12px] bg-[#9A3412] disabled:opacity-50"
-            >
-              {submitting ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
-              ) : (
-                <Text className="text-[11px] font-black text-white">
-                  Create shop order
-                </Text>
-              )}
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => setStep(1)}
-              className="mb-3 h-[42px] items-center justify-center rounded-[11px] border border-[#E2E8F0] bg-white"
-            >
-              <Text className="text-[10px] font-bold text-[#64748B]">
-                Back to edit items
-              </Text>
-            </Pressable>
           </>
         )}
       </ScrollView>
+
+      <View
+        className="shrink-0 border-t border-[#E2E8F0] bg-white px-4 pt-3"
+        style={{ paddingBottom: Math.max(insets.bottom, 12) }}
+      >
+        {step === 1 ? (
+          <>
+            <View className="mb-2 flex-row items-center justify-between">
+              <View className="flex-1 pr-3">
+                <Text className="text-[9px] font-bold text-[#64748B]">
+                  Cart preview ·{' '}
+                  {cart.reduce((sum, item) => sum + item.quantity, 0)} item(s)
+                </Text>
+                <Text
+                  numberOfLines={1}
+                  className="mt-1 text-[8px] text-[#94A3B8]"
+                >
+                  {cart.length
+                    ? cart
+                        .slice(0, 2)
+                        .map(item => `${item.name} ×${item.quantity}`)
+                        .join(' · ')
+                    : 'Add products or combos to create a bill'}
+                  {cart.length > 2 ? ` · +${cart.length - 2} more` : ''}
+                </Text>
+              </View>
+              <Text className="text-[14px] font-black text-[#17191C]">
+                {formatCurrency(totals.total_amount)}
+              </Text>
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              disabled={cart.length === 0 || !gstSettings}
+              onPress={() => setStep(2)}
+              className="h-[44px] flex-row items-center justify-center rounded-[11px] bg-[#9A3412] disabled:opacity-50"
+            >
+              <Text className="text-[10px] font-black text-white">
+                Next · Customer details
+              </Text>
+            </Pressable>
+          </>
+        ) : (
+          <>
+            <View className="mb-2 flex-row items-center justify-between">
+              <Text className="text-[9px] font-bold text-[#64748B]">
+                Order total
+              </Text>
+              <Text className="text-[14px] font-black text-[#17191C]">
+                {formatCurrency(totals.total_amount)}
+              </Text>
+            </View>
+            <View className="flex-row">
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => setStep(1)}
+                className="mr-2 h-[44px] flex-1 items-center justify-center rounded-[11px] border border-[#E2E8F0] bg-white"
+              >
+                <Text className="text-[9px] font-bold text-[#64748B]">
+                  Back to items
+                </Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                disabled={submitting || !gstSettings}
+                onPress={submitOrder}
+                className="h-[44px] flex-1 flex-row items-center justify-center rounded-[11px] bg-[#9A3412] disabled:opacity-50"
+              >
+                {submitting ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Text className="text-[9px] font-black text-white">
+                    Create shop order
+                  </Text>
+                )}
+              </Pressable>
+            </View>
+          </>
+        )}
+      </View>
 
       <Modal
         visible={variantProduct !== null}
