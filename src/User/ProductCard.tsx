@@ -87,7 +87,7 @@ export default function ProductCard({
       </View>
       <View className={compact ? 'p-2' : 'p-3'}>
         <Text
-          numberOfLines={2}
+          numberOfLines={compact ? 1 : 2}
           className={`font-bold uppercase text-[#A06E46] ${
             compact
               ? 'text-[9px] leading-[12px] tracking-[0.8px]'
@@ -100,7 +100,7 @@ export default function ProductCard({
           onPress={() => onProductPress(id)}
           className={`mt-1 ${compact ? 'min-h-[34px]' : 'min-h-[40px]'}`}>
           <Text
-            numberOfLines={2}
+            numberOfLines={compact ? 1 : 2}
             className={`font-bold text-[#351D0E] ${
               compact ? 'text-[12px] leading-[16px]' : 'text-[14px] leading-5'
             }`}>
