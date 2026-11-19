@@ -100,6 +100,7 @@ type StatePickerProps = {
 function StatePicker({ value, onChange }: StatePickerProps) {
   const all = [...INDIAN_STATES, ...INDIAN_UNION_TERRITORIES];
   const [open, setOpen] = useState(false);
+  const insets = useSafeAreaInsets();
   return (
     <>
       <View className="mb-3">
@@ -114,16 +115,22 @@ function StatePicker({ value, onChange }: StatePickerProps) {
           <MapPin size={15} color="#C0A99A" />
         </Pressable>
       </View>
-      <Modal visible={open} animationType="slide" transparent>
+      <Modal visible={open} animationType="slide" transparent statusBarTranslucent>
         <View className="flex-1 justify-end bg-black/40">
-          <View className="max-h-[70%] rounded-t-[24px] bg-white overflow-hidden">
+          <View
+            className="rounded-t-[24px] bg-white overflow-hidden"
+            style={{ maxHeight: '70%' }}
+          >
             <View className="flex-row items-center justify-between border-b border-[#F0E7DE] px-5 py-4">
               <Text className="text-[16px] font-black text-[#351D0E]">Select State</Text>
-              <Pressable onPress={() => setOpen(false)} className="h-[32px] w-[32px] items-center justify-center rounded-full bg-[#F4EDE6]">
+              <Pressable
+                onPress={() => setOpen(false)}
+                className="h-[32px] w-[32px] items-center justify-center rounded-full bg-[#F4EDE6]"
+              >
                 <X size={16} color="#351D0E" />
               </Pressable>
             </View>
-            <ScrollView>
+            <ScrollView contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 16) }}>
               {all.map(s => (
                 <Pressable
                   key={s}
@@ -162,14 +169,18 @@ function AddressFormModal({
   onSave,
   onClose,
 }: AddressFormModalProps) {
+  const insets = useSafeAreaInsets();
   const set = (key: keyof AddressDraft) => (val: string | boolean) =>
     onDraftChange({ ...draft, [key]: val });
 
   return (
-    <Modal visible={visible} animationType="slide" transparent>
+    <Modal visible={visible} animationType="slide" transparent statusBarTranslucent>
       <View className="flex-1 justify-end bg-black/40">
-        <View className="max-h-[90%] rounded-t-[24px] bg-white overflow-hidden">
-          {/* Header */}
+        <View
+          className="rounded-t-[24px] bg-white overflow-hidden"
+          style={{ maxHeight: '90%' }}
+        >
+          {/* ── Header ── */}
           <View className="flex-row items-center justify-between border-b border-[#F0E7DE] bg-[#FFF8F3] px-5 py-4">
             <View className="flex-row items-center gap-3">
               <View className="h-[40px] w-[40px] items-center justify-center rounded-full bg-[#FFF0E1]">
@@ -191,9 +202,11 @@ function AddressFormModal({
             </Pressable>
           </View>
 
+          {/* ── Scrollable form body ── */}
           <ScrollView
             keyboardShouldPersistTaps="handled"
-            contentContainerClassName="px-5 py-5 pb-8"
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 20, paddingBottom: 12 }}
           >
             <View className="flex-row gap-3">
               <View className="flex-1">
@@ -230,7 +243,7 @@ function AddressFormModal({
             {/* Default checkbox */}
             <Pressable
               onPress={() => set('is_default')(!draft.is_default)}
-              className="mb-4 flex-row items-center gap-3"
+              className="mb-2 flex-row items-center gap-3"
             >
               <View
                 className={`h-[20px] w-[20px] items-center justify-center rounded-[5px] border-2 ${
@@ -247,36 +260,39 @@ function AddressFormModal({
             </Pressable>
 
             {error ? (
-              <View className="mb-4 rounded-[12px] bg-red-50 border border-red-200 px-4 py-3">
+              <View className="mt-2 rounded-[12px] bg-red-50 border border-red-200 px-4 py-3">
                 <Text className="text-[13px] text-red-700">{error}</Text>
               </View>
             ) : null}
-
-            {/* Actions */}
-            <View className="flex-row gap-3">
-              <Pressable
-                onPress={onClose}
-                disabled={saving}
-                className="flex-1 h-[48px] items-center justify-center rounded-[14px] border border-[#E7DCCF] bg-white"
-              >
-                <Text className="text-[14px] font-semibold text-[#5B4839]">Cancel</Text>
-              </Pressable>
-              <Pressable
-                onPress={onSave}
-                disabled={saving}
-                className="flex-1 h-[48px] flex-row items-center justify-center rounded-[14px] bg-[#F97316] active:opacity-80"
-              >
-                {saving ? (
-                  <ActivityIndicator size="small" color="white" />
-                ) : (
-                  <Check size={16} color="white" />
-                )}
-                <Text className="ml-2 text-[14px] font-bold text-white">
-                  {saving ? 'Saving...' : 'Save Address'}
-                </Text>
-              </Pressable>
-            </View>
           </ScrollView>
+
+          {/* ── Sticky footer with safe-area bottom inset ── */}
+          <View
+            className="flex-row gap-3 border-t border-[#F0E7DE] bg-white px-5 pt-3"
+            style={{ paddingBottom: Math.max(insets.bottom, 16) }}
+          >
+            <Pressable
+              onPress={onClose}
+              disabled={saving}
+              className="flex-1 h-[50px] items-center justify-center rounded-[14px] border border-[#E7DCCF] bg-white active:bg-[#F9F3ED]"
+            >
+              <Text className="text-[14px] font-semibold text-[#5B4839]">Cancel</Text>
+            </Pressable>
+            <Pressable
+              onPress={onSave}
+              disabled={saving}
+              className="flex-1 h-[50px] flex-row items-center justify-center rounded-[14px] bg-[#F97316] active:opacity-80"
+            >
+              {saving ? (
+                <ActivityIndicator size="small" color="white" />
+              ) : (
+                <Check size={16} color="white" />
+              )}
+              <Text className="ml-2 text-[14px] font-bold text-white">
+                {saving ? 'Saving...' : 'Save Address'}
+              </Text>
+            </Pressable>
+          </View>
         </View>
       </View>
     </Modal>
@@ -288,6 +304,7 @@ type AddressesScreenProps = {
 };
 
 export default function AddressesScreen({ onBack }: AddressesScreenProps) {
+  const insets = useSafeAreaInsets();
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');

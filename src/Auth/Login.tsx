@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   ActivityIndicator,
   Alert,
@@ -34,6 +35,7 @@ type LoginResponse = {
 };
 
 export default function Login({ onLogin, onRegisterPress }: LoginProps) {
+  const insets = useSafeAreaInsets();
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -115,7 +117,7 @@ export default function Login({ onLogin, onRegisterPress }: LoginProps) {
     <ImageBackground
       source={require('../Assert/images/login.png')}
       resizeMode="cover"
-      style={{ backgroundColor: colors.background }}
+      style={{ backgroundColor: colors.background, paddingTop: insets.top }}
       className="flex-1">
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}

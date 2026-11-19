@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   ActivityIndicator,
   Alert,
@@ -28,6 +29,7 @@ type RegisterProps = {
 };
 
 export default function Register({ onLoginPress }: RegisterProps) {
+  const insets = useSafeAreaInsets();
   const [form, setForm] = useState({
     username: '',
     email: '',
@@ -89,7 +91,7 @@ export default function Register({ onLoginPress }: RegisterProps) {
     <ImageBackground
       source={require('../Assert/images/login.png')}
       resizeMode="cover"
-      style={{ backgroundColor: colors.background }}
+      style={{ backgroundColor: colors.background, paddingTop: insets.top }}
       className="flex-1">
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
