@@ -31,7 +31,7 @@ export default function Category({
   const [contentWidth, setContentWidth] = useState(0);
   const [viewportWidth, setViewportWidth] = useState(0);
   const [isUserScrolling, setIsUserScrolling] = useState(false);
-  const categoryStep = 128;
+  const categoryStep = 124;
 
   useEffect(() => {
     if (isUserScrolling || categories.length < 2) {
@@ -83,7 +83,11 @@ export default function Category({
         scrollEventThrottle={16}
         onScrollBeginDrag={() => setIsUserScrolling(true)}
         onScrollEndDrag={() => setIsUserScrolling(false)}
-        onMomentumScrollEnd={() => setIsUserScrolling(false)}>
+        onMomentumScrollEnd={() => setIsUserScrolling(false)}
+        snapToInterval={categoryStep}
+        snapToAlignment="start"
+        decelerationRate="fast"
+        disableIntervalMomentum>
         {categories.map((category, index) => {
           const imageUri = categoryImage(category);
           return (
