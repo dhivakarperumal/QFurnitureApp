@@ -4,7 +4,7 @@ import { GoogleSignin } from '@react-native-google-signin/google-signin';
 export const GOOGLE_WEB_CLIENT_ID =
   Config.VITE_GOOGLE_CLIENT_ID ||
   Config.GOOGLE_WEB_CLIENT_ID ||
-  '';
+  '869082340592-dmbhjhd2nc1ephbchfden0v2hk9mj7ha.apps.googleusercontent.com';
 
 export function initializeGoogleSignIn() {
   if (!GOOGLE_WEB_CLIENT_ID) {

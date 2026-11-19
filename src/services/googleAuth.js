@@ -8,6 +8,9 @@ import { initializeGoogleSignIn as configureGoogleSignIn } from '../config/googl
 
 export function googleAuthError(error) {
   if (isErrorWithCode(error)) {
+    if (String(error.code).includes('DEVELOPER_ERROR')) {
+      return 'Google OAuth is not registered for this app. Add package com.qfurnitureapp and SHA-1 5E:8F:16:06:2E:A3:CD:2C:4A:0D:54:78:76:BA:A6:F3:8C:AB:F6:25 in Google Cloud Console.';
+    }
     if (error.code === statusCodes.SIGN_IN_CANCELLED) {
       return 'Google sign-in was cancelled.';
     }
