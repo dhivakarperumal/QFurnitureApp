@@ -314,7 +314,7 @@ export default function Billing({
           }
           lastScrollY.current = currentScrollY;
         }}
-        contentContainerClassName="px-4 pb-[40px]"
+        contentContainerClassName="px-4 pb-[150px]"
         style={{ paddingTop: insets.top + 84 }}
       >
         <ScrollView

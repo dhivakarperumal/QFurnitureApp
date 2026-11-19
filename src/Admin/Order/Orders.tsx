@@ -212,17 +212,7 @@ export default function Orders({
       icon: '✓',
       color: '#10B981',
     },
-    {
-      label: 'In Transit',
-      value: orders.filter(order =>
-        ['Shipping', 'Out for Delivery', 'Shipped', 'Packing'].includes(
-          order.status || '',
-        ),
-      ).length,
-      note: 'Being fulfilled',
-      icon: '➜',
-      color: '#3B82F6',
-    },
+    
     {
       label: 'Delivered',
       value: orders.filter(order => order.status === 'Delivered').length,
