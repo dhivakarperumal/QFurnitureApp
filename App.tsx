@@ -19,6 +19,8 @@ import type { Order } from './src/Admin/Order/Orders';
 import { signOutGoogle } from './src/services/googleAuth';
 import Login from './src/Auth/Login';
 import Register from './src/Auth/Register';
+import { normalizeRole, type AppRole } from './src/Auth/roles';
+import Storefront from './src/User/Storefront';
 import { clearTokenCache, setTokenCache } from './src/api';
 import './global.css';
 
@@ -35,6 +37,7 @@ function App() {
 
 function AppContent() {
   const [authenticated, setAuthenticated] = useState(false);
+  const [userRole, setUserRole] = useState<AppRole>('user');
   const [checkingSession, setCheckingSession] = useState(true);
   const [authScreen, setAuthScreen] = useState<'login' | 'register'>('login');
   const [productDetailsOpen, setProductDetailsOpen] = useState(false);
@@ -55,9 +58,16 @@ function AppContent() {
       try {
         const token = await AsyncStorage.getItem('userToken');
         if (token) {
+          const serializedUser = await AsyncStorage.getItem('user');
+          const user = serializedUser ? JSON.parse(serializedUser) : null;
           setTokenCache(token);
-          if (mounted) setAuthenticated(true);
+          if (mounted) {
+            setUserRole(normalizeRole(user?.role));
+            setAuthenticated(true);
+          }
         }
+      } catch (error) {
+        if (__DEV__) console.warn('[App] Could not restore the saved session:', error);
       } finally {
         if (mounted) setCheckingSession(false);
       }
@@ -79,6 +89,7 @@ function AppContent() {
     await AsyncStorage.removeItem('user');
     clearTokenCache();
     setActiveItem('Home');
+    setUserRole('user');
     setAuthenticated(false);
   };
 
@@ -93,12 +104,19 @@ function AppContent() {
   if (!authenticated) {
     return authScreen === 'login' ? (
       <Login
-        onLogin={() => setAuthenticated(true)}
+        onLogin={role => {
+          setUserRole(role);
+          setAuthenticated(true);
+        }}
         onRegisterPress={() => setAuthScreen('register')}
       />
     ) : (
       <Register onLoginPress={() => setAuthScreen('login')} />
     );
+  }
+
+  if (userRole === 'user') {
+    return <Storefront onLogoutPress={handleLogout} />;
   }
 
   return (

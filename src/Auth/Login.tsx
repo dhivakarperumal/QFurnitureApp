@@ -17,9 +17,10 @@ import { Eye, EyeOff, LockKeyhole, UserRound } from 'lucide-react-native';
 import api, { setTokenCache } from '../api';
 import { colors } from '../theme/colors';
 import { googleAuthError, signInWithGoogle } from '../services/googleAuth';
+import { normalizeRole, type AppRole } from './roles';
 
 type LoginProps = {
-  onLogin: () => void;
+  onLogin: (role: AppRole) => void;
   onRegisterPress: () => void;
 };
 
@@ -52,13 +53,14 @@ export default function Login({ onLogin, onRegisterPress }: LoginProps) {
       if (!data.token) {
         throw new Error('The server did not return an authentication token.');
       }
+      if (!data.user) {
+        throw new Error('The server did not return the signed-in user.');
+      }
 
       await AsyncStorage.setItem('userToken', data.token);
-      if (data.user) {
-        await AsyncStorage.setItem('user', JSON.stringify(data.user));
-      }
+      await AsyncStorage.setItem('user', JSON.stringify(data.user));
       setTokenCache(data.token);
-      onLogin();
+      onLogin(normalizeRole(data.user.role));
     } catch (error: any) {
       const message =
         error?.data?.message ||
@@ -90,13 +92,14 @@ export default function Login({ onLogin, onRegisterPress }: LoginProps) {
       if (!data.token) {
         throw new Error('The server did not return an authentication token.');
       }
+      if (!data.user) {
+        throw new Error('The server did not return the signed-in user.');
+      }
 
       await AsyncStorage.setItem('userToken', data.token);
-      if (data.user) {
-        await AsyncStorage.setItem('user', JSON.stringify(data.user));
-      }
+      await AsyncStorage.setItem('user', JSON.stringify(data.user));
       setTokenCache(data.token);
-      onLogin();
+      onLogin(normalizeRole(data.user.role));
     } catch (error: any) {
       const message =
         error?.message ||
