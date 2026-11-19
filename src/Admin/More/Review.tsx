@@ -7,6 +7,7 @@ import {
   Modal,
   Platform,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -35,7 +36,10 @@ import {
   type ImagePickerResponse,
 } from 'react-native-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import api, { API_BASE_URL } from '../../api';
+import api, {
+  API_BASE_URL,
+  invalidateApiResponseCache,
+} from '../../api';
 import TopHeader from '../Navigation/TopHeader';
 
 type ReviewStatus = 'Pending' | 'Published' | 'Flagged';
@@ -222,6 +226,8 @@ export default function Review({
   const insets = useSafeAreaInsets();
   const lastScrollY = useRef(0);
   const requestId = useRef(0);
+  const lastRefreshKey = useRef(0);
+  const hasLoadedReviews = useRef(false);
   const [reviews, setReviews] = useState<ReviewRecord[]>([]);
   const [stats, setStats] = useState<ReviewStats | null>(null);
   const [statusFilter, setStatusFilter] = useState<'All' | ReviewStatus>('All');
@@ -229,6 +235,7 @@ export default function Review({
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [busyReviewId, setBusyReviewId] = useState<number | string | null>(
@@ -255,7 +262,17 @@ export default function Review({
 
   useEffect(() => {
     const id = ++requestId.current;
-    setLoading(true);
+    const manualRefresh = refreshKey !== lastRefreshKey.current;
+    lastRefreshKey.current = refreshKey;
+    if (manualRefresh) {
+      if (hasLoadedReviews.current) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
+    } else if (!hasLoadedReviews.current) {
+      setLoading(true);
+    }
     setLoadError(null);
     const params: Record<string, string | number> = {};
     if (statusFilter !== 'All') params.status = statusFilter;
@@ -273,13 +290,17 @@ export default function Review({
         }
         setReviews(response.data.reviews);
         setStats(response.data.stats ?? null);
+        hasLoadedReviews.current = true;
       } catch (error: unknown) {
         if (id !== requestId.current) return;
-        setReviews([]);
+        if (!hasLoadedReviews.current) setReviews([]);
         setLoadError(getErrorMessage(error, 'Could not load reviews.'));
         if (__DEV__) console.warn('[Review] Could not load reviews:', error);
       } finally {
-        if (id === requestId.current) setLoading(false);
+        if (id === requestId.current) {
+          setLoading(false);
+          setRefreshing(false);
+        }
       }
     };
     loadReviews();
@@ -574,6 +595,17 @@ export default function Review({
           }
           lastScrollY.current = currentScrollY;
         }}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => {
+              invalidateApiResponseCache();
+              setRefreshKey(value => value + 1);
+            }}
+            tintColor="#F97316"
+            colors={['#F97316']}
+          />
+        }
       >
         <ScrollView
           horizontal
@@ -713,6 +745,20 @@ export default function Review({
           </Text>
         </Pressable>
 
+        {loadError && hasLoadedReviews.current ? (
+          <View className="mb-3 flex-row items-center justify-between rounded-[12px] border border-[#FECACA] bg-[#FEF2F2] px-3 py-2.5">
+            <Text className="mr-3 flex-1 text-[9px] text-[#B91C1C]">
+              {loadError}
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => setRefreshKey(value => value + 1)}
+            >
+              <Text className="text-[9px] font-bold text-[#991B1B]">Retry</Text>
+            </Pressable>
+          </View>
+        ) : null}
+
         {loading ? (
           <View className="items-center rounded-[15px] bg-white py-10">
             <ActivityIndicator size="large" color="#F97316" />
@@ -720,7 +766,7 @@ export default function Review({
               Loading reviews...
             </Text>
           </View>
-        ) : loadError ? (
+        ) : loadError && !hasLoadedReviews.current ? (
           <View className="items-center rounded-[15px] bg-white px-5 py-8">
             <Text className="mb-4 text-center text-[11px] text-[#B91C1C]">
               {loadError}

@@ -785,7 +785,28 @@ export default function CreateBill({
         orderId
           ? `Shop order ${orderId} was created successfully.`
           : 'The shop order was created successfully.',
-        [{ text: 'Back to Billing', onPress: onOrderCreated }],
+        [
+          {
+            text: 'Back to Billing',
+            onPress: () => {
+              setStep(1);
+              setCatalogType('product');
+              setSearch('');
+              setSelectedCategory(null);
+              setCart([]);
+              setForm(initialForm);
+              setIsGuest(true);
+              setUserSearch('');
+              setVariantProduct(null);
+              setSelectedVariant(null);
+              setSelectedSize('');
+              setChoiceModal(null);
+              setSummaryVisible(false);
+              setIncludeGst(gstSettings?.gst_enabled ?? true);
+              onOrderCreated();
+            },
+          },
+        ],
       );
     } catch (error: unknown) {
       if (__DEV__) console.warn('[CreateBill] Could not create order:', error);

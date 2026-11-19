@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -7,6 +7,7 @@ import {
   Modal,
   Platform,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -34,7 +35,10 @@ import {
   type ImagePickerResponse,
 } from 'react-native-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import api, { API_BASE_URL } from '../../api';
+import api, {
+  API_BASE_URL,
+  invalidateApiResponseCache,
+} from '../../api';
 import TopHeader from '../Navigation/TopHeader';
 
 type ProfileUser = {
@@ -197,9 +201,12 @@ export default function Profile({
 }: ProfileProps) {
   const insets = useSafeAreaInsets();
   const lastScrollY = useRef(0);
+  const editVisibleRef = useRef(false);
+  const hasLoadedProfile = useRef(false);
   const [profile, setProfile] = useState<ProfileUser | null>(null);
   const [address, setAddress] = useState<UserAddress | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [addressError, setAddressError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -214,18 +221,26 @@ export default function Profile({
   const [addressForm, setAddressForm] = useState<AddressForm>(initialAddress);
   const [savingAddress, setSavingAddress] = useState(false);
 
-  const loadProfile = async () => {
-    setLoading(true);
+  const loadProfile = useCallback(async (refresh = false) => {
+    if (refresh) {
+      setRefreshing(true);
+      invalidateApiResponseCache();
+    } else if (!hasLoadedProfile.current) {
+      setLoading(true);
+    }
     setLoadError(null);
     try {
       const response = await api.get<ProfileUser>('/users/me');
       setProfile(response.data);
-      setForm({
-        name: response.data.name || response.data.username || '',
-        email: response.data.email || '',
-        phone: response.data.phone || '',
-        date_of_birth: response.data.date_of_birth?.slice(0, 10) || '',
-      });
+      hasLoadedProfile.current = true;
+      if (!editVisibleRef.current) {
+        setForm({
+          name: response.data.name || response.data.username || '',
+          email: response.data.email || '',
+          phone: response.data.phone || '',
+          date_of_birth: response.data.date_of_birth?.slice(0, 10) || '',
+        });
+      }
       await AsyncStorage.setItem('user', JSON.stringify(response.data));
     } catch (error: unknown) {
       const message = getErrorMessage(error, 'Could not load your profile.');
@@ -243,17 +258,22 @@ export default function Profile({
       }
       setAddress(getDefaultAddress(response.data));
     } catch (error: unknown) {
-      setAddress(null);
+      if (!hasLoadedProfile.current) setAddress(null);
       setAddressError(
         getErrorMessage(error, 'Could not load your saved address.'),
       );
       if (__DEV__) console.warn('[Profile] Could not load addresses:', error);
     }
-  };
+    setRefreshing(false);
+  }, []);
 
   useEffect(() => {
     loadProfile();
-  }, []);
+  }, [loadProfile]);
+
+  useEffect(() => {
+    editVisibleRef.current = editVisible;
+  }, [editVisible]);
 
   const openEdit = () => {
     setForm({
@@ -574,6 +594,14 @@ export default function Profile({
         showsVerticalScrollIndicator={false}
         contentContainerClassName="px-4 pb-[255px]"
         style={{ paddingTop: insets.top + 72 }}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => loadProfile(true)}
+            tintColor="#F97316"
+            colors={['#F97316']}
+          />
+        }
         scrollEventThrottle={16}
         onScroll={event => {
           const currentScrollY = event.nativeEvent.contentOffset.y;
@@ -599,7 +627,7 @@ export default function Profile({
             </Text>
             <Pressable
               accessibilityRole="button"
-              onPress={loadProfile}
+              onPress={() => loadProfile()}
               className="rounded-[11px] bg-[#C2410C] px-5 py-3"
             >
               <Text className="text-[11px] font-bold text-white">
@@ -612,11 +640,11 @@ export default function Profile({
             {loadError ? (
               <Pressable
                 accessibilityRole="button"
-                onPress={loadProfile}
+                onPress={() => loadProfile()}
                 className="mb-3 rounded-[12px] border border-[#FECACA] bg-[#FEF2F2] px-3 py-3"
               >
                 <Text className="text-[10px] text-[#B91C1C]">
-                  Profile may be out of date. Tap to retry.
+                  {loadError}
                 </Text>
               </Pressable>
             ) : null}
@@ -785,7 +813,7 @@ export default function Profile({
             </View>
             <Pressable
               accessibilityRole="button"
-              onPress={loadProfile}
+              onPress={() => loadProfile()}
               className="mb-2 flex-row items-center justify-center py-3"
             >
               <Text className="text-[10px] font-bold text-[#C2410C]">

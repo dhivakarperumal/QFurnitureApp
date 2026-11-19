@@ -7,6 +7,7 @@ import {
   Modal,
   Pressable,
   Platform,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Switch,
@@ -26,7 +27,10 @@ import {
   XCircle,
 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import api, { API_BASE_URL } from '../../api';
+import api, {
+  API_BASE_URL,
+  invalidateApiResponseCache,
+} from '../../api';
 import TopHeader from '../Navigation/TopHeader';
 
 type StockVariant = {
@@ -222,6 +226,8 @@ export default function StockDetails({
   const insets = useSafeAreaInsets();
   const lastScrollY = useRef(0);
   const requestId = useRef(0);
+  const lastRefreshKey = useRef(0);
+  const hasLoadedInventory = useRef(false);
   const detailRequestId = useRef(0);
   const [inventoryType, setInventoryType] = useState<InventoryType>('single');
   const [searchInput, setSearchInput] = useState('');
@@ -232,6 +238,7 @@ export default function StockDetails({
   const [pagination, setPagination] = useState({ total: 0, totalPages: 1 });
   const [stats, setStats] = useState<InventoryStats>(emptyStats);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [allowNegativeStock, setAllowNegativeStock] = useState(false);
@@ -262,7 +269,18 @@ export default function StockDetails({
 
   useEffect(() => {
     const id = ++requestId.current;
-    setLoading(true);
+    const manualRefresh = refreshKey !== lastRefreshKey.current;
+    lastRefreshKey.current = refreshKey;
+    if (manualRefresh) {
+      invalidateApiResponseCache();
+      if (hasLoadedInventory.current) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
+    } else if (!hasLoadedInventory.current) {
+      setLoading(true);
+    }
     setLoadError(null);
     const params: Record<string, string | number | boolean> = {
       page: currentPage,
@@ -303,16 +321,20 @@ export default function StockDetails({
           outOfStock: toNumber(data.stats?.outOfStock),
           lowStock: toNumber(data.stats?.lowStock),
         });
+        hasLoadedInventory.current = true;
       } catch (error: unknown) {
         if (id !== requestId.current) return;
         const message = getErrorMessage(error, 'Could not load stock details.');
         setLoadError(message);
-        setItems([]);
+        if (!hasLoadedInventory.current) setItems([]);
         if (__DEV__) {
           console.warn('[StockDetails] Could not load inventory:', error);
         }
       } finally {
-        if (id === requestId.current) setLoading(false);
+        if (id === requestId.current) {
+          setLoading(false);
+          setRefreshing(false);
+        }
       }
     };
     loadInventory();
@@ -557,6 +579,14 @@ export default function StockDetails({
           }
           lastScrollY.current = currentScrollY;
         }}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => setRefreshKey(value => value + 1)}
+            tintColor="#F97316"
+            colors={['#F97316']}
+          />
+        }
         contentContainerClassName="px-4 pb-[255px]"
         style={{ paddingTop: insets.top + 72 }}
       >
@@ -714,6 +744,20 @@ export default function StockDetails({
           </ScrollView>
         </View>
 
+        {loadError && hasLoadedInventory.current ? (
+          <View className="mb-3 flex-row items-center justify-between rounded-[12px] border border-[#FECACA] bg-[#FEF2F2] px-3 py-2.5">
+            <Text className="mr-3 flex-1 text-[9px] text-[#B91C1C]">
+              {loadError}
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => setRefreshKey(value => value + 1)}
+            >
+              <Text className="text-[9px] font-bold text-[#991B1B]">Retry</Text>
+            </Pressable>
+          </View>
+        ) : null}
+
         {loading ? (
           <View className="items-center rounded-[15px] bg-white py-10">
             <ActivityIndicator size="large" color="#F97316" />
@@ -721,7 +765,7 @@ export default function StockDetails({
               Loading stock details...
             </Text>
           </View>
-        ) : loadError ? (
+        ) : loadError && !hasLoadedInventory.current ? (
           <View className="items-center rounded-[15px] bg-white px-5 py-8">
             <Text className="mb-4 text-center text-[11px] text-[#B91C1C]">
               {loadError}

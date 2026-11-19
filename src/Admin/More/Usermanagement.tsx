@@ -10,6 +10,7 @@ import {
   Image,
   Modal,
   Pressable,
+  RefreshControl,
   ScrollView,
   Text,
   TextInput,
@@ -25,7 +26,10 @@ import {
   Users,
 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import api, { API_BASE_URL } from '../../api';
+import api, {
+  API_BASE_URL,
+  invalidateApiResponseCache,
+} from '../../api';
 import TopHeader from '../Navigation/TopHeader';
 
 type UserRecord = {
@@ -88,8 +92,10 @@ export default function Usermanagement({
 }: UserManagementProps) {
   const insets = useSafeAreaInsets();
   const lastScrollY = useRef(0);
+  const hasLoadedUsers = useRef(false);
   const [users, setUsers] = useState<UserRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [selectedTab, setSelectedTab] = useState<'All' | 'New'>('All');
@@ -97,8 +103,13 @@ export default function Usermanagement({
   const [currentPage, setCurrentPage] = useState(1);
   const [viewingUser, setViewingUser] = useState<UserRecord | null>(null);
 
-  const loadUsers = useCallback(async () => {
-    setLoading(true);
+  const loadUsers = useCallback(async (refresh = false) => {
+    if (refresh) {
+      setRefreshing(true);
+      invalidateApiResponseCache();
+    } else if (!hasLoadedUsers.current) {
+      setLoading(true);
+    }
     setLoadError(null);
     try {
       const response = await api.get<UserRecord[]>('/auth/users');
@@ -106,6 +117,7 @@ export default function Usermanagement({
         throw new Error('The users response did not contain a user list.');
       }
       setUsers(response.data);
+      hasLoadedUsers.current = true;
     } catch (error: unknown) {
       const message =
         typeof error === 'object' &&
@@ -119,6 +131,7 @@ export default function Usermanagement({
         console.warn('[Usermanagement] Could not load users:', error);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }, []);
 
@@ -188,6 +201,14 @@ export default function Usermanagement({
           }
           lastScrollY.current = currentScrollY;
         }}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => loadUsers(true)}
+            tintColor="#F97316"
+            colors={['#F97316']}
+          />
+        }
         contentContainerClassName="px-4 pb-[255px]"
         style={{ paddingTop: insets.top + 72 }}
       >
@@ -330,6 +351,20 @@ export default function Usermanagement({
           </ScrollView>
         </View>
 
+        {loadError && users.length > 0 ? (
+          <View className="mb-3 flex-row items-center justify-between rounded-[12px] border border-[#FECACA] bg-[#FEF2F2] px-3 py-2.5">
+            <Text className="mr-3 flex-1 text-[9px] text-[#B91C1C]">
+              {loadError}
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => loadUsers(true)}
+            >
+              <Text className="text-[9px] font-bold text-[#991B1B]">Retry</Text>
+            </Pressable>
+          </View>
+        ) : null}
+
         {loading ? (
           <View className="items-center rounded-[16px] bg-white py-10">
             <ActivityIndicator size="large" color="#F97316" />
@@ -337,14 +372,14 @@ export default function Usermanagement({
               Loading accounts...
             </Text>
           </View>
-        ) : loadError ? (
+        ) : loadError && users.length === 0 ? (
           <View className="items-center rounded-[16px] bg-white px-5 py-8">
             <Text className="mb-4 text-center text-[12px] text-[#B91C1C]">
               {loadError}
             </Text>
             <Pressable
               accessibilityRole="button"
-              onPress={loadUsers}
+              onPress={() => loadUsers()}
               className="rounded-[10px] bg-[#F97316] px-4 py-2.5"
             >
               <Text className="text-[11px] font-bold text-white">Retry</Text>

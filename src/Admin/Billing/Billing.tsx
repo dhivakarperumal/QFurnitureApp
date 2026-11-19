@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Alert,
   Pressable,
+  RefreshControl,
   ScrollView,
   Text,
   TextInput,
@@ -28,11 +29,10 @@ import {
   Search,
   ShoppingBag,
   X,
-  Plus,
 } from 'lucide-react-native';
 import RNPrint from 'react-native-print';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import api from '../../api';
+import api, { invalidateApiResponseCache } from '../../api';
 import type { Order } from '../Order/Orders';
 
 type BillingApiOrder = Order & {
@@ -54,6 +54,7 @@ type BillingInvoice = {
 type BillingProps = {
   onOrderPress: (order: Order) => void;
   onCreateBill: () => void;
+  refreshKey?: number;
   onScrollVisibilityChange?: (visible: boolean) => void;
 };
 
@@ -146,13 +147,16 @@ const escapeHtml = (value: string) =>
 
 export default function Billing({
   onOrderPress,
-  onCreateBill,
+  onCreateBill: _onCreateBill,
+  refreshKey = 0,
   onScrollVisibilityChange,
 }: BillingProps) {
   const insets = useSafeAreaInsets();
   const lastScrollY = useRef(0);
+  const hasLoadedInvoices = useRef(false);
   const [invoices, setInvoices] = useState<BillingInvoice[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
@@ -162,8 +166,13 @@ export default function Billing({
     number | string | null
   >(null);
 
-  const fetchShopOrders = useCallback(async () => {
-    setLoading(true);
+  const fetchShopOrders = useCallback(async (refresh = false) => {
+    if (refresh) {
+      setRefreshing(true);
+      invalidateApiResponseCache();
+    } else if (!hasLoadedInvoices.current) {
+      setLoading(true);
+    }
     setLoadError(null);
     try {
       const response = await api.get<BillingApiOrder[]>('/orders');
@@ -186,17 +195,19 @@ export default function Billing({
           method: order.payment_method || 'Showroom',
         }));
       setInvoices(shopOrders);
+      hasLoadedInvoices.current = true;
     } catch (error: unknown) {
       if (__DEV__) console.warn('[Billing] Could not load shop orders:', error);
       setLoadError(getErrorMessage(error));
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }, []);
 
   useEffect(() => {
-    fetchShopOrders();
-  }, [fetchShopOrders]);
+    fetchShopOrders(refreshKey > 0);
+  }, [fetchShopOrders, refreshKey]);
 
   const filteredInvoices = useMemo(() => {
     const search = searchTerm.trim().toLowerCase();
@@ -314,6 +325,14 @@ export default function Billing({
           }
           lastScrollY.current = currentScrollY;
         }}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => fetchShopOrders(true)}
+            tintColor="#9A3412"
+            colors={['#9A3412']}
+          />
+        }
         contentContainerClassName="px-4 pb-[150px]"
         style={{ paddingTop: insets.top + 84 }}
       >
@@ -503,6 +522,20 @@ export default function Billing({
           </View>
         </View>
 
+        {loadError && invoices.length > 0 ? (
+          <View className="mb-3 flex-row items-center justify-between rounded-[12px] border border-[#FECACA] bg-[#FEF2F2] px-3 py-2.5">
+            <Text className="mr-3 flex-1 text-[9px] text-[#B91C1C]">
+              {loadError}
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => fetchShopOrders(true)}
+            >
+              <Text className="text-[9px] font-bold text-[#991B1B]">Retry</Text>
+            </Pressable>
+          </View>
+        ) : null}
+
         {loading ? (
           <View className="items-center rounded-[16px] bg-white py-12">
             <ActivityIndicator size="large" color="#F97316" />
@@ -510,14 +543,14 @@ export default function Billing({
               Loading billing orders...
             </Text>
           </View>
-        ) : loadError ? (
+        ) : loadError && invoices.length === 0 ? (
           <View className="items-center rounded-[16px] bg-white px-5 py-10">
             <Text className="text-center text-[11px] text-[#BE123C]">
               {loadError}
             </Text>
             <Pressable
               accessibilityRole="button"
-              onPress={fetchShopOrders}
+              onPress={() => fetchShopOrders()}
               className="mt-4 rounded-[10px] bg-[#9A3412] px-4 py-2.5"
             >
               <Text className="text-[10px] font-bold text-white">
@@ -535,83 +568,10 @@ export default function Billing({
               Try changing your search or status filter.
             </Text>
           </View>
-        ) : viewMode === 'cards' ? (
-          paginatedInvoices.map(invoice => {
-            const colors = statusColors[invoice.status] ?? {
-              background: '#F1F5F9',
-              foreground: '#475569',
-            };
-            return (
-              <View
-                key={invoice.orderId}
-                className="mb-3 rounded-[16px] border border-[#E2E8F0] bg-white p-4 shadow-sm"
-              >
-                <View className="mb-4 flex-row items-start justify-between">
-                  <View className="flex-1 pr-2">
-                    <Text className="text-[8px] font-bold uppercase tracking-[1px] text-[#94A3B8]">
-                      Shop order
-                    </Text>
-                    <Text className="mt-1 text-[14px] font-black text-[#9A3412]">
-                      {invoice.id}
-                    </Text>
-                  </View>
-                  <View
-                    className="rounded-full px-2.5 py-1.5"
-                    style={{ backgroundColor: colors.background }}
-                  >
-                    <Text
-                      className="text-[8px] font-black"
-                      style={{ color: colors.foreground }}
-                    >
-                      {invoice.status}
-                    </Text>
-                  </View>
-                </View>
-                <View className="flex-row flex-wrap">
-                  <InvoiceDetail label="Customer" value={invoice.customer} />
-                  <InvoiceDetail label="Payment" value={invoice.method} />
-                  <InvoiceDetail label="Order date" value={invoice.date} />
-                  <InvoiceDetail
-                    label="Amount"
-                    value={formatCurrency(invoice.amount)}
-                    emphasis
-                  />
-                </View>
-                <View className="mt-3 flex-row justify-end border-t border-[#F1F5F9] pt-3">
-                  {renderActions(invoice)}
-                </View>
-              </View>
-            );
-          })
         ) : (
-          <ScrollView
-            horizontal
-            nestedScrollEnabled
-            showsHorizontalScrollIndicator
-            className="mb-3"
-          >
-            <View className="w-[605px] overflow-hidden rounded-[12px] border border-[#E2E8F0] bg-white">
-              <View className="flex-row bg-[#F8FAFC] px-3 py-3">
-                <Text className="w-[96px] text-[8px] font-bold text-[#64748B]">
-                  Order ID
-                </Text>
-                <Text className="w-[115px] text-[8px] font-bold text-[#64748B]">
-                  Customer
-                </Text>
-                <Text className="w-[90px] text-[8px] font-bold text-[#64748B]">
-                  Date
-                </Text>
-                <Text className="w-[95px] text-[8px] font-bold text-[#64748B]">
-                  Amount
-                </Text>
-                <Text className="w-[95px] text-[8px] font-bold text-[#64748B]">
-                  Status
-                </Text>
-                <Text className="w-[90px] text-[8px] font-bold text-[#64748B]">
-                  Actions
-                </Text>
-              </View>
-              {paginatedInvoices.map(invoice => {
+          <View key={viewMode}>
+            {viewMode === 'cards' ? (
+              paginatedInvoices.map(invoice => {
                 const colors = statusColors[invoice.status] ?? {
                   background: '#F1F5F9',
                   foreground: '#475569',
@@ -619,44 +579,126 @@ export default function Billing({
                 return (
                   <View
                     key={invoice.orderId}
-                    className="flex-row items-center border-t border-[#F1F5F9] px-3 py-2.5"
+                    className="mb-3 rounded-[16px] border border-[#E2E8F0] bg-white p-4 shadow-sm"
                   >
-                    <Text
-                      numberOfLines={1}
-                      className="w-[96px] text-[8px] font-bold text-[#9A3412]"
-                    >
-                      {invoice.id}
-                    </Text>
-                    <Text
-                      numberOfLines={1}
-                      className="w-[115px] pr-2 text-[8px] text-[#334155]"
-                    >
-                      {invoice.customer}
-                    </Text>
-                    <Text className="w-[90px] text-[8px] text-[#64748B]">
-                      {invoice.date}
-                    </Text>
-                    <Text className="w-[95px] text-[8px] font-bold text-[#17191C]">
-                      {formatCurrency(invoice.amount)}
-                    </Text>
-                    <View className="w-[95px]">
-                      <Text
-                        numberOfLines={1}
-                        className="self-start rounded-full px-2 py-1 text-[7px] font-bold"
-                        style={{
-                          color: colors.foreground,
-                          backgroundColor: colors.background,
-                        }}
+                    <View className="mb-4 flex-row items-start justify-between">
+                      <View className="flex-1 pr-2">
+                        <Text className="text-[8px] font-bold uppercase tracking-[1px] text-[#94A3B8]">
+                          Shop order
+                        </Text>
+                        <Text className="mt-1 text-[14px] font-black text-[#9A3412]">
+                          {invoice.id}
+                        </Text>
+                      </View>
+                      <View
+                        className="rounded-full px-2.5 py-1.5"
+                        style={{ backgroundColor: colors.background }}
                       >
-                        {invoice.status}
-                      </Text>
+                        <Text
+                          className="text-[8px] font-black"
+                          style={{ color: colors.foreground }}
+                        >
+                          {invoice.status}
+                        </Text>
+                      </View>
                     </View>
-                    <View className="w-[90px]">{renderActions(invoice)}</View>
+                    <View className="flex-row flex-wrap">
+                      <InvoiceDetail
+                        label="Customer"
+                        value={invoice.customer}
+                      />
+                      <InvoiceDetail label="Payment" value={invoice.method} />
+                      <InvoiceDetail label="Order date" value={invoice.date} />
+                      <InvoiceDetail
+                        label="Amount"
+                        value={formatCurrency(invoice.amount)}
+                        emphasis
+                      />
+                    </View>
+                    <View className="mt-3 flex-row justify-end border-t border-[#F1F5F9] pt-3">
+                      {renderActions(invoice)}
+                    </View>
                   </View>
                 );
-              })}
-            </View>
-          </ScrollView>
+              })
+            ) : (
+              <ScrollView
+                horizontal
+                nestedScrollEnabled
+                showsHorizontalScrollIndicator
+                className="mb-3"
+              >
+                <View className="w-[605px] overflow-hidden rounded-[12px] border border-[#E2E8F0] bg-white">
+                  <View className="flex-row bg-[#F8FAFC] px-3 py-3">
+                    <Text className="w-[96px] text-[8px] font-bold text-[#64748B]">
+                      Order ID
+                    </Text>
+                    <Text className="w-[115px] text-[8px] font-bold text-[#64748B]">
+                      Customer
+                    </Text>
+                    <Text className="w-[90px] text-[8px] font-bold text-[#64748B]">
+                      Date
+                    </Text>
+                    <Text className="w-[95px] text-[8px] font-bold text-[#64748B]">
+                      Amount
+                    </Text>
+                    <Text className="w-[95px] text-[8px] font-bold text-[#64748B]">
+                      Status
+                    </Text>
+                    <Text className="w-[90px] text-[8px] font-bold text-[#64748B]">
+                      Actions
+                    </Text>
+                  </View>
+                  {paginatedInvoices.map(invoice => {
+                    const colors = statusColors[invoice.status] ?? {
+                      background: '#F1F5F9',
+                      foreground: '#475569',
+                    };
+                    return (
+                      <View
+                        key={invoice.orderId}
+                        className="flex-row items-center border-t border-[#F1F5F9] px-3 py-2.5"
+                      >
+                        <Text
+                          numberOfLines={1}
+                          className="w-[96px] text-[8px] font-bold text-[#9A3412]"
+                        >
+                          {invoice.id}
+                        </Text>
+                        <Text
+                          numberOfLines={1}
+                          className="w-[115px] pr-2 text-[8px] text-[#334155]"
+                        >
+                          {invoice.customer}
+                        </Text>
+                        <Text className="w-[90px] text-[8px] text-[#64748B]">
+                          {invoice.date}
+                        </Text>
+                        <Text className="w-[95px] text-[8px] font-bold text-[#17191C]">
+                          {formatCurrency(invoice.amount)}
+                        </Text>
+                        <View className="w-[95px]">
+                          <Text
+                            numberOfLines={1}
+                            className="self-start rounded-full px-2 py-1 text-[7px] font-bold"
+                            style={{
+                              color: colors.foreground,
+                              backgroundColor: colors.background,
+                            }}
+                          >
+                            {invoice.status}
+                          </Text>
+                        </View>
+                        <View className="w-[90px]">
+                          {renderActions(invoice)}
+                        </View>
+                      </View>
+                    );
+                  })}
+                </View>
+              </ScrollView>
+            )}
+          </View>
         )}
 
         {totalPages > 1 ? (

@@ -9,7 +9,6 @@ import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   StatusBar,
-  Text,
   useColorScheme,
   View,
 } from 'react-native';
@@ -26,6 +25,7 @@ import OrdersDetails from './src/Admin/Order/OrdersDetails';
 import type { Order } from './src/Admin/Order/Orders';
 import More from './src/Admin/More/More';
 import Profile from './src/Admin/More/Profile';
+import KeepAliveScreen from './src/Admin/Navigation/KeepAliveScreen';
 import { signOutGoogle } from './src/services/googleAuth';
 import Login from './src/Auth/Login';
 import Register from './src/Auth/Register';
@@ -50,9 +50,11 @@ function AppContent() {
   const [profileOpen, setProfileOpen] = useState(false);
   const [billingOpen, setBillingOpen] = useState(false);
   const [createBillOpen, setCreateBillOpen] = useState(false);
+  const [billingRefreshKey, setBillingRefreshKey] = useState(0);
   const [productDetailsOpen, setProductDetailsOpen] = useState(false);
   const [moreDetailsOpen, setMoreDetailsOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [detailsOrder, setDetailsOrder] = useState<Order | null>(null);
   const [activeItem, setActiveItem] = useState<
     'Home' | 'Products' | 'Orders' | 'More'
   >('Home');
@@ -104,6 +106,9 @@ function AppContent() {
     setProfileOpen(false);
     setBillingOpen(false);
     setCreateBillOpen(false);
+    setBillingRefreshKey(0);
+    setSelectedOrder(null);
+    setDetailsOrder(null);
     setAuthenticated(false);
   };
 
@@ -126,6 +131,9 @@ function AppContent() {
     );
   }
 
+  const tabsVisible =
+    !profileOpen && !billingOpen && selectedOrder === null;
+
   return (
     <View className="flex-1 bg-white">
       {!profileOpen &&
@@ -145,32 +153,36 @@ function AppContent() {
           }}
         />
       ) : null}
-      {profileOpen ? (
+      <KeepAliveScreen active={profileOpen}>
         <Profile
           onBackPress={() => setProfileOpen(false)}
           onScrollVisibilityChange={setBottomBarVisible}
         />
-      ) : billingOpen ? (
-        createBillOpen ? (
-          <CreateBill
-            onBackPress={() => setCreateBillOpen(false)}
-            onOrderCreated={() => {
-              setCreateBillOpen(false);
-            }}
-          />
-        ) : (
-          <Billing
-            onCreateBill={() => setCreateBillOpen(true)}
-            onScrollVisibilityChange={setBottomBarVisible}
-            onOrderPress={order => {
-              setBillingOpen(false);
-              setCreateBillOpen(false);
-              setActiveItem('Orders');
-              setSelectedOrder(order);
-            }}
-          />
-        )
-      ) : activeItem === 'Home' ? (
+      </KeepAliveScreen>
+      <KeepAliveScreen active={!profileOpen && billingOpen && !createBillOpen}>
+        <Billing
+          onCreateBill={() => setCreateBillOpen(true)}
+          refreshKey={billingRefreshKey}
+          onScrollVisibilityChange={setBottomBarVisible}
+          onOrderPress={order => {
+            setBillingOpen(false);
+            setCreateBillOpen(false);
+            setActiveItem('Orders');
+            setDetailsOrder(order);
+            setSelectedOrder(order);
+          }}
+        />
+      </KeepAliveScreen>
+      <KeepAliveScreen active={!profileOpen && billingOpen && createBillOpen}>
+        <CreateBill
+          onBackPress={() => setCreateBillOpen(false)}
+          onOrderCreated={() => {
+            setBillingRefreshKey(key => key + 1);
+            setCreateBillOpen(false);
+          }}
+        />
+      </KeepAliveScreen>
+      <KeepAliveScreen active={tabsVisible && activeItem === 'Home'}>
         <Home
           onScrollVisibilityChange={setBottomBarVisible}
           onActionPress={action => {
@@ -185,38 +197,37 @@ function AppContent() {
             }
           }}
         />
-      ) : activeItem === 'Products' ? (
+      </KeepAliveScreen>
+      <KeepAliveScreen active={tabsVisible && activeItem === 'Products'}>
         <Products
           onScrollVisibilityChange={setBottomBarVisible}
           onActionPress={action => console.log(action)}
           onDetailsVisibilityChange={setProductDetailsOpen}
         />
-      ) : activeItem === 'Orders' ? (
-        selectedOrder ? (
+      </KeepAliveScreen>
+      <KeepAliveScreen active={tabsVisible && activeItem === 'Orders'}>
+        <Orders
+          onScrollVisibilityChange={setBottomBarVisible}
+          onOrderPress={order => {
+            setDetailsOrder(order);
+            setSelectedOrder(order);
+          }}
+        />
+      </KeepAliveScreen>
+      <KeepAliveScreen active={selectedOrder !== null}>
+        {detailsOrder ? (
           <OrdersDetails
-            order={selectedOrder}
+            order={detailsOrder}
             onBack={() => setSelectedOrder(null)}
           />
-        ) : (
-          <Orders
-            onScrollVisibilityChange={setBottomBarVisible}
-            onOrderPress={order => setSelectedOrder(order)}
-          />
-        )
-      ) : activeItem === 'More' ? (
+        ) : null}
+      </KeepAliveScreen>
+      <KeepAliveScreen active={tabsVisible && activeItem === 'More'}>
         <More
           onScrollVisibilityChange={setBottomBarVisible}
           onDetailsVisibilityChange={setMoreDetailsOpen}
         />
-      ) : (
-        <View className="flex-1 items-center justify-center">
-          <View className="rounded-[18px] bg-[#FFF7E6] px-6 py-5">
-            <Text className="text-[14px] font-bold text-[#073E56]">
-              {activeItem} section
-            </Text>
-          </View>
-        </View>
-      )}
+      </KeepAliveScreen>
       <Bottombar
         activeItem={activeItem}
         onItemPress={item => {

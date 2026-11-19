@@ -14,6 +14,7 @@ import Profile from './Profile';
 import ReviewScreen from './Review';
 import StockDetails from './StockDetails';
 import Usermanagement from './Usermanagement';
+import KeepAliveScreen from '../Navigation/KeepAliveScreen';
 
 type MoreProps = {
   onScrollVisibilityChange?: (visible: boolean) => void;
@@ -91,57 +92,16 @@ export default function More({
     onScrollVisibilityChange?.(true);
   };
 
-  if (categoriesOpen) {
-    return (
-      <Categery
-        onScrollVisibilityChange={onScrollVisibilityChange}
-        onBackPress={closeCategories}
-      />
-    );
-  }
-
-  if (usersOpen) {
-    return (
-      <Usermanagement
-        onScrollVisibilityChange={onScrollVisibilityChange}
-        onBackPress={closeUsers}
-      />
-    );
-  }
-
-  if (stockOpen) {
-    return (
-      <StockDetails
-        onScrollVisibilityChange={onScrollVisibilityChange}
-        onBackPress={closeStock}
-      />
-    );
-  }
-
-  if (profileOpen) {
-    return (
-      <Profile
-        onScrollVisibilityChange={onScrollVisibilityChange}
-        onBackPress={closeProfile}
-      />
-    );
-  }
-
-  if (reviewsOpen) {
-    return (
-      <ReviewScreen
-        onScrollVisibilityChange={onScrollVisibilityChange}
-        onBackPress={closeReviews}
-      />
-    );
-  }
-
+  const detailOpen =
+    categoriesOpen || usersOpen || stockOpen || profileOpen || reviewsOpen;
   return (
-    <ScrollView
-      showsVerticalScrollIndicator={false}
-      contentContainerClassName="px-4 pb-[255px]"
-      style={{ paddingTop: insets.top + 84 }}
-    >
+    <View className="flex-1">
+      <KeepAliveScreen active={!detailOpen}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerClassName="px-4 pb-[255px]"
+          style={{ paddingTop: insets.top + 84 }}
+        >
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Open profile"
@@ -233,6 +193,38 @@ export default function More({
         </View>
         <ChevronRight size={21} color="#94A3B8" />
       </Pressable>
-    </ScrollView>
+        </ScrollView>
+      </KeepAliveScreen>
+      <KeepAliveScreen active={categoriesOpen}>
+        <Categery
+          onScrollVisibilityChange={onScrollVisibilityChange}
+          onBackPress={closeCategories}
+        />
+      </KeepAliveScreen>
+      <KeepAliveScreen active={usersOpen}>
+        <Usermanagement
+          onScrollVisibilityChange={onScrollVisibilityChange}
+          onBackPress={closeUsers}
+        />
+      </KeepAliveScreen>
+      <KeepAliveScreen active={stockOpen}>
+        <StockDetails
+          onScrollVisibilityChange={onScrollVisibilityChange}
+          onBackPress={closeStock}
+        />
+      </KeepAliveScreen>
+      <KeepAliveScreen active={profileOpen}>
+        <Profile
+          onScrollVisibilityChange={onScrollVisibilityChange}
+          onBackPress={closeProfile}
+        />
+      </KeepAliveScreen>
+      <KeepAliveScreen active={reviewsOpen}>
+        <ReviewScreen
+          onScrollVisibilityChange={onScrollVisibilityChange}
+          onBackPress={closeReviews}
+        />
+      </KeepAliveScreen>
+    </View>
   );
 }

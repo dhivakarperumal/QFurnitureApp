@@ -4,6 +4,7 @@ import {
   ActivityIndicator,
   Modal,
   Pressable,
+  RefreshControl,
   ScrollView,
   Text,
   TextInput,
@@ -12,7 +13,7 @@ import {
 import { Eye, Printer } from 'lucide-react-native';
 import RNPrint from 'react-native-print';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import api from '../../api';
+import api, { invalidateApiResponseCache } from '../../api';
 
 type OrderStatus =
   | 'Order Placed'
@@ -134,8 +135,10 @@ export default function Orders({
 }: OrdersProps) {
   const insets = useSafeAreaInsets();
   const lastScrollY = useRef(0);
+  const hasLoadedOrders = useRef(false);
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeStatus, setActiveStatus] = useState<'All' | OrderStatus>(
@@ -147,8 +150,13 @@ export default function Orders({
   const [savingStatus, setSavingStatus] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
-  const fetchOrders = useCallback(async () => {
-    setLoading(true);
+  const fetchOrders = useCallback(async (refresh = false) => {
+    if (refresh) {
+      setRefreshing(true);
+      invalidateApiResponseCache();
+    } else if (!hasLoadedOrders.current) {
+      setLoading(true);
+    }
     setLoadError(null);
     try {
       const response = await api.get('/orders', {
@@ -158,11 +166,13 @@ export default function Orders({
         throw new Error('The orders response was not a list.');
       }
       setOrders(response.data);
+      hasLoadedOrders.current = true;
     } catch (error) {
       console.error('Fetch Orders Error:', error);
       setLoadError('Could not load orders. Check your connection and try again.');
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }, [activeStatus]);
 
@@ -378,17 +388,23 @@ export default function Orders({
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           {[...new Set(options)].map(option => {
             const optionColors = statusColors[option] || statusColors.New;
+            const isCurrentStatus = option === currentStatus;
             return (
               <Pressable
                 key={option}
-                disabled={savingStatus || option === currentStatus}
+                disabled={savingStatus || isCurrentStatus}
                 onPress={() => openStatusUpdate(order, option)}
-                className="mr-2 rounded-full px-3 py-2"
-                style={{ backgroundColor: optionColors.background }}>
+                className="mr-2 rounded-full border px-3 py-2"
+                style={{
+                  backgroundColor: optionColors.background,
+                  borderColor: isCurrentStatus
+                    ? optionColors.color
+                    : optionColors.background,
+                }}>
                 <Text
                   className="text-[10px] font-bold"
                   style={{ color: optionColors.color }}>
-                  {option === currentStatus ? `• ${option}` : option}
+                  {isCurrentStatus ? `✓ ${option}` : option}
                 </Text>
               </Pressable>
             );
@@ -405,93 +421,131 @@ export default function Orders({
     const customer = order.customer_name || 'Guest Customer';
     const payment = order.payment_method || 'Not specified';
     const statusColor = statusColors[order.status || 'New'] || statusColors.New;
+    const itemCount = Array.isArray(order.items) ? order.items.length : 0;
+    const customerInitial = customer.trim().charAt(0).toUpperCase() || 'G';
 
     return (
       <View
         key={order.id}
-        className="mb-3 rounded-[18px] border border-[#E8E7E3] bg-white p-4 shadow-sm elevation-[2]">
-        <Pressable
-          onPress={() => openOrder(order)}
-          className="mb-3 flex-row items-start justify-between border-b border-[#F1F5F9] pb-3">
-          <View>
-            <Text className="text-[10px] font-bold uppercase tracking-[1px] text-[#94A3B8]">
-              Order ID
-            </Text>
-            <Text className="mt-1 text-[14px] font-black text-[#17191C]">
-              {formatOrderId(order)}
-            </Text>
+        className="mb-4 overflow-hidden rounded-[22px] border border-[#E9E4DC] bg-white shadow-sm elevation-[3]">
+        <View className="h-[4px]" style={{ backgroundColor: statusColor.color }} />
+        <View className="p-4">
+          <View className="mb-4 flex-row items-start justify-between">
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => openOrder(order)}
+              className="flex-1 flex-row items-center">
+              <View className="mr-3 h-[42px] w-[42px] items-center justify-center rounded-[13px] bg-[#FFF3E8]">
+                <Text className="text-[19px] font-black text-[#C2410C]">#</Text>
+              </View>
+              <View className="flex-1">
+                <Text className="text-[9px] font-bold uppercase tracking-[1.4px] text-[#94A3B8]">
+                  Order
+                </Text>
+                <Text className="mt-0.5 text-[14px] font-black text-[#17191C]">
+                  {formatOrderId(order)}
+                </Text>
+                <Text className="mt-0.5 text-[10px] text-[#64748B]">
+                  {formatDate(order.created_at)}
+                </Text>
+              </View>
+            </Pressable>
+            <View
+              className="ml-2 flex-row items-center rounded-full px-3 py-2"
+              style={{ backgroundColor: statusColor.background }}>
+              <View
+                className="mr-1.5 h-[6px] w-[6px] rounded-full"
+                style={{ backgroundColor: statusColor.color }}
+              />
+              <Text
+                className="text-[9px] font-bold"
+                style={{ color: statusColor.color }}>
+                {order.status || 'New'}
+              </Text>
+            </View>
           </View>
-          <View
-            className="rounded-full px-3 py-1.5"
-            style={{ backgroundColor: statusColor.background }}>
-            <Text
-              className="text-[10px] font-bold"
-              style={{ color: statusColor.color }}>
-              {order.status || 'New'}
-            </Text>
-          </View>
-        </Pressable>
 
-        <Pressable onPress={() => openOrder(order)} className="mb-3 flex-row items-center">
-          <View className="mr-3 h-[40px] w-[40px] items-center justify-center rounded-full bg-[#FFF1D6]">
-            <Text className="text-[15px] font-black text-[#B45309]">
-              {customer.charAt(0).toUpperCase()}
-            </Text>
-          </View>
-          <View className="flex-1">
-            <Text className="text-[13px] font-bold text-[#17191C]">{customer}</Text>
-            <Text className="mt-0.5 text-[10px] text-[#94A3B8]">
-              {order.customer_phone || order.customer_email || 'Contact unavailable'}
-            </Text>
-          </View>
-          <Text className="text-[15px] font-black text-[#17191C]">
-            {formatCurrency(order.total_amount)}
-          </Text>
-        </Pressable>
+          <View className="mb-4 h-px bg-[#F1F0ED]" />
 
-        <View className="mb-3 flex-row justify-between rounded-[12px] bg-[#F8FAFC] px-3 py-2.5">
-          <View>
-            <Text className="text-[9px] font-bold uppercase text-[#94A3B8]">
-              Type
-            </Text>
-            <Text className="mt-1 text-[11px] font-bold text-[#475569]">
-              {getOrderType(order)}
-            </Text>
-          </View>
-          <View>
-            <Text className="text-[9px] font-bold uppercase text-[#94A3B8]">
-              Payment
-            </Text>
-            <Text className="mt-1 text-[11px] font-bold text-[#475569]">
-              {payment}
-            </Text>
-          </View>
-          <View>
-            <Text className="text-[9px] font-bold uppercase text-[#94A3B8]">
-              Order Date
-            </Text>
-            <Text className="mt-1 text-[11px] font-bold text-[#475569]">
-              {formatDate(order.created_at)}
-            </Text>
-          </View>
-        </View>
-
-        {renderStatusSelector(order)}
-        <View className="mt-3 flex-row items-center justify-end">
           <Pressable
+            accessibilityRole="button"
             onPress={() => openOrder(order)}
-            accessibilityRole="button"
-            accessibilityLabel={`View order ${formatOrderId(order)}`}
-            className="mr-2 h-[42px] w-[42px] items-center justify-center rounded-[12px] border border-[#17191C]">
-            <Eye size={20} color="#17191C" strokeWidth={2} />
+            className="mb-4 flex-row items-center">
+            <View className="mr-3 h-[46px] w-[46px] items-center justify-center rounded-full bg-[#FFF1D6]">
+              <Text className="text-[16px] font-black text-[#B45309]">
+                {customerInitial}
+              </Text>
+            </View>
+            <View className="mr-2 flex-1">
+              <Text
+                numberOfLines={1}
+                className="text-[13px] font-bold text-[#17191C]">
+                {customer}
+              </Text>
+              <Text
+                numberOfLines={1}
+                className="mt-1 text-[10px] text-[#64748B]">
+                {order.customer_phone ||
+                  order.customer_email ||
+                  'Contact unavailable'}
+              </Text>
+            </View>
+            <View className="items-end rounded-[13px] bg-[#FFF7ED] px-3 py-2">
+              <Text className="text-[8px] font-bold uppercase tracking-[1px] text-[#C2410C]">
+                Total
+              </Text>
+              <Text className="mt-0.5 text-[14px] font-black text-[#9A3412]">
+                {formatCurrency(order.total_amount)}
+              </Text>
+            </View>
           </Pressable>
-          <Pressable
-            onPress={() => printOrder(order)}
-            accessibilityRole="button"
-            accessibilityLabel={`Print invoice ${formatOrderId(order)}`}
-            className="h-[42px] w-[42px] items-center justify-center rounded-[12px] bg-[#17191C]">
-            <Printer size={20} color="#FFFFFF" strokeWidth={2} />
-          </Pressable>
+
+          <View className="mb-4 flex-row">
+            <View className="mr-2 flex-1 rounded-[13px] bg-[#F8FAFC] px-3 py-2.5">
+              <Text className="text-[8px] font-bold uppercase tracking-[0.8px] text-[#94A3B8]">
+                Order type
+              </Text>
+              <Text className="mt-1 text-[10px] font-bold text-[#334155]">
+                {getOrderType(order)}
+                {itemCount > 0 ? ` · ${itemCount} item${itemCount === 1 ? '' : 's'}` : ''}
+              </Text>
+            </View>
+            <View className="flex-1 rounded-[13px] bg-[#F8FAFC] px-3 py-2.5">
+              <Text className="text-[8px] font-bold uppercase tracking-[0.8px] text-[#94A3B8]">
+                Payment
+              </Text>
+              <Text numberOfLines={1} className="mt-1 text-[10px] font-bold text-[#334155]">
+                {payment}
+              </Text>
+            </View>
+          </View>
+
+          <View className="rounded-[15px] border border-[#F1F0ED] bg-[#FCFBF9] p-3">
+            <Text className="mb-2 text-[8px] font-bold uppercase tracking-[1.1px] text-[#94A3B8]">
+              Update order status
+            </Text>
+            {renderStatusSelector(order)}
+          </View>
+
+          <View className="mt-4 flex-row items-center">
+            <Pressable
+              onPress={() => openOrder(order)}
+              accessibilityRole="button"
+              accessibilityLabel={`View order ${formatOrderId(order)}`}
+              className="mr-2 h-[44px] flex-1 flex-row items-center justify-center rounded-[13px] bg-[#17191C]">
+              <Eye size={17} color="#FFFFFF" strokeWidth={2} />
+              <Text className="ml-2 text-[11px] font-bold text-white">
+                View order
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => printOrder(order)}
+              accessibilityRole="button"
+              accessibilityLabel={`Print invoice ${formatOrderId(order)}`}
+              className="h-[44px] w-[48px] items-center justify-center rounded-[13px] border border-[#E2E8F0] bg-white">
+              <Printer size={18} color="#475569" strokeWidth={2} />
+            </Pressable>
+          </View>
         </View>
       </View>
     );
@@ -512,6 +566,14 @@ export default function Orders({
           }
           lastScrollY.current = currentScrollY;
         }}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => fetchOrders(true)}
+            tintColor="#F97316"
+            colors={['#F97316']}
+          />
+        }
         contentContainerClassName="px-4 pb-[255px]"
         style={{ paddingTop: insets.top + 84 }}>
         

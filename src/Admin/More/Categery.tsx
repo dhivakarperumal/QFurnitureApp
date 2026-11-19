@@ -5,6 +5,7 @@ import {
   Image,
   Modal,
   Pressable,
+  RefreshControl,
   ScrollView,
   Text,
   TextInput,
@@ -13,13 +14,15 @@ import {
 import {
   LayoutGrid,
   Pencil,
-  Plus,
   Search,
   Trash2,
   X,
 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import api, { API_BASE_URL } from '../../api';
+import api, {
+  API_BASE_URL,
+  invalidateApiResponseCache,
+} from '../../api';
 import TopHeader from '../Navigation/TopHeader';
 
 type Category = {
@@ -50,9 +53,11 @@ export default function Categery({
 }: CategeryProps) {
   const insets = useSafeAreaInsets();
   const lastScrollY = useRef(0);
+  const hasLoadedCategories = useRef(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [categoryForm, setCategoryForm] = useState({
@@ -63,8 +68,13 @@ export default function Categery({
   });
   const [savingCategory, setSavingCategory] = useState(false);
 
-  const loadCategories = useCallback(async () => {
-    setLoading(true);
+  const loadCategories = useCallback(async (refresh = false) => {
+    if (refresh) {
+      setRefreshing(true);
+      invalidateApiResponseCache();
+    } else if (!hasLoadedCategories.current) {
+      setLoading(true);
+    }
     setLoadError(null);
     try {
       const response = await api.get<Category[]>('/categories');
@@ -72,6 +82,7 @@ export default function Categery({
         throw new Error('The categories response did not contain a category list.');
       }
       setCategories(response.data);
+      hasLoadedCategories.current = true;
     } catch (error: unknown) {
       const message =
         typeof error === 'object' &&
@@ -84,6 +95,7 @@ export default function Categery({
       if (__DEV__) console.warn('[More] Could not load categories:', error);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }, []);
 
@@ -232,6 +244,14 @@ export default function Categery({
             }
             lastScrollY.current = currentScrollY;
           }}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => loadCategories(true)}
+              tintColor="#F97316"
+              colors={['#F97316']}
+            />
+          }
           contentContainerClassName="px-4 pb-[255px]"
           style={{ paddingTop: insets.top + 72 }}>
          
@@ -247,18 +267,34 @@ export default function Categery({
             />
           </View>
 
+          {loadError && categories.length > 0 ? (
+            <View className="mb-3 flex-row items-center justify-between rounded-[12px] border border-[#FECACA] bg-[#FEF2F2] px-3 py-2.5">
+              <Text className="mr-3 flex-1 text-[9px] text-[#B91C1C]">
+                {loadError}
+              </Text>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => loadCategories(true)}
+              >
+                <Text className="text-[9px] font-bold text-[#991B1B]">
+                  Retry
+                </Text>
+              </Pressable>
+            </View>
+          ) : null}
+
           {loading ? (
             <View className="items-center py-10">
               <ActivityIndicator size="large" color="#F97316" />
             </View>
-          ) : loadError ? (
+          ) : loadError && categories.length === 0 ? (
             <View className="items-center rounded-[16px] bg-white px-5 py-8">
               <Text className="mb-4 text-center text-[13px] text-[#B91C1C]">
                 {loadError}
               </Text>
               <Pressable
                 accessibilityRole="button"
-                onPress={loadCategories}
+                onPress={() => loadCategories()}
                 className="rounded-[10px] bg-[#F97316] px-4 py-2.5">
                 <Text className="text-[12px] font-bold text-white">Retry</Text>
               </Pressable>

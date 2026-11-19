@@ -10,6 +10,7 @@ import {
   Image,
   Modal,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -17,7 +18,11 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import api, { API_BASE_URL } from '../../api';
+import api, {
+  API_BASE_URL,
+  invalidateApiResponseCache,
+} from '../../api';
+import KeepAliveScreen from '../Navigation/KeepAliveScreen';
 import ProductsDetails from './ProductsDetails';
 
 export type Product = {
@@ -322,23 +327,27 @@ export default function Products({
 }: ProductsProps) {
   const insets = useSafeAreaInsets();
   const lastScrollY = useRef(0);
+  const hasLoadedProducts = useRef(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [status, setStatus] = useState<'All' | Product['status']>('All');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [productDetailsVisible, setProductDetailsVisible] = useState(false);
   const [stockProduct, setStockProduct] = useState<Product | null>(null);
   const [stockValue, setStockValue] = useState('');
 
   const showProductDetails = (product: Product) => {
     setSelectedProduct(product);
+    setProductDetailsVisible(true);
     onDetailsVisibilityChange?.(true);
   };
 
   const hideProductDetails = () => {
-    setSelectedProduct(null);
+    setProductDetailsVisible(false);
     onDetailsVisibilityChange?.(false);
   };
 
@@ -347,8 +356,13 @@ export default function Products({
     [onDetailsVisibilityChange],
   );
 
-  const fetchProducts = useCallback(async () => {
-    setLoading(true);
+  const fetchProducts = useCallback(async (refresh = false) => {
+    if (refresh) {
+      setRefreshing(true);
+      invalidateApiResponseCache();
+    } else if (!hasLoadedProducts.current) {
+      setLoading(true);
+    }
     setLoadError(null);
 
     try {
@@ -364,6 +378,7 @@ export default function Products({
         ...mappedProducts,
         ...apiCombos.map(combo => mapApiCombo(combo, productsById)),
       ]);
+      hasLoadedProducts.current = true;
     } catch (error: unknown) {
       const message =
         typeof error === 'object' &&
@@ -375,6 +390,7 @@ export default function Products({
       setLoadError(message);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }, []);
 
@@ -478,17 +494,14 @@ export default function Products({
     'Out of Stock',
   ];
 
-  if (selectedProduct) {
-    return (
-      <ProductsDetails product={selectedProduct} onBack={hideProductDetails} />
-    );
-  }
-
   return (
-    <View className="flex-1 bg-[#F7F8FA]">
+    <View className="flex-1">
+      <KeepAliveScreen active={!productDetailsVisible}>
+        <View className="flex-1 bg-[#F7F8FA]">
       <ScrollView
         showsVerticalScrollIndicator={false}
         scrollEventThrottle={16}
+        contentOffset={{ x: 0, y: lastScrollY.current }}
         onScroll={event => {
           const currentScrollY = event.nativeEvent.contentOffset.y;
           if (currentScrollY < 20 || currentScrollY < lastScrollY.current - 8) {
@@ -498,6 +511,14 @@ export default function Products({
           }
           lastScrollY.current = currentScrollY;
         }}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => fetchProducts(true)}
+            tintColor="#F97316"
+            colors={['#F97316']}
+          />
+        }
         contentContainerClassName="px-4 pb-[255px]"
         style={{ paddingTop: insets.top + 84 }}
       >
@@ -620,6 +641,20 @@ export default function Products({
           </View>
         </View>
 
+        {loadError && products.length > 0 ? (
+          <View className="mb-3 flex-row items-center justify-between rounded-[12px] border border-[#FECACA] bg-[#FEF2F2] px-3 py-2.5">
+            <Text className="mr-3 flex-1 text-[9px] text-[#B91C1C]">
+              {loadError}
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => fetchProducts(true)}
+            >
+              <Text className="text-[9px] font-bold text-[#991B1B]">Retry</Text>
+            </Pressable>
+          </View>
+        ) : null}
+
         {loading ? (
           <View className="items-center rounded-[18px] border border-[#ECE8DF] bg-white py-12">
             <ActivityIndicator size="large" color="#F97316" />
@@ -627,14 +662,14 @@ export default function Products({
               Loading products and combos...
             </Text>
           </View>
-        ) : loadError ? (
+        ) : loadError && products.length === 0 ? (
           <View className="items-center rounded-[18px] border border-[#ECE8DF] bg-white px-5 py-12">
             <Text className="text-center text-[13px] text-[#64748B]">
               {loadError}
             </Text>
             <Pressable
               accessibilityRole="button"
-              onPress={fetchProducts}
+              onPress={() => fetchProducts()}
               className="mt-4 rounded-[12px] bg-[#F97316] px-5 py-3"
             >
               <Text className="text-[12px] font-bold text-white">Retry</Text>
@@ -919,6 +954,16 @@ export default function Products({
           </View>
         </View>
       </Modal>
+        </View>
+      </KeepAliveScreen>
+      <KeepAliveScreen active={productDetailsVisible}>
+        {selectedProduct ? (
+          <ProductsDetails
+            product={selectedProduct}
+            onBack={hideProductDetails}
+          />
+        ) : null}
+      </KeepAliveScreen>
     </View>
   );
 }

@@ -1,8 +1,8 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 
-// export const API_BASE_URL = "https://srigold.qtechx.com/api";
-export const API_BASE_URL = "http://192.168.1.7:5000/api";
+export const API_BASE_URL = "https://furnitures.qtechx.com/api";
+// export const API_BASE_URL = "http://192.168.1.7:5000/api";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -11,14 +11,149 @@ const api = axios.create({
 });
 
 const MAX_RETRIES = 1;
+const API_CACHE_STALE_TIME_MS = 60 * 1000;
+const API_CACHE_GC_TIME_MS = 5 * 60 * 1000;
+const MAX_API_CACHE_ENTRIES = 100;
+const cachedResponses = new Map();
+const inFlightRequests = new Map();
+const baseAdapter = axios.getAdapter(api.defaults.adapter);
 let cachedToken = null;
+let cacheGeneration = 0;
+
+const serializeCacheValue = (value) => {
+  if (value === undefined) return "undefined";
+  if (value === null || typeof value !== "object") {
+    return JSON.stringify(value);
+  }
+  if (Array.isArray(value)) {
+    return `[${value.map(serializeCacheValue).join(",")}]`;
+  }
+  if (typeof URLSearchParams !== "undefined" && value instanceof URLSearchParams) {
+    return value.toString();
+  }
+
+  return `{${Object.keys(value)
+    .sort()
+    .map(
+      (key) =>
+        `${JSON.stringify(key)}:${serializeCacheValue(value[key])}`,
+    )
+    .join(",")}}`;
+};
+
+const readHeader = (headers, name) => {
+  if (typeof headers?.get === "function") return headers.get(name) || "";
+  const header = Object.keys(headers || {}).find(
+    (key) => key.toLowerCase() === name.toLowerCase(),
+  );
+  return header ? headers[header] : "";
+};
+
+const createCacheKey = (config) => {
+  const authorization = readHeader(config.headers, "authorization");
+  return [
+    authorization,
+    config.baseURL || "",
+    config.url || "",
+    serializeCacheValue(config.params || {}),
+    config.responseType || "",
+  ].join("|");
+};
+
+const pruneCachedResponses = (now) => {
+  for (const [key, entry] of cachedResponses) {
+    if (now - entry.cachedAt > API_CACHE_GC_TIME_MS) {
+      cachedResponses.delete(key);
+    }
+  }
+
+  if (cachedResponses.size <= MAX_API_CACHE_ENTRIES) return;
+
+  const leastRecentlyUsed = [...cachedResponses.entries()]
+    .sort(([, left], [, right]) => left.lastUsedAt - right.lastUsedAt)
+    .slice(0, cachedResponses.size - MAX_API_CACHE_ENTRIES);
+  leastRecentlyUsed.forEach(([key]) => cachedResponses.delete(key));
+};
+
+export function invalidateApiResponseCache() {
+  cacheGeneration += 1;
+  cachedResponses.clear();
+  inFlightRequests.clear();
+}
+
+api.defaults.adapter = async (config) => {
+  const requestCacheControl = String(
+    readHeader(config.headers, "cache-control") || "",
+  ).toLowerCase();
+  if (
+    config.method?.toLowerCase() !== "get" ||
+    config.signal ||
+    config.cancelToken ||
+    requestCacheControl.includes("no-store")
+  ) {
+    return baseAdapter(config);
+  }
+
+  const key = createCacheKey(config);
+  const now = Date.now();
+  pruneCachedResponses(now);
+
+  const cached = cachedResponses.get(key);
+  if (cached && now - cached.cachedAt < API_CACHE_STALE_TIME_MS) {
+    cached.lastUsedAt = now;
+    return { ...cached.response, config };
+  }
+
+  const pendingRequest = inFlightRequests.get(key);
+  if (pendingRequest) {
+    const response = await pendingRequest;
+    return { ...response, config };
+  }
+
+  const requestGeneration = cacheGeneration;
+  let request;
+  request = baseAdapter(config)
+    .then((response) => {
+      const cacheControl = String(
+        readHeader(response.headers, "cache-control") || "",
+      ).toLowerCase();
+      if (
+        response.status >= 200 &&
+        response.status < 300 &&
+        !cacheControl.includes("no-store") &&
+        requestGeneration === cacheGeneration
+      ) {
+        const cachedAt = Date.now();
+        cachedResponses.set(key, {
+          response: { ...response, config: undefined },
+          cachedAt,
+          lastUsedAt: cachedAt,
+        });
+        pruneCachedResponses(cachedAt);
+      }
+
+      return response;
+    })
+    .finally(() => {
+      if (inFlightRequests.get(key) === request) {
+        inFlightRequests.delete(key);
+      }
+    });
+
+  inFlightRequests.set(key, request);
+  return request;
+};
 
 export function setTokenCache(token) {
+  if (cachedToken !== token) {
+    invalidateApiResponseCache();
+  }
   cachedToken = token;
 }
 
 export function clearTokenCache() {
   cachedToken = null;
+  invalidateApiResponseCache();
 }
 
 api.interceptors.request.use(async (config) => {
@@ -33,8 +168,12 @@ api.interceptors.request.use(async (config) => {
 
   const activeToken = storageToken || cachedToken;
 
-  if (activeToken) {
+  if (activeToken !== cachedToken) {
     cachedToken = activeToken;
+    invalidateApiResponseCache();
+  }
+
+  if (activeToken) {
     config.headers.Authorization = `Bearer ${activeToken}`;
   } else {
     delete config.headers.Authorization;
@@ -59,6 +198,10 @@ api.interceptors.response.use(
         url: response.config.url,
         status: response.status,
       });
+    }
+
+    if (response.config.method?.toLowerCase() !== "get") {
+      invalidateApiResponseCache();
     }
 
     return response;
