@@ -46,7 +46,7 @@ export default function ProductCard({
       }`}>
       <View
         className={`relative ${
-          compact ? 'h-[128px]' : 'h-[170px]'
+          compact ? 'h-[104px]' : 'h-[170px]'
         } overflow-hidden bg-[#F4E9DD]`}>
         <Pressable
           accessibilityRole="button"
