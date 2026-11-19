@@ -1357,12 +1357,7 @@ export default function CreateBill({
       >
         {step === 1 ? (
           <>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Preview order summary"
-              onPress={() => setSummaryVisible(true)}
-              className="mb-2 flex-row items-center justify-between"
-            >
+            <View className="mb-2 flex-row items-center justify-between">
               <View className="flex-1 pr-3">
                 <Text className="text-[9px] font-bold text-[#64748B]">
                   Order summary ·{' '}
@@ -1377,31 +1372,34 @@ export default function CreateBill({
                         .slice(0, 2)
                         .map(item => `${item.name} ×${item.quantity}`)
                         .join(' · ')
-                    : 'Tap to preview your bill'}
+                    : 'Add products or combos to create a bill'}
                   {cart.length > 2 ? ` · +${cart.length - 2} more` : ''}
                 </Text>
               </View>
-              <View className="flex-row items-center">
-                <Text className="mr-2 text-[14px] font-black text-[#17191C]">
-                  {formatCurrency(totals.total_amount)}
-                </Text>
-                <ChevronDown
-                  size={17}
-                  color="#9A3412"
-                  style={{ transform: [{ rotate: '180deg' }] }}
-                />
-              </View>
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              disabled={cart.length === 0 || !gstSettings}
-              onPress={() => setStep(2)}
-              className="h-[44px] flex-row items-center justify-center rounded-[11px] bg-[#9A3412] disabled:opacity-50"
-            >
-              <Text className="text-[10px] font-black text-white">
-                Next · Customer details
+              <Text className="text-[14px] font-black text-[#17191C]">
+                {formatCurrency(totals.total_amount)}
               </Text>
-            </Pressable>
+            </View>
+            <View className="flex-row">
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Preview order summary"
+                onPress={() => setSummaryVisible(true)}
+                className="mr-2 h-[44px] flex-1 items-center justify-center rounded-[11px] border border-[#9A3412] bg-white"
+              >
+                <Text className="text-[10px] font-black text-[#9A3412]">
+                    Preview
+                </Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                disabled={cart.length === 0 || !gstSettings}
+                onPress={() => setStep(2)}
+                className="h-[44px] flex-1 flex-row items-center justify-center rounded-[11px] bg-[#9A3412] disabled:opacity-50"
+              >
+                <Text className="text-[10px] font-black text-white">Next</Text>
+              </Pressable>
+            </View>
           </>
         ) : (
           <>
@@ -1449,8 +1447,11 @@ export default function CreateBill({
         onRequestClose={() => setSummaryVisible(false)}
       >
         <View className="flex-1 justify-end bg-black/60">
-          <View className="max-h-[90%] rounded-t-[22px] bg-[#F7F8FA]">
-            <View className="flex-row items-center justify-between border-b border-[#E2E8F0] bg-white px-5 py-4">
+          <View className="flex-1 rounded-t-[22px] bg-[#F7F8FA]">
+            <View
+              className="flex-row items-center justify-between border-b border-[#E2E8F0] bg-white px-5 pb-4"
+              style={{ paddingTop: Math.max(insets.top, 12) }}
+            >
               <View>
                 <Text className="text-[14px] font-black text-[#17191C]">
                   Order Summary
@@ -1472,7 +1473,7 @@ export default function CreateBill({
             <ScrollView
               keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={false}
-              className="shrink"
+              className="flex-1"
               contentContainerClassName="px-4 pt-3 pb-1"
             >
               <CartSummary
