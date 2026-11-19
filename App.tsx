@@ -20,6 +20,7 @@ import TopHeader from './src/Admin/Navigation/TopHeader';
 import Home from './src/Admin/Home/Home';
 import Products from './src/Admin/Products/Products';
 import Billing from './src/Admin/Billing/Billing';
+import CreateBill from './src/Admin/Billing/CreateBill';
 import Orders from './src/Admin/Order/Orders';
 import OrdersDetails from './src/Admin/Order/OrdersDetails';
 import type { Order } from './src/Admin/Order/Orders';
@@ -48,6 +49,7 @@ function AppContent() {
   const [authScreen, setAuthScreen] = useState<'login' | 'register'>('login');
   const [profileOpen, setProfileOpen] = useState(false);
   const [billingOpen, setBillingOpen] = useState(false);
+  const [createBillOpen, setCreateBillOpen] = useState(false);
   const [productDetailsOpen, setProductDetailsOpen] = useState(false);
   const [moreDetailsOpen, setMoreDetailsOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -62,6 +64,7 @@ function AppContent() {
     activeItem,
     profileOpen,
     billingOpen,
+    createBillOpen,
     productDetailsOpen,
     moreDetailsOpen,
     selectedOrder,
@@ -100,6 +103,7 @@ function AppContent() {
     setActiveItem('Home');
     setProfileOpen(false);
     setBillingOpen(false);
+    setCreateBillOpen(false);
     setAuthenticated(false);
   };
 
@@ -125,6 +129,7 @@ function AppContent() {
   return (
     <View className="flex-1 bg-white">
       {!profileOpen &&
+      !createBillOpen &&
       !productDetailsOpen &&
       !moreDetailsOpen &&
       !selectedOrder ? (
@@ -135,6 +140,7 @@ function AppContent() {
           onLogoutPress={handleLogout}
           onDrawerItemPress={item => {
             setBillingOpen(false);
+            setCreateBillOpen(false);
             setActiveItem(item);
           }}
         />
@@ -145,13 +151,24 @@ function AppContent() {
           onScrollVisibilityChange={setBottomBarVisible}
         />
       ) : billingOpen ? (
-        <Billing
-          onOrderPress={order => {
-            setBillingOpen(false);
-            setActiveItem('Orders');
-            setSelectedOrder(order);
-          }}
-        />
+        createBillOpen ? (
+          <CreateBill
+            onBackPress={() => setCreateBillOpen(false)}
+            onOrderCreated={() => {
+              setCreateBillOpen(false);
+            }}
+          />
+        ) : (
+          <Billing
+            onCreateBill={() => setCreateBillOpen(true)}
+            onOrderPress={order => {
+              setBillingOpen(false);
+              setCreateBillOpen(false);
+              setActiveItem('Orders');
+              setSelectedOrder(order);
+            }}
+          />
+        )
       ) : activeItem === 'Home' ? (
         <Home
           onScrollVisibilityChange={setBottomBarVisible}
@@ -203,13 +220,18 @@ function AppContent() {
         activeItem={activeItem}
         onItemPress={item => {
           setBillingOpen(false);
+          setCreateBillOpen(false);
           setActiveItem(item);
         }}
-        onAddPress={() => setBillingOpen(true)}
+        onAddPress={() => {
+          setBillingOpen(true);
+          setCreateBillOpen(true);
+        }}
         badgeCount={5}
         visible={
           bottomBarVisible &&
           !profileOpen &&
+          !createBillOpen &&
           !productDetailsOpen &&
           !moreDetailsOpen &&
           !selectedOrder

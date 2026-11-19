@@ -22,6 +22,7 @@ import {
   Search,
   ShoppingBag,
   X,
+  Plus,
 } from 'lucide-react-native';
 import RNPrint from 'react-native-print';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -46,6 +47,7 @@ type BillingInvoice = {
 
 type BillingProps = {
   onOrderPress: (order: Order) => void;
+  onCreateBill: () => void;
 };
 
 const itemsPerPage = 8;
@@ -135,7 +137,7 @@ const escapeHtml = (value: string) =>
     return entities[character];
   });
 
-export default function Billing({ onOrderPress }: BillingProps) {
+export default function Billing({ onOrderPress, onCreateBill }: BillingProps) {
   const insets = useSafeAreaInsets();
   const [invoices, setInvoices] = useState<BillingInvoice[]>([]);
   const [loading, setLoading] = useState(true);
@@ -293,11 +295,25 @@ export default function Billing({ onOrderPress }: BillingProps) {
         contentContainerClassName="px-4 pb-8"
         style={{ paddingTop: insets.top + 84 }}
       >
-        <View className="mb-3">
-          <Text className="text-[20px] font-black text-[#17191C]">Billing</Text>
-          <Text className="mt-1 text-[10px] text-[#64748B]">
-            Shop order invoices
-          </Text>
+        <View className="mb-3 flex-row items-center justify-between">
+          <View>
+            <Text className="text-[20px] font-black text-[#17191C]">
+              Billing
+            </Text>
+            <Text className="mt-1 text-[10px] text-[#64748B]">
+              Shop order invoices
+            </Text>
+          </View>
+          <Pressable
+            accessibilityRole="button"
+            onPress={onCreateBill}
+            className="flex-row items-center rounded-[10px] bg-[#9A3412] px-3 py-2.5"
+          >
+            <Plus size={15} color="#FFFFFF" />
+            <Text className="ml-1.5 text-[9px] font-bold text-white">
+              Create bill
+            </Text>
+          </Pressable>
         </View>
         <ScrollView
           horizontal
