@@ -2,7 +2,6 @@ import React, {
   useCallback,
   useEffect,
   useMemo,
-  useRef,
   useState,
 } from 'react';
 import {
@@ -495,7 +494,6 @@ export default function Checkout({
       fulfillment === 'delivery' && coordinates ? coordinates : undefined,
     pickup_location_id: fulfillment === 'pickup' ? selectedPickupId : undefined,
     payment_method: paymentMethod === 'cod' ? 'cash_on_delivery' : 'razorpay',
-    quote_id: quote?.quote_id,
     items: quoteRequestBody.items,
   });
 
@@ -604,12 +602,11 @@ export default function Checkout({
     fulfillment === 'delivery'
       ? selectedAddress != null
       : selectedPickupId != null;
-  const requestKey = JSON.stringify(quoteRequestBody);
   const orderReady =
     destinationReady &&
     quote != null &&
-    quotedRequestKey === requestKey &&
     !quoteLoading &&
+    !quoteError &&
     !submitting;
 
   return (
@@ -890,15 +887,19 @@ export default function Checkout({
             <View className="flex-row items-center py-2">
               <ActivityIndicator size="small" color="#F97316" />
               <Text className="ml-2 text-[11px] text-[#8B735E]">
-                Getting taxes and total from server…
+                Fetching GST settings from server…
               </Text>
             </View>
-          ) : quote && quotedRequestKey === requestKey ? (
+          ) : quote ? (
             <>
               <SummaryLine label="Subtotal" value={quote.subtotal} />
               <SummaryLine
                 label={
-                  quote.gst_rate != null ? `GST (${quote.gst_rate}%)` : 'GST'
+                  !gstSettings?.gst_enabled
+                    ? 'GST (disabled)'
+                    : gstSettings.tax_mode === 'Tax Inclusive'
+                    ? `GST included (${quote.gst_rate}%)`
+                    : `GST (${quote.gst_rate}%)`
                 }
                 value={quote.gst_amount}
               />
@@ -908,10 +909,9 @@ export default function Checkout({
                   value={-Number(quote.discount_amount)}
                 />
               ) : null}
-              <SummaryLine
-                label="Delivery"
-                value={quote.shipping_amount ?? 0}
-              />
+              {quote.shipping_amount != null ? (
+                <SummaryLine label="Delivery" value={quote.shipping_amount} />
+              ) : null}
               <View className="mt-2 flex-row justify-between border-t border-[#F0E7DE] pt-3">
                 <Text className="text-[13px] font-black text-[#351D0E]">
                   Total
@@ -923,9 +923,7 @@ export default function Checkout({
             </>
           ) : (
             <Text className="text-[11px] leading-4 text-[#8B735E]">
-              Select a{' '}
-              {fulfillment === 'delivery' ? 'saved address' : 'pickup point'} to
-              get server-calculated GST and your final total.
+              GST is calculated using the current tax settings from the server.
             </Text>
           )}
           {quoteError ? (
@@ -975,7 +973,7 @@ export default function Checkout({
       <View className="mb-3 flex-row items-center justify-center">
         <Check size={12} color="#8B735E" />
         <Text className="ml-1 text-[10px] text-[#8B735E]">
-          GST and order total are verified by the server
+          GST settings are fetched from the server; order totals are confirmed when submitted
         </Text>
       </View>
 
