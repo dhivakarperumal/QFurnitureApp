@@ -1,5 +1,12 @@
 import React from 'react';
-import { Image, Pressable, Text, View } from 'react-native';
+import {
+  Image,
+  Pressable,
+  ScrollView,
+  Text,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import { ArrowRight } from 'lucide-react-native';
 import type { StoreBanner } from '../types';
 import { mediaUrl } from '../utils';
@@ -13,22 +20,23 @@ export default function OfferBanners({
   banners,
   onShopPress,
 }: OfferBannersProps) {
-  const banner = banners[0];
-  const imageUri = mediaUrl(banner?.mobile_image ?? banner?.desktop_image);
+  const { width } = useWindowDimensions();
+  const cardWidth = width - 56;
 
-  return (
-    <View className="mt-5 px-4">
-      <View className="mb-3">
-        <Text className="text-[10px] font-bold uppercase tracking-[2px] text-[#A06E46]">
-          Discover more
-        </Text>
-        <Text className="mt-1 text-[22px] font-black text-[#351D0E]">
-          Collections &amp; offers
-        </Text>
-      </View>
-      <View className="min-h-[170px] justify-center overflow-hidden rounded-[20px] bg-[#F5E3D0] px-5 py-4">
+  const renderBanner = (banner: StoreBanner | undefined, key: string) => {
+    const imageUri = mediaUrl(banner?.mobile_image ?? banner?.desktop_image);
+
+    return (
+      <View
+        key={key}
+        style={{ width: cardWidth }}
+        className="relative mr-3 min-h-[170px] justify-center overflow-hidden rounded-[20px] bg-[#F5E3D0] px-5 py-4">
         {imageUri ? (
-          <Image source={{ uri: imageUri }} className="absolute inset-0 h-full w-full" resizeMode="cover" />
+          <Image
+            source={{ uri: imageUri }}
+            className="absolute inset-0 h-full w-full"
+            resizeMode="cover"
+          />
         ) : null}
         <View pointerEvents="none" className="absolute inset-0 bg-white/25" />
         <View className="w-[62%]">
@@ -52,6 +60,33 @@ export default function OfferBanners({
           </Pressable>
         </View>
       </View>
+    );
+  };
+
+  return (
+    <View className="mt-5 px-4">
+      <View className="mb-3">
+        <Text className="text-[10px] font-bold uppercase tracking-[2px] text-[#A06E46]">
+          Discover more
+        </Text>
+        <Text className="mt-1 text-[22px] font-black text-[#351D0E]">
+          Collections &amp; offers
+        </Text>
+      </View>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerClassName="pr-3"
+        snapToInterval={cardWidth + 12}
+        snapToAlignment="start"
+        decelerationRate="fast"
+        disableIntervalMomentum>
+        {banners.length
+          ? banners.map((banner, index) =>
+              renderBanner(banner, String(banner.id ?? index)),
+            )
+          : renderBanner(undefined, 'empty-offer-banner')}
+      </ScrollView>
     </View>
   );
 }
