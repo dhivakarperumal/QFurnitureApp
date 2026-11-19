@@ -19,6 +19,7 @@ import Bottombar from './src/Admin/Navigation/Bottombar';
 import TopHeader from './src/Admin/Navigation/TopHeader';
 import Home from './src/Admin/Home/Home';
 import Products from './src/Admin/Products/Products';
+import Billing from './src/Admin/Billing/Billing';
 import Orders from './src/Admin/Order/Orders';
 import OrdersDetails from './src/Admin/Order/OrdersDetails';
 import type { Order } from './src/Admin/Order/Orders';
@@ -46,6 +47,7 @@ function AppContent() {
   const [checkingSession, setCheckingSession] = useState(true);
   const [authScreen, setAuthScreen] = useState<'login' | 'register'>('login');
   const [profileOpen, setProfileOpen] = useState(false);
+  const [billingOpen, setBillingOpen] = useState(false);
   const [productDetailsOpen, setProductDetailsOpen] = useState(false);
   const [moreDetailsOpen, setMoreDetailsOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -59,6 +61,7 @@ function AppContent() {
   }, [
     activeItem,
     profileOpen,
+    billingOpen,
     productDetailsOpen,
     moreDetailsOpen,
     selectedOrder,
@@ -96,6 +99,7 @@ function AppContent() {
     clearTokenCache();
     setActiveItem('Home');
     setProfileOpen(false);
+    setBillingOpen(false);
     setAuthenticated(false);
   };
 
@@ -129,13 +133,24 @@ function AppContent() {
           onNotificationPress={() => console.log('Notifications')}
           onProfilePress={() => setProfileOpen(true)}
           onLogoutPress={handleLogout}
-          onDrawerItemPress={item => setActiveItem(item)}
+          onDrawerItemPress={item => {
+            setBillingOpen(false);
+            setActiveItem(item);
+          }}
         />
       ) : null}
       {profileOpen ? (
         <Profile
           onBackPress={() => setProfileOpen(false)}
           onScrollVisibilityChange={setBottomBarVisible}
+        />
+      ) : billingOpen ? (
+        <Billing
+          onOrderPress={order => {
+            setBillingOpen(false);
+            setActiveItem('Orders');
+            setSelectedOrder(order);
+          }}
         />
       ) : activeItem === 'Home' ? (
         <Home
@@ -186,8 +201,11 @@ function AppContent() {
       )}
       <Bottombar
         activeItem={activeItem}
-        onItemPress={item => setActiveItem(item)}
-        onAddPress={() => setActiveItem('Products')}
+        onItemPress={item => {
+          setBillingOpen(false);
+          setActiveItem(item);
+        }}
+        onAddPress={() => setBillingOpen(true)}
         badgeCount={5}
         visible={
           bottomBarVisible &&
