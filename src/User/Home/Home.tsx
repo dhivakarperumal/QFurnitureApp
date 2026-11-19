@@ -4,6 +4,7 @@ import CustomFurniture from './CustomFurniture';
 import Hero from './Hero';
 import OfferBanners from './OfferBanners';
 import Products from './Products';
+import Reviews from './Reviews';
 import ShopByRoom from './ShopByRoom';
 import TopRatedProducts from './TopRatedProducts';
 import type { StoreBanner, StoreCategory, StoreProduct } from '../types';
@@ -81,6 +82,7 @@ export default function Home({
       <ShopByRoom onRoomPress={onRoomPress} />
       <CustomFurniture onRequestPress={onCustomFurniturePress} />
       <OfferBanners banners={offerBanners} onShopPress={onExplorePress} />
+      <Reviews />
     </>
   );
 }

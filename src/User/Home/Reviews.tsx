@@ -1,0 +1,193 @@
+import React, { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  Text,
+  useWindowDimensions,
+  View,
+} from 'react-native';
+import { Star } from 'lucide-react-native';
+import api from '../../api';
+
+type CustomerReview = {
+  id: string;
+  customerName: string;
+  rating: number;
+  text: string;
+  productName?: string;
+};
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : null;
+}
+
+function firstString(...values: unknown[]) {
+  return values.find(
+    (value): value is string => typeof value === 'string' && value.trim().length > 0,
+  )?.trim();
+}
+
+function parseReviews(data: unknown): CustomerReview[] {
+  const response = asRecord(data);
+  const items = Array.isArray(data) ? data : response?.reviews;
+  if (!Array.isArray(items)) {
+    throw new Error('The reviews response did not contain a review list.');
+  }
+
+  return items.map((item, index) => {
+    const review = asRecord(item);
+    if (!review) {
+      throw new Error(`The review at position ${index + 1} is invalid.`);
+    }
+
+    const customer = asRecord(review.customer);
+    const user = asRecord(review.user);
+    const product = asRecord(review.product);
+    const customerName = firstString(
+      review.customer_name,
+      review.user_name,
+      review.name,
+      customer?.name,
+      user?.name,
+    );
+    const text = firstString(review.review, review.review_text, review.comment);
+    const rating = Number(review.rating);
+
+    if (
+      !customerName ||
+      !text ||
+      !Number.isFinite(rating) ||
+      rating < 0 ||
+      rating > 5
+    ) {
+      throw new Error(`The review at position ${index + 1} is incomplete.`);
+    }
+
+    return {
+      id: String(review.id ?? index),
+      customerName,
+      rating,
+      text,
+      productName: firstString(
+        review.product_name,
+        review.product_title,
+        product?.name,
+      ),
+    };
+  });
+}
+
+function errorMessage(error: unknown) {
+  if (
+    typeof error === 'object' &&
+    error !== null &&
+    'message' in error &&
+    typeof error.message === 'string'
+  ) {
+    return error.message;
+  }
+  return 'Could not load customer reviews. Please try again.';
+}
+
+export default function Reviews() {
+  const { width } = useWindowDimensions();
+  const cardWidth = width - 80;
+  const [reviews, setReviews] = useState<CustomerReview[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadReviews = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const { data } = await api.get<unknown>('/reviews');
+        const nextReviews = parseReviews(data);
+        if (active) setReviews(nextReviews);
+      } catch (requestError) {
+        console.error('Could not load customer reviews:', requestError);
+        if (active) setError(errorMessage(requestError));
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+
+    loadReviews();
+    return () => {
+      active = false;
+    };
+  }, [retryCount]);
+
+  return (
+    <View className="mt-8">
+      <View className="mb-4 px-4">
+        <Text className="text-[22px] font-black capitalize text-[#351D0E]">
+          Loved by our customers
+        </Text>
+      </View>
+      {loading ? (
+        <View className="h-[150px] items-center justify-center">
+          <ActivityIndicator color="#F97316" />
+        </View>
+      ) : error ? (
+        <View className="mx-4 rounded-[16px] border border-[#F0E7DE] bg-white p-4">
+          <Text accessibilityRole="alert" className="text-[13px] text-[#8B2D20]">
+            {error}
+          </Text>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => setRetryCount(count => count + 1)}
+            className="mt-3 self-start rounded-full bg-[#FFF0E1] px-4 py-2">
+            <Text className="text-[12px] font-bold text-[#351D0E]">Try again</Text>
+          </Pressable>
+        </View>
+      ) : reviews.length ? (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerClassName="pr-9"
+          snapToInterval={cardWidth + 12}
+          snapToAlignment="start"
+          decelerationRate="fast"
+          disableIntervalMomentum>
+          {reviews.map(review => (
+            <View
+              key={review.id}
+              style={{ width: cardWidth }}
+              className="mr-3 min-h-[150px] rounded-[18px] border border-[#F0E7DE] bg-white p-4">
+              <View className="mb-2 flex-row items-center">
+                <Star size={16} color="#F97316" fill="#F97316" />
+                <Text className="ml-1 text-[12px] font-bold text-[#634D3B]">
+                  {review.rating.toFixed(1)}
+                </Text>
+              </View>
+              <Text numberOfLines={4} className="text-[13px] leading-5 text-[#49392D]">
+                “{review.text}”
+              </Text>
+              <View className="mt-auto pt-3">
+                <Text numberOfLines={1} className="text-[12px] font-bold text-[#351D0E]">
+                  {review.customerName}
+                </Text>
+                {review.productName ? (
+                  <Text numberOfLines={1} className="mt-1 text-[10px] text-[#8B735E]">
+                    {review.productName}
+                  </Text>
+                ) : null}
+              </View>
+            </View>
+          ))}
+        </ScrollView>
+      ) : (
+        <Text className="px-4 py-3 text-[13px] text-[#8B735E]">
+          No customer reviews yet.
+        </Text>
+      )}
+    </View>
+  );
+}
