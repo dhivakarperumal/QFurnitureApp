@@ -155,7 +155,7 @@ export default function Billing({
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [viewMode, setViewMode] = useState<'cards' | 'list'>('cards');
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
   const [statusFilter, setStatusFilter] = useState('All');
   const [currentPage, setCurrentPage] = useState(1);
   const [printingOrderId, setPrintingOrderId] = useState<
@@ -314,7 +314,7 @@ export default function Billing({
           }
           lastScrollY.current = currentScrollY;
         }}
-        contentContainerClassName="px-4 pb-8"
+        contentContainerClassName="px-4 pb-[40px]"
         style={{ paddingTop: insets.top + 84 }}
       >
         <ScrollView
@@ -459,10 +459,10 @@ export default function Billing({
             <View className="flex-row rounded-[10px] bg-[#F1F5F9] p-1">
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="Card view"
+                accessibilityLabel="Cards view"
                 accessibilityState={{ selected: viewMode === 'cards' }}
                 onPress={() => setViewMode('cards')}
-                className={`h-[34px] w-[38px] items-center justify-center rounded-[8px] ${
+                className={`h-[34px] flex-row items-center justify-center rounded-[8px] px-2 ${
                   viewMode === 'cards' ? 'bg-white' : ''
                 }`}
               >
@@ -470,20 +470,34 @@ export default function Billing({
                   size={16}
                   color={viewMode === 'cards' ? '#9A3412' : '#64748B'}
                 />
+                <Text
+                  className={`ml-1 text-[8px] font-bold ${
+                    viewMode === 'cards' ? 'text-[#9A3412]' : 'text-[#64748B]'
+                  }`}
+                >
+                  Cards
+                </Text>
               </Pressable>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="List view"
-                accessibilityState={{ selected: viewMode === 'list' }}
-                onPress={() => setViewMode('list')}
-                className={`h-[34px] w-[38px] items-center justify-center rounded-[8px] ${
-                  viewMode === 'list' ? 'bg-white' : ''
+                accessibilityLabel="Table view"
+                accessibilityState={{ selected: viewMode === 'table' }}
+                onPress={() => setViewMode('table')}
+                className={`h-[34px] flex-row items-center justify-center rounded-[8px] px-2 ${
+                  viewMode === 'table' ? 'bg-white' : ''
                 }`}
               >
                 <List
                   size={17}
-                  color={viewMode === 'list' ? '#9A3412' : '#64748B'}
+                  color={viewMode === 'table' ? '#9A3412' : '#64748B'}
                 />
+                <Text
+                  className={`ml-1 text-[8px] font-bold ${
+                    viewMode === 'table' ? 'text-[#9A3412]' : 'text-[#64748B]'
+                  }`}
+                >
+                  Table
+                </Text>
               </Pressable>
             </View>
           </View>
@@ -570,43 +584,79 @@ export default function Billing({
             );
           })
         ) : (
-          paginatedInvoices.map(invoice => {
-            const colors = statusColors[invoice.status] ?? {
-              background: '#F1F5F9',
-              foreground: '#475569',
-            };
-            return (
-              <View
-                key={invoice.orderId}
-                className="mb-2 flex-row items-center rounded-[13px] border border-[#E2E8F0] bg-white p-3"
-              >
-                <View className="mr-3 h-[38px] w-[38px] items-center justify-center rounded-[10px] bg-[#FFF7ED]">
-                  <FileText size={17} color="#9A3412" />
-                </View>
-                <View className="flex-1">
-                  <Text className="text-[10px] font-black text-[#334155]">
-                    {invoice.id}
-                  </Text>
-                  <Text
-                    numberOfLines={1}
-                    className="mt-1 text-[9px] text-[#64748B]"
-                  >
-                    {invoice.customer} · {formatCurrency(invoice.amount)}
-                  </Text>
-                  <Text
-                    className="mt-1 self-start rounded-full px-2 py-0.5 text-[7px] font-bold"
-                    style={{
-                      color: colors.foreground,
-                      backgroundColor: colors.background,
-                    }}
-                  >
-                    {invoice.status}
-                  </Text>
-                </View>
-                {renderActions(invoice)}
+          <ScrollView
+            horizontal
+            nestedScrollEnabled
+            showsHorizontalScrollIndicator
+            className="mb-3"
+          >
+            <View className="w-[605px] overflow-hidden rounded-[12px] border border-[#E2E8F0] bg-white">
+              <View className="flex-row bg-[#F8FAFC] px-3 py-3">
+                <Text className="w-[96px] text-[8px] font-bold text-[#64748B]">
+                  Order ID
+                </Text>
+                <Text className="w-[115px] text-[8px] font-bold text-[#64748B]">
+                  Customer
+                </Text>
+                <Text className="w-[90px] text-[8px] font-bold text-[#64748B]">
+                  Date
+                </Text>
+                <Text className="w-[95px] text-[8px] font-bold text-[#64748B]">
+                  Amount
+                </Text>
+                <Text className="w-[95px] text-[8px] font-bold text-[#64748B]">
+                  Status
+                </Text>
+                <Text className="w-[90px] text-[8px] font-bold text-[#64748B]">
+                  Actions
+                </Text>
               </View>
-            );
-          })
+              {paginatedInvoices.map(invoice => {
+                const colors = statusColors[invoice.status] ?? {
+                  background: '#F1F5F9',
+                  foreground: '#475569',
+                };
+                return (
+                  <View
+                    key={invoice.orderId}
+                    className="flex-row items-center border-t border-[#F1F5F9] px-3 py-2.5"
+                  >
+                    <Text
+                      numberOfLines={1}
+                      className="w-[96px] text-[8px] font-bold text-[#9A3412]"
+                    >
+                      {invoice.id}
+                    </Text>
+                    <Text
+                      numberOfLines={1}
+                      className="w-[115px] pr-2 text-[8px] text-[#334155]"
+                    >
+                      {invoice.customer}
+                    </Text>
+                    <Text className="w-[90px] text-[8px] text-[#64748B]">
+                      {invoice.date}
+                    </Text>
+                    <Text className="w-[95px] text-[8px] font-bold text-[#17191C]">
+                      {formatCurrency(invoice.amount)}
+                    </Text>
+                    <View className="w-[95px]">
+                      <Text
+                        numberOfLines={1}
+                        className="self-start rounded-full px-2 py-1 text-[7px] font-bold"
+                        style={{
+                          color: colors.foreground,
+                          backgroundColor: colors.background,
+                        }}
+                      >
+                        {invoice.status}
+                      </Text>
+                    </View>
+                    <View className="w-[90px]">{renderActions(invoice)}</View>
+                  </View>
+                );
+              })}
+            </View>
+          </ScrollView>
         )}
 
         {totalPages > 1 ? (
