@@ -204,7 +204,7 @@ export default function ProfileScreen({ onBack }: ProfileScreenProps) {
       <ScrollView
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
-        contentContainerClassName="pb-10"
+        contentContainerStyle={{ paddingBottom: Math.max(insets.bottom + 65, 100) }}
       >
         {/* Avatar section */}
         <View className="items-center bg-white py-6 border-b border-[#F0E7DE]">

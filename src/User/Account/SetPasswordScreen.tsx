@@ -88,6 +88,7 @@ type SetPasswordScreenProps = {
 };
 
 export default function SetPasswordScreen({ onBack }: SetPasswordScreenProps) {
+  const insets = useSafeAreaInsets();
   const [passwords, setPasswords] = useState<Passwords>({
     current: '',
     next: '',
@@ -154,7 +155,7 @@ export default function SetPasswordScreen({ onBack }: SetPasswordScreenProps) {
       <ScrollView
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
-        contentContainerClassName="pb-10"
+        contentContainerStyle={{ paddingBottom: Math.max(insets.bottom + 65, 100) }}
       >
         {/* Illustration header */}
         <View className="items-center bg-white py-6 border-b border-[#F0E7DE]">

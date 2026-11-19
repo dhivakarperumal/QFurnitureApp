@@ -74,6 +74,7 @@ type OrdersScreenProps = {
 };
 
 export default function OrdersScreen({ onBack }: OrdersScreenProps) {
+  const insets = useSafeAreaInsets();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -188,7 +189,7 @@ export default function OrdersScreen({ onBack }: OrdersScreenProps) {
           </Text>
         </View>
       ) : (
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="px-4 py-4 pb-10">
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="px-4 py-4" contentContainerStyle={{ paddingBottom: Math.max(insets.bottom + 65, 100) }}>
           {visibleOrders.map(order => {
             const firstItem = Array.isArray(order.items) ? order.items[0] : null;
             const status = order.status || 'Order Placed';
