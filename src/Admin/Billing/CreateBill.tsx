@@ -1388,7 +1388,7 @@ export default function CreateBill({
                 className="mr-2 h-[44px] flex-1 items-center justify-center rounded-[11px] border border-[#9A3412] bg-white"
               >
                 <Text className="text-[10px] font-black text-[#9A3412]">
-                    Preview
+                  Preview
                 </Text>
               </Pressable>
               <Pressable
@@ -1758,10 +1758,9 @@ function CartSummary({
   onRetryGst: () => void;
 }) {
   return (
-    <View className="mb-3 rounded-[16px] bg-[#5B2C12] p-4">
-      <View className="mb-3 flex-row items-center justify-between">
-        <Text className="text-[14px] font-black text-white">Order summary</Text>
-        <Text className="text-[9px] font-bold text-white/70">
+    <View className="mb-3 rounded-[16px] border border-[#E2E8F0] bg-white p-4">
+      <View className="mb-3 flex-row items-center justify-end">
+        <Text className="text-[9px] font-bold text-[#64748B]">
           {cart.length} item{cart.length === 1 ? '' : 's'}
         </Text>
       </View>
@@ -1770,28 +1769,28 @@ function CartSummary({
           {cart.map(item => (
             <View
               key={item.key}
-              className="mb-2 flex-row items-center border-b border-white/10 pb-2"
+              className="mb-2 flex-row items-center border-b border-[#E2E8F0] pb-2"
             >
               {item.image ? (
                 <Image
                   source={{ uri: item.image }}
                   accessibilityLabel={`${item.name} image`}
-                  className="mr-2 h-[42px] w-[42px] rounded-[8px] bg-white/10"
+                  className="mr-2 h-[42px] w-[42px] rounded-[8px] bg-[#F1F5F9]"
                   resizeMode="cover"
                 />
               ) : (
-                <View className="mr-2 h-[42px] w-[42px] items-center justify-center rounded-[8px] bg-white/10">
-                  <Package size={17} color="#FFFFFF" />
+                <View className="mr-2 h-[42px] w-[42px] items-center justify-center rounded-[8px] bg-[#F1F5F9]">
+                  <Package size={17} color="#94A3B8" />
                 </View>
               )}
               <View className="flex-1">
                 <Text
                   numberOfLines={1}
-                  className="text-[9px] font-bold text-white"
+                  className="text-[9px] font-bold text-[#17191C]"
                 >
                   {item.name}
                 </Text>
-                <Text className="mt-1 text-[7px] text-white/60">
+                <Text className="mt-1 text-[7px] text-[#64748B]">
                   {item.item_type === 'combo'
                     ? 'Combo'
                     : `${item.variant_color} · ${item.variant_size}`}
@@ -1800,20 +1799,20 @@ function CartSummary({
                   <Pressable
                     accessibilityRole="button"
                     onPress={() => onQuantityChange(item.key, -1)}
-                    className="h-[22px] w-[22px] items-center justify-center rounded-md border border-white/20"
+                    className="h-[22px] w-[22px] items-center justify-center rounded-md border border-[#CBD5E1]"
                   >
-                    <Minus size={10} color="#FFFFFF" />
+                    <Minus size={10} color="#475569" />
                   </Pressable>
-                  <Text className="mx-2 text-[9px] font-bold text-white">
+                  <Text className="mx-2 text-[9px] font-bold text-[#334155]">
                     {item.quantity}
                   </Text>
                   <Pressable
                     accessibilityRole="button"
                     disabled={item.quantity >= item.stockLimit}
                     onPress={() => onQuantityChange(item.key, 1)}
-                    className="h-[22px] w-[22px] items-center justify-center rounded-md border border-white/20 disabled:opacity-40"
+                    className="h-[22px] w-[22px] items-center justify-center rounded-md border border-[#CBD5E1] disabled:opacity-40"
                   >
-                    <Plus size={10} color="#FFFFFF" />
+                    <Plus size={10} color="#475569" />
                   </Pressable>
                   <Pressable
                     accessibilityRole="button"
@@ -1821,25 +1820,25 @@ function CartSummary({
                     onPress={() => onQuantityChange(item.key, -item.quantity)}
                     className="ml-2 h-[22px] w-[22px] items-center justify-center"
                   >
-                    <Trash2 size={12} color="#FECACA" />
+                    <Trash2 size={12} color="#DC2626" />
                   </Pressable>
                 </View>
               </View>
-              <Text className="ml-2 text-[9px] font-black text-white">
+              <Text className="ml-2 text-[9px] font-black text-[#17191C]">
                 {formatCurrency(item.total)}
               </Text>
             </View>
           ))}
         </View>
       ) : (
-        <Text className="mb-3 text-[9px] text-white/60">
+        <Text className="mb-3 text-[9px] text-[#64748B]">
           No products added yet.
         </Text>
       )}
 
       {gstError ? (
-        <View className="mb-3 rounded-[9px] border border-red-200/30 bg-red-500/10 p-2.5">
-          <Text className="text-[8px] text-red-100">
+        <View className="mb-3 rounded-[9px] border border-red-200 bg-red-50 p-2.5">
+          <Text className="text-[8px] text-red-700">
             GST settings could not be loaded: {gstError}
           </Text>
           <Pressable
@@ -1847,20 +1846,20 @@ function CartSummary({
             onPress={onRetryGst}
             className="mt-1"
           >
-            <Text className="text-[8px] font-bold text-white underline">
+            <Text className="text-[8px] font-bold text-red-700 underline">
               Retry
             </Text>
           </Pressable>
         </View>
       ) : !gstSettings ? (
-        <Text className="mb-3 text-[8px] text-white/60">
+        <Text className="mb-3 text-[8px] text-[#64748B]">
           Loading GST settings...
         </Text>
       ) : null}
 
       {gstSettings?.gst_enabled ? (
         <View className="mb-3">
-          <Text className="mb-2 text-[9px] font-bold text-white/80">
+          <Text className="mb-2 text-[9px] font-bold text-[#475569]">
             GST for this order
           </Text>
           <View className="flex-row">
@@ -1872,11 +1871,11 @@ function CartSummary({
                 onPress={() => onToggleGst(included)}
                 className={`mr-2 flex-1 items-center rounded-[8px] border py-2 ${
                   includeGst === included
-                    ? 'border-orange-200 bg-orange-300/20'
-                    : 'border-white/20'
+                    ? 'border-[#9A3412] bg-[#FFF7ED]'
+                    : 'border-[#CBD5E1]'
                 }`}
               >
-                <Text className="text-[8px] font-bold text-white">
+                <Text className="text-[8px] font-bold text-[#475569]">
                   {included ? 'Include GST' : 'Exclude GST'}
                 </Text>
               </Pressable>
@@ -1884,32 +1883,32 @@ function CartSummary({
           </View>
           {includeGst ? (
             <View className="mt-2 flex-row items-center justify-between">
-              <Text className="text-[8px] text-white/70">
+              <Text className="text-[8px] text-[#64748B]">
                 GST rate · {gstRate}%
               </Text>
-              <Text className="text-[8px] font-bold text-white">
+              <Text className="text-[8px] font-bold text-[#334155]">
                 {formatCurrency(totals.gst_amount)}
               </Text>
             </View>
           ) : (
-            <Text className="mt-2 text-[8px] text-white/60">
+            <Text className="mt-2 text-[8px] text-[#64748B]">
               GST will not be charged for this order.
             </Text>
           )}
         </View>
       ) : null}
 
-      <View className="mb-3 flex-row items-center justify-between border-t border-white/15 pt-3">
-        <Text className="text-[9px] font-bold text-white/75">Subtotal</Text>
-        <Text className="text-[9px] font-bold text-white">
+      <View className="mb-3 flex-row items-center justify-between border-t border-[#E2E8F0] pt-3">
+        <Text className="text-[9px] font-bold text-[#64748B]">Subtotal</Text>
+        <Text className="text-[9px] font-bold text-[#334155]">
           {formatCurrency(totals.subtotal)}
         </Text>
       </View>
       <View className="mb-2 flex-row items-center">
-        <Text className="mr-2 flex-1 text-[9px] font-bold text-white/80">
+        <Text className="mr-2 flex-1 text-[9px] font-bold text-[#475569]">
           Discount
         </Text>
-        <View className="mr-2 flex-row rounded-[8px] border border-white/20 p-0.5">
+        <View className="mr-2 flex-row rounded-[8px] border border-[#CBD5E1] p-0.5">
           {[
             { label: '%', value: 'percentage' as const },
             { label: '₹', value: 'fixed' as const },
@@ -1927,10 +1926,10 @@ function CartSummary({
               }}
               onPress={() => onDiscountTypeChange(option.value)}
               className={`rounded-[6px] px-2 py-1 ${
-                form.discount_type === option.value ? 'bg-white/20' : ''
+                form.discount_type === option.value ? 'bg-[#FFF7ED]' : ''
               }`}
             >
-              <Text className="text-[8px] font-bold text-white">
+              <Text className="text-[8px] font-bold text-[#475569]">
                 {option.label}
               </Text>
             </Pressable>
@@ -1941,28 +1940,28 @@ function CartSummary({
           onChangeText={onDiscountValueChange}
           keyboardType="decimal-pad"
           accessibilityLabel="Discount value"
-          className="w-[66px] rounded-[8px] border border-white/20 px-2 py-1.5 text-right text-[9px] font-bold text-white"
+          className="w-[66px] rounded-[8px] border border-[#CBD5E1] px-2 py-1.5 text-right text-[9px] font-bold text-[#17191C]"
         />
-        <Text className="ml-1 text-[8px] text-white/70">
+        <Text className="ml-1 text-[8px] text-[#64748B]">
           {form.discount_type === 'percentage' ? '%' : '₹'}
         </Text>
       </View>
       <View className="mb-3 flex-row items-center justify-between">
-        <Text className="text-[8px] text-white/60">Discount applied</Text>
-        <Text className="text-[8px] font-bold text-white">
+        <Text className="text-[8px] text-[#64748B]">Discount applied</Text>
+        <Text className="text-[8px] font-bold text-[#334155]">
           -{formatCurrency(totals.discount_amount)}
         </Text>
       </View>
       {pricingError ? (
-        <Text className="mb-2 text-[8px] font-semibold text-amber-200">
+        <Text className="mb-2 text-[8px] font-semibold text-amber-700">
           {pricingError}
         </Text>
       ) : null}
-      <View className="flex-row items-center justify-between border-t border-white/15 pt-3">
-        <Text className="text-[9px] font-black uppercase tracking-[1px] text-orange-200">
+      <View className="flex-row items-center justify-between border-t border-[#E2E8F0] pt-3">
+        <Text className="text-[9px] font-black uppercase tracking-[1px] text-[#9A3412]">
           Grand total
         </Text>
-        <Text className="text-[17px] font-black text-white">
+        <Text className="text-[17px] font-black text-[#17191C]">
           {formatCurrency(totals.total_amount)}
         </Text>
       </View>
