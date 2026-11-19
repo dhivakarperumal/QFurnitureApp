@@ -26,7 +26,7 @@ type DetailItem = StoreProduct & {
   combo_items?: Array<{ quantity?: number | string }> | null;
 };
 
-type ItemDetailsProps = {
+export type ItemDetailsProps = {
   itemId: string;
   itemType: 'product' | 'combo';
   favorite: boolean;

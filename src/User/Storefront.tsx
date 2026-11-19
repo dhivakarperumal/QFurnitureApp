@@ -11,7 +11,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '../api';
 import Header from './Header';
 import Home from './Home/Home';
-import ItemDetails from './ItemDetails';
+import ComboDetails from './ComboDetails';
+import ProductDetails from './ProductDetails';
 import Shop from './Shop/Shop';
 import Tabs from './Tabs';
 import Cart from './Cart/Cart';
@@ -384,15 +385,17 @@ export default function Storefront({
         detailTarget.itemType === 'combo'
           ? `combo-${detailTarget.itemId}`
           : detailTarget.itemId;
-      return (
-        <ItemDetails
-          itemId={detailTarget.itemId}
-          itemType={detailTarget.itemType}
-          favorite={favoriteIds.includes(actionId)}
-          onBack={() => setDetailTarget(null)}
-          onFavoritePress={toggleFavorite}
-          onAddToCart={addToCart}
-        />
+      const detailProps = {
+        itemId: detailTarget.itemId,
+        favorite: favoriteIds.includes(actionId),
+        onBack: () => setDetailTarget(null),
+        onFavoritePress: toggleFavorite,
+        onAddToCart: addToCart,
+      };
+      return detailTarget.itemType === 'combo' ? (
+        <ComboDetails {...detailProps} />
+      ) : (
+        <ProductDetails {...detailProps} />
       );
     }
 
