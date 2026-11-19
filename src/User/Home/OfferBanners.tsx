@@ -43,16 +43,19 @@ export default function OfferBanners({
       <View
         key={key}
         style={{ width: cardWidth }}
-        className="relative mr-3 min-h-[170px] justify-center overflow-hidden rounded-[20px] bg-[#F5E3D0] px-5 py-4">
+        className="relative min-h-[170px] justify-center overflow-hidden rounded-[20px] bg-[#F5E3D0] px-5 py-4">
         {imageUri ? (
           <Image
             source={{ uri: imageUri }}
-            className="absolute inset-0 h-full w-full"
+            className="absolute right-0 top-0 h-full w-1/2"
             resizeMode="cover"
           />
         ) : null}
-        <View pointerEvents="none" className="absolute inset-0 bg-white/25" />
-        <View className="w-[62%]">
+        <View
+          pointerEvents="none"
+          className="absolute inset-y-0 left-0 w-[60%] rounded-r-[80px] bg-[#F5E3D0]"
+        />
+        <View className="w-[60%]">
           {banner?.offer ? (
             <Text className="mb-2 self-start rounded-full bg-[#176139] px-3 py-1 text-[10px] font-bold text-white">
               {banner.offer}
