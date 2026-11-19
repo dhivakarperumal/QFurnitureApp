@@ -10,6 +10,7 @@ import {
   Tag,
   UserRound,
   UsersRound,
+  Video,
 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Categery from './Categery';
@@ -21,6 +22,7 @@ import KeepAliveScreen from '../Navigation/KeepAliveScreen';
 import BannerScreen from './Banner';
 import Topheaderoffer from './Topheaderoffer';
 import Coupens from './Coupens';
+import YoutubeVideos from './Youtuble';
 
 type MoreProps = {
   onScrollVisibilityChange?: (visible: boolean) => void;
@@ -36,6 +38,7 @@ export default function More({
   screenRequestId = 0,
 }: MoreProps) {
   const insets = useSafeAreaInsets();
+  const lastScrollY = React.useRef(0);
   const [categoriesOpen, setCategoriesOpen] = React.useState(false);
   const [usersOpen, setUsersOpen] = React.useState(false);
   const [stockOpen, setStockOpen] = React.useState(false);
@@ -44,6 +47,7 @@ export default function More({
   const [offersOpen, setOffersOpen] = React.useState(false);
   const [offerManagementOpen, setOfferManagementOpen] = React.useState(false);
   const [couponsOpen, setCouponsOpen] = React.useState(false);
+  const [videosOpen, setVideosOpen] = React.useState(false);
 
   React.useEffect(() => {
     if (!initialScreen || screenRequestId === 0) return;
@@ -158,6 +162,18 @@ export default function More({
     onScrollVisibilityChange?.(true);
   };
 
+  const openVideos = () => {
+    setVideosOpen(true);
+    onDetailsVisibilityChange?.(true);
+    onScrollVisibilityChange?.(true);
+  };
+
+  const closeVideos = () => {
+    setVideosOpen(false);
+    onDetailsVisibilityChange?.(false);
+    onScrollVisibilityChange?.(true);
+  };
+
   const detailOpen =
     categoriesOpen ||
     usersOpen ||
@@ -166,12 +182,26 @@ export default function More({
     reviewsOpen ||
     offersOpen ||
     offerManagementOpen ||
-    couponsOpen;
+    couponsOpen ||
+    videosOpen;
   return (
     <View className="flex-1">
       <KeepAliveScreen active={!detailOpen}>
         <ScrollView
           showsVerticalScrollIndicator={false}
+          scrollEventThrottle={16}
+          onScroll={event => {
+            const currentScrollY = event.nativeEvent.contentOffset.y;
+            if (
+              currentScrollY < 20 ||
+              currentScrollY < lastScrollY.current - 8
+            ) {
+              onScrollVisibilityChange?.(true);
+            } else if (currentScrollY > lastScrollY.current + 8) {
+              onScrollVisibilityChange?.(false);
+            }
+            lastScrollY.current = currentScrollY;
+          }}
           contentContainerClassName="px-4 pb-[255px]"
           style={{ paddingTop: insets.top + 84 }}
         >
@@ -323,6 +353,25 @@ export default function More({
         </View>
         <ChevronRight size={21} color="#94A3B8" />
       </Pressable>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Open YouTube videos"
+        onPress={openVideos}
+        className="mt-3 flex-row items-center rounded-[18px] border border-[#FCE6D7] bg-white p-4 shadow-sm elevation-[2]"
+      >
+        <View className="h-[52px] w-[52px] items-center justify-center rounded-[14px] bg-[#FFF1D6]">
+          <Video size={25} color="#F97316" strokeWidth={2} />
+        </View>
+        <View className="ml-3 flex-1">
+          <Text className="text-[15px] font-black text-[#17191C]">
+            YouTube Videos
+          </Text>
+          <Text className="mt-1 text-[11px] text-[#64748B]">
+            Manage videos, links, and supporting documents
+          </Text>
+        </View>
+        <ChevronRight size={21} color="#94A3B8" />
+      </Pressable>
         </ScrollView>
       </KeepAliveScreen>
       <KeepAliveScreen active={categoriesOpen}>
@@ -363,6 +412,9 @@ export default function More({
       </KeepAliveScreen>
       <KeepAliveScreen active={couponsOpen}>
         <Coupens onBackPress={closeCoupons} />
+      </KeepAliveScreen>
+      <KeepAliveScreen active={videosOpen}>
+        <YoutubeVideos onBackPress={closeVideos} />
       </KeepAliveScreen>
     </View>
   );
