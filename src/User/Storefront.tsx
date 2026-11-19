@@ -287,8 +287,9 @@ export default function Storefront({
     return (
       <View
         key={id}
-        style={compact ? { width: '48%' } : { width: 258 }}
-        className="mb-3 overflow-hidden rounded-[20px] border border-[#F0E7DE] bg-white shadow-sm">
+        className={`mb-3 overflow-hidden rounded-[20px] border border-[#F0E7DE] bg-white shadow-sm ${
+          compact ? 'w-[48%]' : 'w-[258px]'
+        }`}>
         <View className="relative h-[170px] overflow-hidden bg-[#F4E9DD]">
           {imageUri ? (
             <Image source={{ uri: imageUri }} className="h-full w-full" resizeMode="cover" />
