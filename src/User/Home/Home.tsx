@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Category from './Category';
 import CustomFurniture from './CustomFurniture';
 import Hero from './Hero';
@@ -36,6 +36,22 @@ export default function Home({
   onAddToCart,
 }: HomeProps) {
   const [heroIndex, setHeroIndex] = useState(0);
+
+  useEffect(() => {
+    setHeroIndex(currentIndex =>
+      heroBanners.length ? currentIndex % heroBanners.length : 0,
+    );
+  }, [heroBanners.length]);
+
+  useEffect(() => {
+    if (heroBanners.length < 2) return;
+
+    const intervalId = setInterval(() => {
+      setHeroIndex(currentIndex => (currentIndex + 1) % heroBanners.length);
+    }, 4000);
+
+    return () => clearInterval(intervalId);
+  }, [heroBanners.length]);
 
   return (
     <>
