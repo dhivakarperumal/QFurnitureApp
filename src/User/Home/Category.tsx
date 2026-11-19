@@ -31,7 +31,9 @@ export default function Category({
   const [contentWidth, setContentWidth] = useState(0);
   const [viewportWidth, setViewportWidth] = useState(0);
   const [isUserScrolling, setIsUserScrolling] = useState(false);
-  const categoryStep = 124;
+  const categoryWidth =
+    viewportWidth > 0 ? Math.max(96, (viewportWidth - 32 - 24) / 3) : 112;
+  const categoryStep = categoryWidth + 12;
 
   useEffect(() => {
     if (isUserScrolling || categories.length < 2) {
@@ -52,7 +54,7 @@ export default function Category({
     }, 3000);
 
     return () => clearInterval(interval);
-  }, [categories.length, contentWidth, isUserScrolling, viewportWidth]);
+  }, [categories.length, categoryStep, contentWidth, isUserScrolling, viewportWidth]);
 
   const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     scrollPositionRef.current = event.nativeEvent.contentOffset.x;
@@ -95,8 +97,13 @@ export default function Category({
               key={category.catId ?? category.id ?? category.name ?? index}
               accessibilityRole="button"
               onPress={() => onCategoryPress(category.name)}
-              className="mr-3 w-[112px] items-center">
-              <View className="h-[104px] w-[112px] overflow-hidden rounded-[18px] bg-[#F1E5D7]">
+              style={{ width: categoryWidth }}
+              className={`items-center ${
+                index === categories.length - 1 ? 'mr-0' : 'mr-3'
+              }`}>
+              <View
+                className="h-[104px] overflow-hidden rounded-[18px] bg-[#F1E5D7]"
+                style={{ width: categoryWidth }}>
                 {imageUri ? (
                   <Image source={{ uri: imageUri }} className="h-full w-full" resizeMode="cover" />
                 ) : (
