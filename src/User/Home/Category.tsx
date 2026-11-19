@@ -32,8 +32,9 @@ export default function Category({
   const [viewportWidth, setViewportWidth] = useState(0);
   const [isUserScrolling, setIsUserScrolling] = useState(false);
   const categoryWidth =
-    viewportWidth > 0 ? Math.max(96, (viewportWidth - 32 - 24) / 3) : 112;
+    viewportWidth > 0 ? (viewportWidth - 56) / 3 : 112;
   const categoryStep = categoryWidth + 12;
+  const snapOffsets = categories.map((_, index) => index * categoryStep);
 
   useEffect(() => {
     if (isUserScrolling || categories.length < 2) {
@@ -88,6 +89,7 @@ export default function Category({
         onMomentumScrollEnd={() => setIsUserScrolling(false)}
         snapToInterval={categoryStep}
         snapToAlignment="start"
+        snapToOffsets={snapOffsets}
         decelerationRate="fast"
         disableIntervalMomentum>
         {categories.map((category, index) => {
