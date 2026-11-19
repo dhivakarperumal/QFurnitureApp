@@ -19,11 +19,15 @@ import KeepAliveScreen from '../Navigation/KeepAliveScreen';
 type MoreProps = {
   onScrollVisibilityChange?: (visible: boolean) => void;
   onDetailsVisibilityChange?: (visible: boolean) => void;
+  initialScreen?: 'menu' | 'categories' | 'users' | 'stock';
+  screenRequestId?: number;
 };
 
 export default function More({
   onScrollVisibilityChange,
   onDetailsVisibilityChange,
+  initialScreen,
+  screenRequestId = 0,
 }: MoreProps) {
   const insets = useSafeAreaInsets();
   const [categoriesOpen, setCategoriesOpen] = React.useState(false);
@@ -31,6 +35,22 @@ export default function More({
   const [stockOpen, setStockOpen] = React.useState(false);
   const [profileOpen, setProfileOpen] = React.useState(false);
   const [reviewsOpen, setReviewsOpen] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!initialScreen || screenRequestId === 0) return;
+    setCategoriesOpen(initialScreen === 'categories');
+    setUsersOpen(initialScreen === 'users');
+    setStockOpen(initialScreen === 'stock');
+    setProfileOpen(false);
+    setReviewsOpen(false);
+    onDetailsVisibilityChange?.(initialScreen !== 'menu');
+    onScrollVisibilityChange?.(true);
+  }, [
+    initialScreen,
+    screenRequestId,
+    onDetailsVisibilityChange,
+    onScrollVisibilityChange,
+  ]);
 
   const openCategories = () => {
     setCategoriesOpen(true);

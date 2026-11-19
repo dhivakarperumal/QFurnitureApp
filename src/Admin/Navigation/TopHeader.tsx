@@ -8,19 +8,29 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   ArrowLeft,
+  BarChart3,
   Bell,
-  Ellipsis,
+  ChevronDown,
+  ChevronRight,
   Home,
+  LayoutGrid,
+  Layers,
   LogOut,
   Menu,
   Package,
+  Pencil,
+  Settings,
+  ShieldCheck,
   ShoppingBag,
+  Tag,
   UserRound,
+  UsersRound,
   X,
 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -46,17 +56,38 @@ type TopHeaderProps = {
   onNotificationPress?: () => void;
   onProfilePress?: () => void;
   onLogoutPress?: () => void;
-  onDrawerItemPress?: (
-    item: 'Home' | 'Products' | 'Orders' | 'More',
-  ) => void;
+  activeDrawerItem?: DrawerDestination | null;
+  onDrawerItemPress?: (item: DrawerDestination) => void;
 };
 
-const drawerItems = [
-  { label: 'Home', icon: Home },
-  { label: 'Products', icon: Package },
+export type DrawerDestination =
+  | 'Dashboard'
+  | 'Products'
+  | 'Categories'
+  | 'Orders'
+  | 'Customers'
+  | 'Inventory / Stock'
+  | 'Sales & Reports'
+  | 'Offers & Banners'
+  | 'Users & Roles'
+  | 'Settings';
+
+const drawerItems: Array<{
+  label: DrawerDestination;
+  icon: typeof Home;
+  expandable?: boolean;
+}> = [
+  { label: 'Dashboard', icon: Home },
+  { label: 'Products', icon: Package, expandable: true },
+  { label: 'Categories', icon: LayoutGrid },
   { label: 'Orders', icon: ShoppingBag },
-  { label: 'More', icon: Ellipsis },
-] as const;
+  { label: 'Customers', icon: UsersRound },
+  { label: 'Inventory / Stock', icon: Layers },
+  { label: 'Sales & Reports', icon: BarChart3, expandable: true },
+  { label: 'Offers & Banners', icon: Tag },
+  { label: 'Users & Roles', icon: ShieldCheck },
+  { label: 'Settings', icon: Settings },
+];
 
 const isToday = (value?: string) => {
   if (!value) return false;
@@ -92,13 +123,19 @@ export default function TopHeader({
   onProfilePress,
   onLogoutPress,
   onDrawerItemPress,
+  activeDrawerItem,
 }: TopHeaderProps) {
   const insets = useSafeAreaInsets();
+  const { width: windowWidth } = useWindowDimensions();
   const [drawerVisible, setDrawerVisible] = useState(false);
+  const [expandedDrawerItem, setExpandedDrawerItem] = useState<string | null>(
+    null,
+  );
   const [profileVisible, setProfileVisible] = useState(false);
   const [userInitial, setUserInitial] = useState<string | null>(null);
   const [userName, setUserName] = useState('');
   const [userEmail, setUserEmail] = useState('');
+  const [userRole, setUserRole] = useState('Store Admin');
   const [notificationsVisible, setNotificationsVisible] = useState(false);
   const [todayOrders, setTodayOrders] = useState<HeaderOrder[]>([]);
   const [todayOrdersLoading, setTodayOrdersLoading] = useState(false);
@@ -173,10 +210,15 @@ export default function TopHeader({
         'email' in user && typeof user.email === 'string'
           ? user.email.trim()
           : '';
+      const role =
+        'role' in user && typeof user.role === 'string'
+          ? user.role.trim()
+          : 'Store Admin';
       const initial = Array.from(name)[0]?.toLocaleUpperCase();
       if (mounted) {
         setUserName(name);
         setUserEmail(email);
+        setUserRole(role || 'Store Admin');
         if (initial) setUserInitial(initial);
       }
     };
@@ -191,6 +233,7 @@ export default function TopHeader({
     setProfileVisible(false);
     setNotificationsVisible(false);
     setDrawerVisible(true);
+    if (!todayOrdersLoaded) loadTodayOrders();
     onMenuPress?.();
   };
 
@@ -418,53 +461,191 @@ export default function TopHeader({
       <Modal
         visible={drawerVisible}
         transparent
-        animationType="fade"
+        animationType="slide"
         onRequestClose={() => setDrawerVisible(false)}>
-        <View
-          style={{ paddingTop: insets.top, backgroundColor: colors.primary }}
-          className="flex-1">
-          <View className="h-[72px] flex-row items-center border-b border-white/30 px-2">
-            <Image
-              source={require('../../Assert/images/appicon.png')}
-              className="h-[48px] w-[48px] rounded-full"
-              resizeMode="cover"
-            />
-            <View className="ml-[10px] flex-1">
-              <Text numberOfLines={1} className="text-[16px] font-bold text-white">
-                {shopName}
-              </Text>
+        <View className="flex-1 flex-row bg-black/55">
+          <View
+            style={{
+              width: Math.min(windowWidth * 0.78, 340),
+              paddingTop: insets.top,
+              paddingBottom: insets.bottom,
+            }}
+            className="overflow-hidden rounded-r-[22px] bg-white">
+            <View className="bg-[#E95305] px-4 pb-4 pt-3">
+              <View className="mb-4 flex-row items-center">
+                <View className="h-[42px] w-[42px] items-center justify-center overflow-hidden rounded-[12px] bg-white">
+                  <Image
+                    source={require('../../Assert/images/appicon.png')}
+                    className="h-[38px] w-[38px]"
+                    resizeMode="contain"
+                  />
+                </View>
+                <Text
+                  numberOfLines={1}
+                  className="ml-2 flex-1 text-[19px] font-black text-white">
+                  {shopName.replace(/\s+Furniture$/i, 'Furn')}
+                </Text>
+                <View className="rounded-[7px] border border-white/60 px-2 py-1">
+                  <Text className="text-[10px] font-bold text-white">Admin</Text>
+                </View>
+                <Pressable
+                  accessibilityLabel="Close menu"
+                  accessibilityRole="button"
+                  onPress={() => setDrawerVisible(false)}
+                  className="ml-1 h-[36px] w-[30px] items-center justify-center">
+                  <X size={20} color="#FFFFFF" strokeWidth={2.2} />
+                </Pressable>
+              </View>
+              <View className="flex-row items-center">
+                <View className="h-[52px] w-[52px] items-center justify-center rounded-full border-2 border-white/80 bg-white/95">
+                  <Text className="text-[22px] font-black text-[#C2410C]">
+                    {userInitial || 'A'}
+                  </Text>
+                </View>
+                <View className="ml-3 flex-1">
+                  <Text
+                    numberOfLines={1}
+                    className="text-[15px] font-black text-white">
+                    {userName || 'Admin'}
+                  </Text>
+                  <Text numberOfLines={1} className="mt-1 text-[11px] text-white">
+                    {userRole}
+                  </Text>
+                </View>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Edit profile"
+                  onPress={() => {
+                    setDrawerVisible(false);
+                    onProfilePress?.();
+                  }}
+                  className="h-[38px] w-[38px] items-center justify-center">
+                  <Pencil size={19} color="#FFFFFF" strokeWidth={2.2} />
+                </Pressable>
+              </View>
             </View>
-            <Pressable
-              accessibilityLabel="Close menu"
-              accessibilityRole="button"
-              onPress={() => setDrawerVisible(false)}
-              className="h-[42px] w-[42px] items-center justify-center">
-              <X size={28} color="#FFFFFF" strokeWidth={2.2} />
-            </Pressable>
-          </View>
 
-          <View className="flex-1 px-[16px] py-[12px]">
-            {drawerItems.map(item => {
-              const ItemIcon = item.icon;
-              return (
+            <ScrollView
+              className="flex-1"
+              contentContainerClassName="px-2 py-3"
+              showsVerticalScrollIndicator={false}>
+              {drawerItems.map(item => {
+                const ItemIcon = item.icon;
+                const isActive = activeDrawerItem === item.label;
+                const isExpanded = expandedDrawerItem === item.label;
+                const children =
+                  item.label === 'Products'
+                    ? (['Products', 'Categories', 'Inventory / Stock'] as const)
+                    : item.label === 'Sales & Reports'
+                      ? (['Sales & Reports', 'Orders'] as const)
+                      : [];
+                return (
+                  <View key={item.label}>
+                    <View
+                      className={[
+                        'mb-1 h-[46px] flex-row items-center rounded-[12px]',
+                        isActive ? 'bg-[#FFF0E3]' : '',
+                      ].join(' ')}>
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityState={{ selected: isActive }}
+                        onPress={() => {
+                          setDrawerVisible(false);
+                          onDrawerItemPress?.(item.label);
+                        }}
+                        className="h-full flex-1 flex-row items-center pl-3">
+                        <ItemIcon
+                          size={22}
+                          color={isActive ? '#E95305' : '#17191C'}
+                          strokeWidth={2}
+                        />
+                        <Text
+                          className={[
+                            'ml-3 flex-1 text-[14px]',
+                            isActive
+                              ? 'font-bold text-[#C2410C]'
+                              : 'font-medium text-[#17191C]',
+                          ].join(' ')}>
+                          {item.label}
+                        </Text>
+                        {item.label === 'Orders' &&
+                        displayedNotificationCount > 0 ? (
+                          <View className="mr-3 min-w-[34px] items-center rounded-full bg-[#F97316] px-2 py-1">
+                            <Text className="text-[10px] font-bold text-white">
+                              {displayedNotificationCount > 99
+                                ? '99+'
+                                : displayedNotificationCount}
+                            </Text>
+                          </View>
+                        ) : null}
+                      </Pressable>
+                      {item.expandable ? (
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel={`${isExpanded ? 'Collapse' : 'Expand'} ${item.label}`}
+                          onPress={() =>
+                            setExpandedDrawerItem(isExpanded ? null : item.label)
+                          }
+                          className="h-full w-[40px] items-center justify-center">
+                          {isExpanded ? (
+                            <ChevronDown size={18} color="#475569" />
+                          ) : (
+                            <ChevronRight size={18} color="#475569" />
+                          )}
+                        </Pressable>
+                      ) : null}
+                    </View>
+                    {isExpanded
+                      ? children
+                          .filter(child => child !== item.label)
+                          .map(child => (
+                            <Pressable
+                              key={child}
+                              accessibilityRole="button"
+                              onPress={() => {
+                                setDrawerVisible(false);
+                                onDrawerItemPress?.(child);
+                              }}
+                              className="mb-1 ml-9 h-[38px] justify-center rounded-[10px] px-3">
+                              <Text className="text-[12px] font-medium text-[#475569]">
+                                {child}
+                              </Text>
+                            </Pressable>
+                          ))
+                      : null}
+                  </View>
+                );
+              })}
+            </ScrollView>
+
+            <View className="border-t border-[#E5E7EB] px-2 py-3">
+              {userEmail ? (
+                <Text
+                  numberOfLines={1}
+                  className="mb-2 px-3 text-[10px] text-[#64748B]">
+                  {userEmail}
+                </Text>
+              ) : null}
               <Pressable
-                key={item.label}
                 accessibilityRole="button"
                 onPress={() => {
                   setDrawerVisible(false);
-                  onDrawerItemPress?.(item.label);
+                  onLogoutPress?.();
                 }}
-                className="mb-[8px] h-[56px] flex-row items-center rounded-[10px] px-[14px]">
-                <View className="w-[42px] items-center">
-                  <ItemIcon size={24} color="#FFFFFF" strokeWidth={2} />
-                </View>
-                <Text className="ml-[8px] text-[16px] font-bold text-white">
-                  {item.label}
+                className="h-[48px] flex-row items-center rounded-[12px] px-3">
+                <LogOut size={22} color="#DC2626" strokeWidth={2} />
+                <Text className="ml-3 text-[14px] font-semibold text-[#DC2626]">
+                  Logout
                 </Text>
               </Pressable>
-              );
-            })}
+            </View>
           </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Close navigation drawer"
+            onPress={() => setDrawerVisible(false)}
+            className="flex-1"
+          />
         </View>
       </Modal>
     </ImageBackground>
