@@ -31,6 +31,7 @@ export function productImage(product: StoreProduct) {
       ? images[preferredIndex]
       : undefined) ??
     images[0] ??
+    product.image ??
     product.variants?.find(variant => variant.image)?.image;
   return mediaUrl(path);
 }

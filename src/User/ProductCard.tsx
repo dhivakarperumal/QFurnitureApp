@@ -98,7 +98,7 @@ export default function ProductCard({
         <Pressable
           accessibilityRole="button"
           onPress={() => onProductPress(id)}
-          className={`mt-1 ${compact ? 'min-h-[34px]' : 'min-h-[40px]'}`}>
+          className={compact ? 'mt-1' : 'mt-1 min-h-[40px]'}>
           <Text
             numberOfLines={compact ? 1 : 2}
             className={`font-bold text-[#351D0E] ${
