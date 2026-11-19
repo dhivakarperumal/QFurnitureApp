@@ -295,19 +295,15 @@ export default function Billing({ onOrderPress, onCreateBill }: BillingProps) {
         contentContainerClassName="px-4 pb-8"
         style={{ paddingTop: insets.top + 84 }}
       >
-       
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          className="mb-3"
-        >
+        <View className="mb-4 flex-row flex-wrap justify-between">
           {[
             {
               label: 'Total amount',
               value: formatCurrency(totalAmount),
               detail: 'Shop orders only',
               color: '#C2410C',
-              background: '#FFF7ED',
+              borderColor: '#FED7AA',
+              watermarkColor: '#FDE8D8',
               icon: CreditCard,
             },
             {
@@ -315,7 +311,8 @@ export default function Billing({ onOrderPress, onCreateBill }: BillingProps) {
               value: formatCurrency(totalAmountToday),
               detail: 'Shop orders only',
               color: '#047857',
-              background: '#ECFDF5',
+              borderColor: '#A7F3D0',
+              watermarkColor: '#D1FAE5',
               icon: DollarSign,
             },
             {
@@ -323,7 +320,8 @@ export default function Billing({ onOrderPress, onCreateBill }: BillingProps) {
               value: String(todayInvoices.length),
               detail: 'Shop orders only',
               color: '#B45309',
-              background: '#FFFBEB',
+              borderColor: '#FDE68A',
+              watermarkColor: '#FEF3C7',
               icon: ShoppingBag,
             },
           ].map(stat => {
@@ -331,34 +329,48 @@ export default function Billing({ onOrderPress, onCreateBill }: BillingProps) {
             return (
               <View
                 key={stat.label}
-                className="mr-3 h-[118px] w-[190px] justify-center rounded-[16px] border border-[#F1E8DF] bg-white px-4 shadow-sm"
+                className="relative mb-3 h-[118px] w-[49%] justify-center overflow-hidden rounded-[16px] border bg-white pl-3 pr-2 shadow-sm elevation-[3]"
+                style={{ borderColor: stat.borderColor }}
               >
+                <View
+                  className="absolute left-0 top-[16px] h-[86px] w-[4px] rounded-r-full"
+                  style={{ backgroundColor: stat.color }}
+                />
+                <View className="absolute bottom-1 right-1">
+                  <StatIcon size={48} color={stat.watermarkColor} />
+                </View>
                 <View className="flex-row items-center">
                   <View
-                    className="h-[42px] w-[42px] items-center justify-center rounded-[12px]"
-                    style={{ backgroundColor: stat.background }}
+                    className="h-[48px] w-[48px] items-center justify-center rounded-[12px] shadow-sm elevation-[3]"
+                    style={{ backgroundColor: stat.color }}
                   >
-                    <StatIcon size={20} color={stat.color} />
+                    <StatIcon size={23} color="#FFFFFF" />
                   </View>
                   <View className="ml-3 flex-1">
-                    <Text className="text-[10px] font-bold text-[#64748B]">
+                    <Text
+                      numberOfLines={2}
+                      className="text-[13px] font-bold text-[#17191C]"
+                    >
                       {stat.label}
                     </Text>
                     <Text
                       numberOfLines={1}
-                      className="mt-1 text-[18px] font-black text-[#17191C]"
+                      className="text-[20px] font-black leading-[25px] text-[#17191C]"
                     >
                       {loading ? '—' : stat.value}
                     </Text>
+                    <Text
+                      numberOfLines={2}
+                      className="text-[10px] text-[#64748B]"
+                    >
+                      {stat.detail}
+                    </Text>
                   </View>
                 </View>
-                <Text className="mt-3 text-[9px] text-[#94A3B8]">
-                  {stat.detail}
-                </Text>
               </View>
             );
           })}
-        </ScrollView>
+        </View>
 
         <View className="mb-3 rounded-[16px] border border-[#E2E8F0] bg-white p-3">
           <View className="mb-3 h-[44px] flex-row items-center rounded-[11px] bg-[#F8FAFC] px-3">
