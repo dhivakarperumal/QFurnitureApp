@@ -73,6 +73,7 @@ function FilterSection({
 }
 
 type PriceRangeSliderProps = {
+  minimum: number;
   maximum: number;
   minimumValue: number;
   maximumValue: number;
@@ -81,6 +82,7 @@ type PriceRangeSliderProps = {
 };
 
 function PriceRangeSlider({
+  minimum,
   maximum,
   minimumValue,
   maximumValue,
@@ -90,8 +92,14 @@ function PriceRangeSlider({
   const [trackWidth, setTrackWidth] = useState(0);
   const minimumStart = useRef(minimumValue);
   const maximumStart = useRef(maximumValue);
-  const values = useRef({ trackWidth, maximum, minimumValue, maximumValue });
-  values.current = { trackWidth, maximum, minimumValue, maximumValue };
+  const values = useRef({
+    trackWidth,
+    minimum,
+    maximum,
+    minimumValue,
+    maximumValue,
+  });
+  values.current = { trackWidth, minimum, maximum, minimumValue, maximumValue };
 
   const minimumResponder = useMemo(
     () =>
@@ -104,17 +112,19 @@ function PriceRangeSlider({
         onPanResponderMove: (_, gesture) => {
           const current = values.current;
           const usableWidth = current.trackWidth - 22;
-          if (usableWidth <= 0) return;
+          const priceSpan = current.maximum - current.minimum;
+          if (usableWidth <= 0 || priceSpan <= 0) return;
 
-          const step = Math.max(1000, Math.round(current.maximum / 100));
+          const step = Math.max(1, Math.round(priceSpan / 100));
           const rawValue =
             minimumStart.current +
-            (gesture.dx / usableWidth) * current.maximum;
+            (gesture.dx / usableWidth) * priceSpan;
           const nextValue = Math.max(
-            0,
+            current.minimum,
             Math.min(
               current.maximumValue,
-              Math.round(rawValue / step) * step,
+              current.minimum +
+                Math.round((rawValue - current.minimum) / step) * step,
             ),
           );
           onMinimumValueChange(nextValue);
@@ -133,17 +143,19 @@ function PriceRangeSlider({
         onPanResponderMove: (_, gesture) => {
           const current = values.current;
           const usableWidth = current.trackWidth - 22;
-          if (usableWidth <= 0) return;
+          const priceSpan = current.maximum - current.minimum;
+          if (usableWidth <= 0 || priceSpan <= 0) return;
 
-          const step = Math.max(1000, Math.round(current.maximum / 100));
+          const step = Math.max(1, Math.round(priceSpan / 100));
           const rawValue =
             maximumStart.current +
-            (gesture.dx / usableWidth) * current.maximum;
+            (gesture.dx / usableWidth) * priceSpan;
           const nextValue = Math.min(
             current.maximum,
             Math.max(
               current.minimumValue,
-              Math.round(rawValue / step) * step,
+              current.minimum +
+                Math.round((rawValue - current.minimum) / step) * step,
             ),
           );
           onMaximumValueChange(nextValue);
@@ -153,8 +165,13 @@ function PriceRangeSlider({
   );
 
   const usableWidth = Math.max(0, trackWidth - 22);
-  const minimumPosition = (minimumValue / maximum) * usableWidth;
-  const maximumPosition = (maximumValue / maximum) * usableWidth;
+  const priceSpan = maximum - minimum;
+  const minimumRatio =
+    priceSpan > 0 ? (minimumValue - minimum) / priceSpan : 0;
+  const maximumRatio =
+    priceSpan > 0 ? (maximumValue - minimum) / priceSpan : 1;
+  const minimumPosition = minimumRatio * usableWidth;
+  const maximumPosition = maximumRatio * usableWidth;
   const selectedTrackStyle = useMemo(
     () => ({
       left: 11 + minimumPosition,
@@ -245,13 +262,22 @@ export default function Shop({
     availability: true,
   });
 
-  const priceRangeMaximum = useMemo(() => {
-    const highestPrice = products.reduce(
-      (highest, product) => Math.max(highest, productPrice(product)),
-      0,
-    );
-    return Math.max(Math.ceil(highestPrice / 50000) * 50000, 50000);
+  const priceBounds = useMemo(() => {
+    if (!products.length) return { minimum: 0, maximum: 0 };
+    const prices = products.map(productPrice);
+    return {
+      minimum: Math.min(...prices),
+      maximum: Math.max(...prices),
+    };
   }, [products]);
+  const selectedMinimumPrice = Math.max(
+    priceBounds.minimum,
+    Math.min(minPrice ?? priceBounds.minimum, priceBounds.maximum),
+  );
+  const selectedMaximumPrice = Math.max(
+    selectedMinimumPrice,
+    Math.min(maxPrice ?? priceBounds.maximum, priceBounds.maximum),
+  );
 
   useEffect(() => {
     if (!filtersVisible) return;
@@ -268,16 +294,14 @@ export default function Shop({
   }, [filtersVisible, filtersTranslateX, screenWidth]);
 
   const filteredProducts = useMemo(() => {
-    const minimumPrice = minPrice ?? 0;
-    const maximumPrice = maxPrice ?? priceRangeMaximum;
     const matchingProducts = products.filter(product => {
       const rating = Number(product.rating) || 0;
       const stock = Number(
         product.available_stock ?? product.total_stock ?? product.stock,
       );
       return (
-        productPrice(product) >= minimumPrice &&
-        productPrice(product) <= maximumPrice &&
+        productPrice(product) >= selectedMinimumPrice &&
+        productPrice(product) <= selectedMaximumPrice &&
         (!minRating || rating >= minRating) &&
         (!onSale || productDiscountPercent(product) > 0) &&
         (!inStockOnly || stock > 0)
@@ -298,12 +322,11 @@ export default function Shop({
     });
   }, [
     inStockOnly,
-    maxPrice,
-    minPrice,
     minRating,
     onSale,
     products,
-    priceRangeMaximum,
+    selectedMaximumPrice,
+    selectedMinimumPrice,
     sortOrder,
   ]);
 
@@ -577,9 +600,10 @@ export default function Shop({
                 expanded={expandedFilterSections.price}
                 onToggle={() => toggleFilterSection('price')}>
                 <PriceRangeSlider
-                  maximum={priceRangeMaximum}
-                  minimumValue={minPrice ?? 0}
-                  maximumValue={maxPrice ?? priceRangeMaximum}
+                  minimum={priceBounds.minimum}
+                  maximum={priceBounds.maximum}
+                  minimumValue={selectedMinimumPrice}
+                  maximumValue={selectedMaximumPrice}
                   onMinimumValueChange={setMinPrice}
                   onMaximumValueChange={setMaxPrice}
                 />
