@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import {
   Image,
   Pressable,
+  StyleSheet,
   Text,
   useWindowDimensions,
   View,
@@ -47,7 +48,7 @@ export default function OfferBanners({
         {imageUri ? (
           <Image
             source={{ uri: imageUri }}
-            className="absolute inset-0 h-full w-full"
+            style={StyleSheet.absoluteFillObject}
             resizeMode="cover"
           />
         ) : null}
