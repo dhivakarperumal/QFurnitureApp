@@ -38,6 +38,11 @@ function AppContent() {
   const [activeItem, setActiveItem] = useState<
     'Home' | 'Products' | 'Orders' | 'More'
   >('Home');
+  const [bottomBarVisible, setBottomBarVisible] = useState(true);
+
+  useEffect(() => {
+    setBottomBarVisible(true);
+  }, [activeItem, productDetailsOpen]);
 
   useEffect(() => {
     let mounted = true;
@@ -100,6 +105,7 @@ function AppContent() {
       ) : null}
       {activeItem === 'Home' ? (
         <Home
+          onScrollVisibilityChange={setBottomBarVisible}
           onActionPress={action => {
             if (action === 'Add Product' || action === 'Categories' || action === 'Stock') {
               setActiveItem('Products');
@@ -110,11 +116,12 @@ function AppContent() {
         />
       ) : activeItem === 'Products' ? (
         <Products
+          onScrollVisibilityChange={setBottomBarVisible}
           onActionPress={action => console.log(action)}
           onDetailsVisibilityChange={setProductDetailsOpen}
         />
       ) : activeItem === 'Orders' ? (
-        <Orders />
+        <Orders onScrollVisibilityChange={setBottomBarVisible} />
       ) : (
         <View className="flex-1 items-center justify-center">
           <View className="rounded-[18px] bg-[#FFF7E6] px-6 py-5">
@@ -129,6 +136,7 @@ function AppContent() {
         onItemPress={item => setActiveItem(item)}
         onAddPress={() => setActiveItem('Products')}
         badgeCount={5}
+        visible={bottomBarVisible && !productDetailsOpen}
       />
     </View>
   );

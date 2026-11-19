@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -55,6 +55,7 @@ type ProductsResponse = {
 type ProductsProps = {
   onActionPress?: (label: string) => void;
   onDetailsVisibilityChange?: (visible: boolean) => void;
+  onScrollVisibilityChange?: (visible: boolean) => void;
 };
 
 const formatRupees = (value: number) =>
@@ -120,8 +121,10 @@ const mapApiProduct = (item: ApiProduct): Product => {
 export default function Products({
   onActionPress,
   onDetailsVisibilityChange,
+  onScrollVisibilityChange,
 }: ProductsProps) {
   const insets = useSafeAreaInsets();
+  const lastScrollY = useRef(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [status, setStatus] = useState<'All' | Product['status']>('All');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -296,6 +299,16 @@ export default function Products({
     <View className="flex-1 bg-[#F7F8FA]">
       <ScrollView
         showsVerticalScrollIndicator={false}
+        scrollEventThrottle={16}
+        onScroll={event => {
+          const currentScrollY = event.nativeEvent.contentOffset.y;
+          if (currentScrollY < 20 || currentScrollY < lastScrollY.current - 8) {
+            onScrollVisibilityChange?.(true);
+          } else if (currentScrollY > lastScrollY.current + 8) {
+            onScrollVisibilityChange?.(false);
+          }
+          lastScrollY.current = currentScrollY;
+        }}
         contentContainerClassName="px-4 pb-[255px]"
         style={{ paddingTop: insets.top + 84 }}>
        

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   ActivityIndicator,
@@ -47,6 +47,7 @@ type Order = {
 type OrdersProps = {
   statusFilter?: 'All' | OrderStatus;
   onOrderPress?: (order: Order) => void;
+  onScrollVisibilityChange?: (visible: boolean) => void;
 };
 
 type UpdateModalData = {
@@ -119,8 +120,10 @@ function formatCurrency(value?: string | number) {
 export default function Orders({
   statusFilter = 'All',
   onOrderPress,
+  onScrollVisibilityChange,
 }: OrdersProps) {
   const insets = useSafeAreaInsets();
+  const lastScrollY = useRef(0);
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -434,6 +437,16 @@ export default function Orders({
       <ScrollView
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
+        scrollEventThrottle={16}
+        onScroll={event => {
+          const currentScrollY = event.nativeEvent.contentOffset.y;
+          if (currentScrollY < 20 || currentScrollY < lastScrollY.current - 8) {
+            onScrollVisibilityChange?.(true);
+          } else if (currentScrollY > lastScrollY.current + 8) {
+            onScrollVisibilityChange?.(false);
+          }
+          lastScrollY.current = currentScrollY;
+        }}
         contentContainerClassName="px-4 pb-[255px]"
         style={{ paddingTop: insets.top + 84 }}>
         <View className="mb-4">
