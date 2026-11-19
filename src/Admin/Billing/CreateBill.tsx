@@ -821,7 +821,7 @@ export default function CreateBill({
         className="flex-1"
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
-        contentContainerClassName="px-4 pb-4"
+        contentContainerClassName="px-4 pb-8"
         style={{ paddingTop: insets.top + 72 }}
       >
         <View className="mb-3 flex-row items-center justify-between">
@@ -1464,7 +1464,7 @@ export default function CreateBill({
               keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={false}
               className="flex-1"
-              contentContainerClassName="px-4 pt-3 pb-1"
+              contentContainerClassName="px-4 pt-3 pb-4"
             >
               <CartSummary
                 cart={cart}
