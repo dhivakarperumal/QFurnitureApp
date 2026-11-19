@@ -5,12 +5,12 @@ import {
   Modal,
   Pressable,
   ScrollView,
-  Share,
   Text,
   TextInput,
   View,
 } from 'react-native';
 import { Eye, Printer } from 'lucide-react-native';
+import RNPrint from 'react-native-print';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '../../api';
 
@@ -29,6 +29,9 @@ type OrderItem = {
   item_type?: string;
   combo_id?: number | string | null;
   product_id?: number | string | null;
+  product_name?: string;
+  quantity?: number | string;
+  price?: number | string;
 };
 
 export type Order = {
@@ -118,6 +121,11 @@ function formatCurrency(value?: string | number) {
   const amount = Number(value);
   return `₹${(Number.isFinite(amount) ? amount : 0).toLocaleString('en-IN')}`;
 }
+
+const toNumber = (value?: string | number) => {
+  const amount = Number(value);
+  return Number.isFinite(amount) ? amount : 0;
+};
 
 export default function Orders({
   statusFilter = 'All',
@@ -294,22 +302,65 @@ export default function Orders({
   };
 
   const printOrder = async (order: Order) => {
-    const invoiceText = [
-      `Q Furnitures - Invoice`,
-      `Order: ${formatOrderId(order)}`,
-      `Customer: ${order.customer_name || 'Guest Customer'}`,
-      `Phone: ${order.customer_phone || 'Unavailable'}`,
-      `Payment: ${order.payment_method || 'Not specified'}`,
-      `Status: ${order.status || 'New'}`,
-      `Date: ${formatDate(order.created_at)}`,
-      `Total: ${formatCurrency(order.total_amount)}`,
-    ].join('\n');
-
+    const html = `
+      <html>
+        <head>
+          <meta charset="utf-8" />
+          <style>
+            body { font-family: Arial, sans-serif; padding: 24px; color: #17191C; }
+            .header { display: flex; justify-content: space-between; border-bottom: 3px solid #F97316; padding-bottom: 16px; }
+            .title { font-size: 28px; font-weight: bold; color: #F97316; }
+            .section { margin-top: 24px; }
+            .grid { display: flex; justify-content: space-between; gap: 24px; }
+            .box { width: 48%; }
+            table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+            th { background: #FFF7ED; color: #9A3412; font-size: 12px; }
+            th, td { border: 1px solid #E2E8F0; padding: 10px; text-align: left; }
+            .total { margin-top: 20px; text-align: right; font-size: 18px; font-weight: bold; }
+            .muted { color: #64748B; font-size: 12px; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div>
+              <div class="title">Q Furnitures</div>
+              <div class="muted">Tax Invoice</div>
+            </div>
+            <div style="text-align:right">
+              <strong>${formatOrderId(order)}</strong>
+              <div class="muted">${formatDate(order.created_at)}</div>
+            </div>
+          </div>
+          <div class="section grid">
+            <div class="box">
+              <strong>Customer</strong>
+              <p>${order.customer_name || 'Guest Customer'}<br/>${order.customer_phone || 'Unavailable'}<br/>${order.customer_email || 'Unavailable'}</p>
+            </div>
+            <div class="box" style="text-align:right">
+              <strong>Order Details</strong>
+              <p>Status: ${order.status || 'New'}<br/>Payment: ${order.payment_method || 'Not specified'}</p>
+            </div>
+          </div>
+          <div class="section">
+            <strong>Order Items</strong>
+            <table>
+              <thead>
+                <tr><th>#</th><th>Product</th><th>Quantity</th><th>Amount</th></tr>
+              </thead>
+              <tbody>
+                ${(order.items || []).map((item, index) =>
+                  `<tr><td>${index + 1}</td><td>${item.product_name || 'Product'}</td><td>${item.quantity || 1}</td><td>${formatCurrency(toNumber(item.quantity || 1) * toNumber(item.price))}</td></tr>`
+                ).join('') || '<tr><td colspan="4">No item details available</td></tr>'}
+              </tbody>
+            </table>
+          </div>
+          <div class="total">Total: ${formatCurrency(order.total_amount)}</div>
+          <p class="muted" style="margin-top:40px;text-align:center">Thank you for shopping with Q Furnitures</p>
+        </body>
+      </html>
+    `;
     try {
-      await Share.share({
-        title: `Invoice ${formatOrderId(order)}`,
-        message: invoiceText,
-      });
+      await RNPrint.print({ html });
     } catch (error) {
       console.error('Print/share invoice error:', error);
     }
