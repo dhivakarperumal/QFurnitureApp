@@ -161,6 +161,7 @@ function AppContent() {
         ) : (
           <Billing
             onCreateBill={() => setCreateBillOpen(true)}
+            onScrollVisibilityChange={setBottomBarVisible}
             onOrderPress={order => {
               setBillingOpen(false);
               setCreateBillOpen(false);

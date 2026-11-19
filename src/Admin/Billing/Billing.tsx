@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -48,6 +54,7 @@ type BillingInvoice = {
 type BillingProps = {
   onOrderPress: (order: Order) => void;
   onCreateBill: () => void;
+  onScrollVisibilityChange?: (visible: boolean) => void;
 };
 
 const itemsPerPage = 8;
@@ -137,8 +144,13 @@ const escapeHtml = (value: string) =>
     return entities[character];
   });
 
-export default function Billing({ onOrderPress, onCreateBill }: BillingProps) {
+export default function Billing({
+  onOrderPress,
+  onCreateBill,
+  onScrollVisibilityChange,
+}: BillingProps) {
   const insets = useSafeAreaInsets();
+  const lastScrollY = useRef(0);
   const [invoices, setInvoices] = useState<BillingInvoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -292,6 +304,16 @@ export default function Billing({ onOrderPress, onCreateBill }: BillingProps) {
       <ScrollView
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
+        scrollEventThrottle={16}
+        onScroll={event => {
+          const currentScrollY = event.nativeEvent.contentOffset.y;
+          if (currentScrollY < 20 || currentScrollY < lastScrollY.current - 8) {
+            onScrollVisibilityChange?.(true);
+          } else if (currentScrollY > lastScrollY.current + 8) {
+            onScrollVisibilityChange?.(false);
+          }
+          lastScrollY.current = currentScrollY;
+        }}
         contentContainerClassName="px-4 pb-8"
         style={{ paddingTop: insets.top + 84 }}
       >
