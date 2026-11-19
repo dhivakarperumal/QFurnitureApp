@@ -47,13 +47,17 @@ export default function OfferBanners({
         {imageUri ? (
           <Image
             source={{ uri: imageUri }}
-            className="absolute right-0 top-0 h-full w-1/2"
+            className="absolute inset-0 h-full w-full"
             resizeMode="cover"
           />
         ) : null}
         <View
           pointerEvents="none"
-          className="absolute inset-y-0 left-0 w-[60%] rounded-r-[80px] bg-[#F5E3D0]"
+          className="absolute inset-0 bg-white/20"
+        />
+        <View
+          pointerEvents="none"
+          className="absolute inset-y-0 left-0 w-[60%] rounded-r-[80px] bg-[#F5E3D0]/75"
         />
         <View className="w-[60%]">
           {banner?.offer ? (
