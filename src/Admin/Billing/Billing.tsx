@@ -295,26 +295,7 @@ export default function Billing({ onOrderPress, onCreateBill }: BillingProps) {
         contentContainerClassName="px-4 pb-8"
         style={{ paddingTop: insets.top + 84 }}
       >
-        <View className="mb-3 flex-row items-center justify-between">
-          <View>
-            <Text className="text-[20px] font-black text-[#17191C]">
-              Billing
-            </Text>
-            <Text className="mt-1 text-[10px] text-[#64748B]">
-              Shop order invoices
-            </Text>
-          </View>
-          <Pressable
-            accessibilityRole="button"
-            onPress={onCreateBill}
-            className="flex-row items-center rounded-[10px] bg-[#9A3412] px-3 py-2.5"
-          >
-            <Plus size={15} color="#FFFFFF" />
-            <Text className="ml-1.5 text-[9px] font-bold text-white">
-              Create bill
-            </Text>
-          </Pressable>
-        </View>
+       
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}

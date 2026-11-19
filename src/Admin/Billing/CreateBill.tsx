@@ -821,7 +821,7 @@ export default function CreateBill({
         className="flex-1"
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
-        contentContainerClassName="px-4 pb-8"
+        contentContainerClassName="px-4 pb-[95px]"
         style={{ paddingTop: insets.top + 72 }}
       >
         <View className="mb-3 flex-row items-center justify-between">
