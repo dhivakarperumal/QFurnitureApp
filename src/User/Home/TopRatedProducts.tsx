@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { ScrollView, Text, View } from 'react-native';
+import { ScrollView, Text, useWindowDimensions, View } from 'react-native';
 import ProductCard from '../ProductCard';
 import type { StoreProduct } from '../types';
 import { productDiscountPercent } from '../utils';
@@ -17,6 +17,8 @@ export default function TopRatedProducts({
   onFavoritePress,
   onAddToCart,
 }: TopRatedProductsProps) {
+  const { width } = useWindowDimensions();
+  const cardWidth = (width - 44) / 2;
   const topRatedProducts = useMemo(
     () =>
       [...products]
@@ -47,6 +49,7 @@ export default function TopRatedProducts({
             key={product.id}
             product={product}
             favorite={favorites.includes(String(product.id))}
+            cardWidth={cardWidth}
             onFavoritePress={onFavoritePress}
             onAddToCart={onAddToCart}
           />

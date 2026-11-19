@@ -1,5 +1,5 @@
 import React from 'react';
-import { ScrollView, Text, View } from 'react-native';
+import { ScrollView, Text, useWindowDimensions, View } from 'react-native';
 import ProductCard from '../ProductCard';
 import type { StoreProduct } from '../types';
 
@@ -16,6 +16,9 @@ export default function Products({
   onFavoritePress,
   onAddToCart,
 }: ProductsProps) {
+  const { width } = useWindowDimensions();
+  const cardWidth = (width - 44) / 2;
+
   return (
     <View className="mt-8">
       <View className="mb-4 px-4">
@@ -33,6 +36,7 @@ export default function Products({
               key={product.id}
               product={product}
               favorite={favorites.includes(String(product.id))}
+              cardWidth={cardWidth}
               onFavoritePress={onFavoritePress}
               onAddToCart={onAddToCart}
             />

@@ -14,6 +14,7 @@ type ProductCardProps = {
   product: StoreProduct;
   favorite: boolean;
   compact?: boolean;
+  cardWidth?: number;
   onFavoritePress: (productId: string) => void;
   onAddToCart: (productId: string) => void;
 };
@@ -22,6 +23,7 @@ export default function ProductCard({
   product,
   favorite,
   compact = false,
+  cardWidth,
   onFavoritePress,
   onAddToCart,
 }: ProductCardProps) {
@@ -34,8 +36,11 @@ export default function ProductCard({
 
   return (
     <View
+      style={cardWidth ? { width: cardWidth } : undefined}
       className={`mb-3 overflow-hidden rounded-[20px] border border-[#F0E7DE] bg-white shadow-sm ${
-        compact ? 'w-[48%]' : 'w-[258px]'
+        cardWidth ? 'mr-3' : ''
+      } ${
+        cardWidth ? '' : compact ? 'w-[48%]' : 'w-[258px]'
       }`}>
       <View className="relative h-[170px] overflow-hidden bg-[#F4E9DD]">
         {imageUri ? (
