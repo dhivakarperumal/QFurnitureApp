@@ -18,7 +18,7 @@ export default function Header({
     <ImageBackground
       source={require('../Assert/images/topheader1.png')}
       resizeMode="cover"
-      className="h-[58px] flex-row items-center justify-between overflow-hidden rounded-[22px] px-3 shadow-md">
+      className="h-[58px] w-full flex-row items-center justify-between px-3">
       <View
         pointerEvents="none"
         className="absolute inset-0 bg-[#F45B00]/75"
