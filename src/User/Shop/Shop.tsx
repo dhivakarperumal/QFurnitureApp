@@ -146,6 +146,7 @@ export default function Shop({
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
+        className="flex-grow-0 flex-shrink-0"
         contentContainerClassName="mb-4 px-4">
         <Pressable
           accessibilityRole="button"
