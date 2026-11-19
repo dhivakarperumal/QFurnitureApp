@@ -226,22 +226,6 @@ export default function Reviews() {
               </View>
             );
           })()}
-          {reviews.length > 1 ? (
-            <View className="mt-4 flex-row justify-center">
-              {reviews.map((review, index) => (
-                <Pressable
-                  key={review.id}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Show customer review ${index + 1}`}
-                  accessibilityState={{ selected: activeIndex === index }}
-                  onPress={() => setActiveIndex(index)}
-                  className={`mx-1 h-2 rounded-full ${
-                    activeIndex === index ? 'w-6 bg-[#F97316]' : 'w-2 bg-[#E5D8CB]'
-                  }`}
-                />
-              ))}
-            </View>
-          ) : null}
         </View>
       ) : (
         <Text className="px-4 py-3 text-[13px] text-[#8B735E]">
