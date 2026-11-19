@@ -1129,7 +1129,7 @@ export default function CreateBill({
           </>
         ) : (
           <>
-            <View className="mb-3 rounded-[16px] border border-[#E2E8F0] bg-white p-4">
+            <View className="mb-3 p-4">
               <View className="mb-3 flex-row items-center">
                 <UserRound size={17} color="#9A3412" />
                 <Text className="ml-2 text-[12px] font-black text-[#334155]">
@@ -1216,6 +1216,12 @@ export default function CreateBill({
                   ) : null}
                 </View>
               ) : null}
+            </View>
+
+            <View className="mb-3 rounded-[16px] border border-[#E2E8F0] bg-white p-4">
+              <Text className="mb-3 text-[12px] font-black text-[#334155]">
+                Shipping details *
+              </Text>
               <BillInput
                 label="Customer name *"
                 value={form.customer_name}
@@ -1243,12 +1249,6 @@ export default function CreateBill({
                 keyboardType="email-address"
                 autoCapitalize="none"
               />
-            </View>
-
-            <View className="mb-3 rounded-[16px] border border-[#E2E8F0] bg-white p-4">
-              <Text className="mb-3 text-[12px] font-black text-[#334155]">
-                Shipping details *
-              </Text>
               <BillInput
                 label="Street address *"
                 value={form.street_address}
@@ -1327,26 +1327,6 @@ export default function CreateBill({
                 onPress={() => setChoiceModal('status')}
               />
             </View>
-
-            <CartSummary
-              cart={cart}
-              totals={totals}
-              form={form}
-              gstSettings={gstSettings}
-              gstError={gstError}
-              gstRate={gstRate}
-              includeGst={includeGst}
-              pricingError={pricingError}
-              onQuantityChange={changeQuantity}
-              onDiscountTypeChange={discount_type =>
-                updateForm('discount_type', discount_type)
-              }
-              onDiscountValueChange={discount_value =>
-                updateForm('discount_value', discount_value)
-              }
-              onToggleGst={setIncludeGst}
-              onRetryGst={() => setGstReloadKey(value => value + 1)}
-            />
           </>
         )}
       </ScrollView>
@@ -1411,13 +1391,23 @@ export default function CreateBill({
                 {formatCurrency(totals.total_amount)}
               </Text>
             </View>
-            <View className="flex-row">
+            <View className="mb-2 flex-row">
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Preview order summary"
+                onPress={() => setSummaryVisible(true)}
+                className="mr-2 h-[44px] flex-1 items-center justify-center rounded-[11px] border border-[#9A3412] bg-white"
+              >
+                <Text className="text-[8px] font-black text-[#9A3412]">
+                  Preview
+                </Text>
+              </Pressable>
               <Pressable
                 accessibilityRole="button"
                 onPress={() => setStep(1)}
                 className="mr-2 h-[44px] flex-1 items-center justify-center rounded-[11px] border border-[#E2E8F0] bg-white"
               >
-                <Text className="text-[9px] font-bold text-[#64748B]">
+                <Text className="text-[8px] font-bold text-[#64748B]">
                   Back to items
                 </Text>
               </Pressable>
@@ -1430,7 +1420,7 @@ export default function CreateBill({
                 {submitting ? (
                   <ActivityIndicator size="small" color="#FFFFFF" />
                 ) : (
-                  <Text className="text-[9px] font-black text-white">
+                  <Text className="text-[8px] font-black text-white">
                     Create shop order
                   </Text>
                 )}
@@ -1502,15 +1492,15 @@ export default function CreateBill({
             >
               <Pressable
                 accessibilityRole="button"
-                disabled={cart.length === 0 || !gstSettings}
+                disabled={step === 1 && (cart.length === 0 || !gstSettings)}
                 onPress={() => {
                   setSummaryVisible(false);
-                  setStep(2);
+                  if (step === 1) setStep(2);
                 }}
                 className="h-[44px] flex-row items-center justify-center rounded-[11px] bg-[#9A3412] disabled:opacity-50"
               >
                 <Text className="text-[10px] font-black text-white">
-                  Next · Customer details
+                  {step === 1 ? 'Next · Customer details' : 'Close preview'}
                 </Text>
               </Pressable>
             </View>
