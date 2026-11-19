@@ -40,7 +40,11 @@ export default function ProductsDetails({
 
   return (
     <View className="flex-1 bg-[#F7F8FA]">
-      <TopHeader pageTitle="Products" onBackPress={onBack} />
+      <TopHeader
+        pageTitle={product.name}
+        pageSubtitle={product.category}
+        onBackPress={onBack}
+      />
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerClassName="px-4 pb-[255px]"

@@ -39,6 +39,7 @@ type HeaderOrder = {
 type TopHeaderProps = {
   shopName?: string;
   pageTitle?: string;
+  pageSubtitle?: string;
   onBackPress?: () => void;
   notificationCount?: number;
   onMenuPress?: () => void;
@@ -82,6 +83,7 @@ const formatOrderTime = (value?: string) => {
 export default function TopHeader({
   shopName = 'Q Furniture',
   pageTitle,
+  pageSubtitle,
   onBackPress,
   notificationCount = 0,
   onMenuPress,
@@ -244,6 +246,11 @@ export default function TopHeader({
             <Text numberOfLines={1} className="text-[16px] font-bold text-white">
               {pageTitle}
             </Text>
+            {pageSubtitle ? (
+              <Text numberOfLines={1} className="text-[10px] text-white/85">
+                {pageSubtitle}
+              </Text>
+            ) : null}
           </View>
         ) : (
           <View className="flex-1 flex-row items-center">
