@@ -174,7 +174,7 @@ export default function Reviews() {
             return (
               <View
                 key={review.id}
-                className="overflow-hidden rounded-[22px] border border-[#F0E7DE] bg-white p-5">
+                className="h-[260px] overflow-hidden rounded-[22px] border border-[#F0E7DE] bg-white p-5">
                 <View className="mb-4 flex-row items-center justify-between">
                   <View className="flex-row items-center">
                     <View className="h-10 w-10 items-center justify-center rounded-full bg-[#FFF0E1]">
@@ -192,7 +192,7 @@ export default function Reviews() {
                   </View>
                 </View>
                 <Text
-                  numberOfLines={5}
+                  numberOfLines={4}
                   className="text-[15px] leading-6 text-[#49392D]">
                   “{review.text}”
                 </Text>
