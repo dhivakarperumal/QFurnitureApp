@@ -34,7 +34,7 @@ export default function Tabs({
     <View
       pointerEvents="box-none"
       style={{ paddingBottom: Math.max(bottomInset, 8) }}
-      className="absolute bottom-0 left-0 right-0 px-3">
+      className="absolute bottom-0 left-0 right-0 bg-white px-3 pt-2 shadow-lg">
       <View className="h-[64px] flex-row items-center rounded-full border border-[#F2E8DF] bg-[#FFFEFC] px-1.5 shadow-md">
         {tabs.map(({ name, icon: Icon, label }) => {
           const active = activeTab === name;
