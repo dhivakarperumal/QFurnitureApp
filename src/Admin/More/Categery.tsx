@@ -11,7 +11,6 @@ import {
   View,
 } from 'react-native';
 import {
-  ChevronRight,
   LayoutGrid,
   Pencil,
   Plus,
@@ -35,7 +34,7 @@ type Category = {
 
 type CategeryProps = {
   onScrollVisibilityChange?: (visible: boolean) => void;
-  onDetailsVisibilityChange?: (visible: boolean) => void;
+  onBackPress?: () => void;
 };
 
 const resolveImageUri = (path?: string) => {
@@ -45,13 +44,12 @@ const resolveImageUri = (path?: string) => {
   return `${origin}${path.startsWith('/') ? '' : '/'}${path}`;
 };
 
-export default function More({
+export default function Categery({
   onScrollVisibilityChange,
-  onDetailsVisibilityChange,
-}: MoreProps) {
+  onBackPress,
+}: CategeryProps) {
   const insets = useSafeAreaInsets();
   const lastScrollY = useRef(0);
-  const [categoriesOpen, setCategoriesOpen] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
@@ -90,8 +88,8 @@ export default function More({
   }, []);
 
   useEffect(() => {
-    if (categoriesOpen) loadCategories();
-  }, [categoriesOpen, loadCategories]);
+    loadCategories();
+  }, [loadCategories]);
 
   const filteredCategories = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -102,20 +100,6 @@ export default function More({
         .includes(query),
     );
   }, [categories, search]);
-
-  const openCategories = () => {
-    setCategoriesOpen(true);
-    onDetailsVisibilityChange?.(true);
-    onScrollVisibilityChange?.(true);
-  };
-
-  const closeCategories = () => {
-    setCategoriesOpen(false);
-    setSearch('');
-    lastScrollY.current = 0;
-    onDetailsVisibilityChange?.(false);
-    onScrollVisibilityChange?.(true);
-  };
 
   const openCategoryForm = (category?: Category) => {
     setEditingCategory(category ?? null);
@@ -228,13 +212,12 @@ export default function More({
     );
   };
 
-  if (categoriesOpen) {
-    return (
-      <View className="flex-1 bg-[#F7F8FA]">
+  return (
+    <View className="flex-1 bg-[#F7F8FA]">
         <TopHeader
           pageTitle="Categories"
           pageSubtitle={`${categories.length} furniture categories`}
-          onBackPress={closeCategories}
+          onBackPress={onBackPress}
         />
         <ScrollView
           keyboardShouldPersistTaps="handled"
@@ -251,20 +234,7 @@ export default function More({
           }}
           contentContainerClassName="px-4 pb-[255px]"
           style={{ paddingTop: insets.top + 72 }}>
-          <View className="mb-4 flex-row items-center justify-between">
-            <Text className="text-[17px] font-black text-[#17191C]">
-              All Categories
-            </Text>
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => openCategoryForm()}
-              className="h-[40px] flex-row items-center rounded-[11px] bg-[#F97316] px-3">
-              <Plus size={17} color="#FFFFFF" />
-              <Text className="ml-1 text-[11px] font-bold text-white">
-                Add Category
-              </Text>
-            </Pressable>
-          </View>
+         
 
           <View className="mb-4 flex-row items-center rounded-[14px] bg-white px-3">
             <Search size={18} color="#94A3B8" />
@@ -439,32 +409,6 @@ export default function More({
             </View>
           </View>
         </Modal>
-      </View>
-    );
-  }
-
-  return (
-    <ScrollView
-      showsVerticalScrollIndicator={false}
-      contentContainerClassName="px-4 pb-[255px]"
-      style={{ paddingTop: insets.top + 84 }}>
-      <Text className="mb-4 text-[18px] font-black text-[#17191C]">More</Text>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Open categories"
-        onPress={openCategories}
-        className="flex-row items-center rounded-[18px] border border-[#FCE6D7] bg-white p-4 shadow-sm elevation-[2]">
-        <View className="h-[52px] w-[52px] items-center justify-center rounded-[14px] bg-[#FFF1D6]">
-          <LayoutGrid size={25} color="#F97316" strokeWidth={2} />
-        </View>
-        <View className="ml-3 flex-1">
-          <Text className="text-[15px] font-black text-[#17191C]">Categories</Text>
-          <Text className="mt-1 text-[11px] text-[#64748B]">
-            View furniture categories and subcategories
-          </Text>
-        </View>
-        <ChevronRight size={21} color="#94A3B8" />
-      </Pressable>
-    </ScrollView>
+    </View>
   );
 }
