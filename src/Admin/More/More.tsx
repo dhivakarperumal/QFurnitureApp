@@ -4,10 +4,12 @@ import {
   Boxes,
   ChevronRight,
   LayoutGrid,
+  UserRound,
   UsersRound,
 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Categery from './Categery';
+import Profile from './Profile';
 import StockDetails from './StockDetails';
 import Usermanagement from './Usermanagement';
 
@@ -24,6 +26,7 @@ export default function More({
   const [categoriesOpen, setCategoriesOpen] = React.useState(false);
   const [usersOpen, setUsersOpen] = React.useState(false);
   const [stockOpen, setStockOpen] = React.useState(false);
+  const [profileOpen, setProfileOpen] = React.useState(false);
 
   const openCategories = () => {
     setCategoriesOpen(true);
@@ -61,6 +64,18 @@ export default function More({
     onScrollVisibilityChange?.(true);
   };
 
+  const openProfile = () => {
+    setProfileOpen(true);
+    onDetailsVisibilityChange?.(true);
+    onScrollVisibilityChange?.(true);
+  };
+
+  const closeProfile = () => {
+    setProfileOpen(false);
+    onDetailsVisibilityChange?.(false);
+    onScrollVisibilityChange?.(true);
+  };
+
   if (categoriesOpen) {
     return (
       <Categery
@@ -88,12 +103,38 @@ export default function More({
     );
   }
 
+  if (profileOpen) {
+    return (
+      <Profile
+        onScrollVisibilityChange={onScrollVisibilityChange}
+        onBackPress={closeProfile}
+      />
+    );
+  }
+
   return (
     <ScrollView
       showsVerticalScrollIndicator={false}
       contentContainerClassName="px-4 pb-[255px]"
       style={{ paddingTop: insets.top + 84 }}
     >
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Open profile"
+        onPress={openProfile}
+        className="mb-3 flex-row items-center rounded-[18px] border border-[#FCE6D7] bg-white p-4 shadow-sm elevation-[2]"
+      >
+        <View className="h-[52px] w-[52px] items-center justify-center rounded-[14px] bg-[#FFF1D6]">
+          <UserRound size={25} color="#F97316" strokeWidth={2} />
+        </View>
+        <View className="ml-3 flex-1">
+          <Text className="text-[15px] font-black text-[#17191C]">Profile</Text>
+          <Text className="mt-1 text-[11px] text-[#64748B]">
+            View and update your account information
+          </Text>
+        </View>
+        <ChevronRight size={21} color="#94A3B8" />
+      </Pressable>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Open categories"
