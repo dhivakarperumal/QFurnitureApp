@@ -6,19 +6,23 @@ import {
   Pressable,
   ScrollView,
   Text,
-  TextInput,
   View,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Armchair, Heart, LogOut, ShoppingCart, UserRound, X } from 'lucide-react-native';
+import { Armchair, Heart, ShoppingCart, X } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '../api';
 import Header from './Header';
 import Home from './Home/Home';
 import ProductCard from './ProductCard';
+import Shop from './Shop/Shop';
 import Tabs from './Tabs';
 import type { StoreBanner, StoreCategory, StoreProduct, StoreTab } from './types';
 import { formatPrice, productCategory, productImage, productPrice } from './utils';
+import AccountScreen, { type AccountSubScreen } from './Account/AccountScreen';
+import ProfileScreen from './Account/ProfileScreen';
+import AddressesScreen from './Account/AddressesScreen';
+import OrdersScreen from './Account/OrdersScreen';
+import SetPasswordScreen from './Account/SetPasswordScreen';
 
 type StoreData = {
   categories: StoreCategory[];
@@ -60,7 +64,13 @@ export default function Storefront({
   const [selectedCategory, setSelectedCategory] = useState('');
   const [favorites, setFavorites] = useState<string[]>([]);
   const [cart, setCart] = useState<Record<string, number>>({});
-  const [userName, setUserName] = useState('');
+  const [accountSubScreen, setAccountSubScreen] = useState<AccountSubScreen>('menu');
+
+  // Reset account sub-screen when switching away from Profile tab
+  const handleTabPress = useCallback((tab: StoreTab) => {
+    if (tab !== 'Profile') setAccountSubScreen('menu');
+    setActiveTab(tab);
+  }, []);
 
   const loadStore = useCallback(async () => {
     setLoading(true);
@@ -70,7 +80,7 @@ export default function Storefront({
         await Promise.all([
           api.get<StoreCategory[]>('/categories'),
           api.get<{ products?: StoreProduct[] }>('/products', {
-            params: { page: 1, limit: 30, search: '', status: 'All' },
+            params: { page: 1, limit: 100, search: '', status: 'All' },
           }),
           api.get<{ banners?: StoreBanner[] }>('/banners/hero'),
           api.get<{ banners?: StoreBanner[] }>('/banners/offers'),
@@ -109,30 +119,6 @@ export default function Storefront({
   useEffect(() => {
     loadStore();
   }, [loadStore]);
-
-  useEffect(() => {
-    let active = true;
-    AsyncStorage.getItem('user')
-      .then(serializedUser => {
-        if (!serializedUser) return;
-        const user: unknown = JSON.parse(serializedUser);
-        if (
-          active &&
-          typeof user === 'object' &&
-          user !== null &&
-          'name' in user &&
-          typeof user.name === 'string'
-        ) {
-          setUserName(user.name);
-        }
-      })
-      .catch(error => {
-        if (__DEV__) console.warn('[Storefront] Could not read the saved user:', error);
-      });
-    return () => {
-      active = false;
-    };
-  }, []);
 
   const cartCount = Object.values(cart).reduce((total, count) => total + count, 0);
 
@@ -224,50 +210,17 @@ export default function Storefront({
 
     if (activeTab === 'Explore') {
       return (
-        <View className="px-4 pt-5">
-          <Text className="text-[25px] font-black text-[#351D0E]">Explore furniture</Text>
-          <TextInput
-            accessibilityLabel="Search furniture"
-            value={search}
-            onChangeText={setSearch}
-            placeholder="Search furniture or category"
-            placeholderTextColor="#9A8B7D"
-            className="mt-4 h-[48px] rounded-[14px] border border-[#E7DCCF] bg-white px-4 text-[14px] text-[#351D0E]"
-          />
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mt-4">
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => setSelectedCategory('')}
-              className={`mr-2 rounded-full px-4 py-2 ${
-                selectedCategory ? 'bg-[#F4E9DD]' : 'bg-[#F97316]'
-              }`}>
-              <Text className={`text-[12px] font-semibold ${selectedCategory ? 'text-[#634D3B]' : 'text-white'}`}>
-                All
-              </Text>
-            </Pressable>
-            {storeData.categories.map(category => (
-              <Pressable
-                key={category.catId ?? category.id ?? category.name}
-                accessibilityRole="button"
-                onPress={() => setSelectedCategory(category.name)}
-                className={`mr-2 rounded-full px-4 py-2 ${
-                  selectedCategory === category.name ? 'bg-[#F97316]' : 'bg-[#F4E9DD]'
-                }`}>
-                <Text className={`text-[12px] font-semibold ${
-                  selectedCategory === category.name ? 'text-white' : 'text-[#634D3B]'
-                }`}>
-                  {category.name}
-                </Text>
-              </Pressable>
-            ))}
-          </ScrollView>
-          <View className="mt-5">{renderProductGrid(visibleProducts)}</View>
-          {!visibleProducts.length ? (
-            <Text className="py-8 text-center text-[14px] text-[#8B735E]">
-              No furniture matches your search.
-            </Text>
-          ) : null}
-        </View>
+        <Shop
+          categories={storeData.categories}
+          products={visibleProducts}
+          favorites={favorites}
+          search={search}
+          selectedCategory={selectedCategory}
+          onSearchChange={setSearch}
+          onCategoryChange={setSelectedCategory}
+          onFavoritePress={toggleFavorite}
+          onAddToCart={addToCart}
+        />
       );
     }
 
@@ -354,24 +307,21 @@ export default function Storefront({
     }
 
     return (
-      <View className="px-4 pt-5">
-        <Text className="mb-4 text-[25px] font-black text-[#351D0E]">My profile</Text>
-        <View className="items-center rounded-[20px] bg-white p-6">
-          <View className="h-[68px] w-[68px] items-center justify-center rounded-full bg-[#FFF0E1]">
-            <UserRound size={32} color="#F97316" />
-          </View>
-          <Text className="mt-3 text-[16px] font-bold text-[#351D0E]">
-            {userName || 'Welcome to Q Living'}
-          </Text>
-          <Pressable
-            accessibilityRole="button"
-            onPress={onLogoutPress}
-            className="mt-5 flex-row items-center rounded-full bg-[#FFF0E1] px-5 py-3">
-            <LogOut size={17} color="#B94719" />
-            <Text className="ml-2 text-[13px] font-bold text-[#B94719]">Sign out</Text>
-          </Pressable>
-        </View>
-      </View>
+      // Account sub-screens (each screen manages its own scroll/layout)
+      accountSubScreen === 'profile' ? (
+        <ProfileScreen onBack={() => setAccountSubScreen('menu')} />
+      ) : accountSubScreen === 'addresses' ? (
+        <AddressesScreen onBack={() => setAccountSubScreen('menu')} />
+      ) : accountSubScreen === 'orders' ? (
+        <OrdersScreen onBack={() => setAccountSubScreen('menu')} />
+      ) : accountSubScreen === 'password' ? (
+        <SetPasswordScreen onBack={() => setAccountSubScreen('menu')} />
+      ) : (
+        <AccountScreen
+          onLogoutPress={onLogoutPress}
+          onSubScreenChange={screen => setAccountSubScreen(screen)}
+        />
+      )
     );
   };
 
@@ -396,6 +346,11 @@ export default function Storefront({
             <Text className="text-[13px] font-bold text-white">Try again</Text>
           </Pressable>
         </View>
+      ) : activeTab === 'Profile' ? (
+        // Account screens manage their own scroll — render directly without wrapper
+        <View className="flex-1 pb-[65px]">
+          {renderTabContent()}
+        </View>
       ) : (
         <ScrollView
           key={activeTab}
@@ -409,7 +364,7 @@ export default function Storefront({
         activeTab={activeTab}
         cartCount={cartCount}
         bottomInset={insets.bottom}
-        onTabPress={setActiveTab}
+        onTabPress={handleTabPress}
       />
     </View>
   );

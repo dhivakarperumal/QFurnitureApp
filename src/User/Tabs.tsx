@@ -17,11 +17,11 @@ type TabsProps = {
 };
 
 const tabs = [
-  { name: 'Home', icon: Home },
-  { name: 'Explore', icon: Search },
+  { name: 'Home',      icon: Home },
+  { name: 'Explore',   icon: Search },
   { name: 'Favorites', icon: Heart },
-  { name: 'Cart', icon: ShoppingCart },
-  { name: 'Profile', icon: UserRound },
+  { name: 'Cart',      icon: ShoppingCart },
+  { name: 'Profile',   icon: UserRound },
 ] as const;
 
 export default function Tabs({
@@ -34,14 +34,15 @@ export default function Tabs({
     <View
       style={{ paddingBottom: Math.max(bottomInset, 8) }}
       className="absolute bottom-0 left-0 right-0 flex-row items-center justify-around border-t border-[#F0E7DE] bg-white pt-2 shadow-lg">
-      {tabs.map(({ name, icon: Icon }) => {
+      {tabs.map(({ name, icon: Icon, ...rest }) => {
+        const label = 'label' in rest ? (rest as { label: string }).label : name;
         const active = activeTab === name;
         return (
           <Pressable
             key={name}
             accessibilityRole="tab"
             accessibilityState={{ selected: active }}
-            accessibilityLabel={`${name} tab`}
+            accessibilityLabel={`${label} tab`}
             onPress={() => onTabPress(name)}
             className="min-w-[58px] items-center py-1">
             <View className="relative">
@@ -60,7 +61,7 @@ export default function Tabs({
               className={`mt-1 text-[10px] ${
                 active ? 'font-bold text-[#F97316]' : 'text-[#351D0E]'
               }`}>
-              {name}
+              {name === 'Profile' ? 'Account' : name}
             </Text>
           </Pressable>
         );

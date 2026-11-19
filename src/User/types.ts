@@ -22,6 +22,9 @@ export type StoreProduct = {
   offer_price?: number | string | null;
   mrp?: number | string | null;
   rating?: number | string | null;
+  available_stock?: number | string | null;
+  total_stock?: number | string | null;
+  stock?: number | string | null;
 };
 
 export type StoreBanner = {
