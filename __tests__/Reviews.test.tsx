@@ -47,7 +47,7 @@ describe('Reviews', () => {
       await Promise.resolve();
     });
 
-    expect(api.get).toHaveBeenCalledWith('/reviews');
+    expect(api.get).toHaveBeenCalledWith('/reviews/published');
     const text = renderer!.root.findAllByType(Text);
     expect(text.some(node => node.props.children === 'Published customer')).toBe(true);
     expect(text.some(node => node.props.children === 'Pending customer')).toBe(false);

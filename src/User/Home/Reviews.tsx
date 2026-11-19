@@ -117,7 +117,7 @@ export default function Reviews() {
       setLoading(true);
       setError(null);
       try {
-        const { data } = await api.get<unknown>('/reviews');
+        const { data } = await api.get<unknown>('/reviews/published');
         const nextReviews = parseReviews(data);
         if (active) setReviews(nextReviews);
       } catch (requestError) {
