@@ -35,7 +35,7 @@ export default function Tabs({
       pointerEvents="box-none"
       style={{ paddingBottom: Math.max(bottomInset, 8) }}
       className="absolute bottom-0 left-0 right-0 px-3">
-      <View className="h-[54px] flex-row items-center rounded-full border border-[#F2E8DF] bg-[#FFFEFC] px-1.5 shadow-md">
+      <View className="h-[64px] flex-row items-center rounded-full border border-[#F2E8DF] bg-[#FFFEFC] px-1.5 shadow-md">
         {tabs.map(({ name, icon: Icon, label }) => {
           const active = activeTab === name;
           if (name === 'Cart') {
@@ -46,11 +46,11 @@ export default function Tabs({
                   accessibilityState={{ selected: active }}
                   accessibilityLabel={`Cart tab, ${cartCount} items`}
                   onPress={() => onTabPress('Cart')}
-                  className="h-[44px] w-[50px] items-center justify-center rounded-[15px] bg-[#F97316] shadow-sm">
-                  <ShoppingCart size={21} color="#FFFFFF" strokeWidth={2.2} />
+                  className="h-[54px] w-[56px] items-center justify-center rounded-[17px] bg-[#F97316] shadow-sm">
+                  <ShoppingCart size={24} color="#FFFFFF" strokeWidth={2.2} />
                   {cartCount > 0 ? (
-                    <View className="absolute right-[-3px] top-[-4px] h-[16px] min-w-[16px] items-center justify-center rounded-full border border-white bg-[#F45112] px-1">
-                      <Text className="text-[9px] font-bold text-white">
+                    <View className="absolute right-[-3px] top-[-4px] h-[18px] min-w-[18px] items-center justify-center rounded-full border border-white bg-[#F45112] px-1">
+                      <Text className="text-[10px] font-bold text-white">
                         {cartCount}
                       </Text>
                     </View>
@@ -67,17 +67,17 @@ export default function Tabs({
               accessibilityState={{ selected: active }}
               accessibilityLabel={`${label} tab`}
               onPress={() => onTabPress(name)}
-              className={`relative h-[38px] flex-1 items-center justify-center rounded-[15px] ${
+              className={`relative h-[50px] flex-1 items-center justify-center rounded-[17px] ${
                 active ? 'bg-[#FFF0E4]' : ''
               }`}>
               <Icon
-                size={17}
+                size={21}
                 color={active ? '#F97316' : '#1E432C'}
                 fill={active && name === 'Home' ? '#F97316' : 'transparent'}
                 strokeWidth={2.2}
               />
               <Text
-                className={`mt-[2px] text-[8px] leading-[10px] ${
+                className={`mt-[3px] text-[10px] leading-[12px] ${
                   active
                     ? 'font-bold text-[#F97316]'
                     : 'font-medium text-[#1E432C]'
