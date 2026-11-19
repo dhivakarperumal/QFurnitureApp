@@ -16,6 +16,7 @@ import Products from './src/Admin/Products/Products';
 import Orders from './src/Admin/Order/Orders';
 import OrdersDetails from './src/Admin/Order/OrdersDetails';
 import type { Order } from './src/Admin/Order/Orders';
+import More from './src/Admin/More/More';
 import { signOutGoogle } from './src/services/googleAuth';
 import Login from './src/Auth/Login';
 import Register from './src/Auth/Register';
@@ -38,6 +39,7 @@ function AppContent() {
   const [checkingSession, setCheckingSession] = useState(true);
   const [authScreen, setAuthScreen] = useState<'login' | 'register'>('login');
   const [productDetailsOpen, setProductDetailsOpen] = useState(false);
+  const [moreDetailsOpen, setMoreDetailsOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [activeItem, setActiveItem] = useState<
     'Home' | 'Products' | 'Orders' | 'More'
@@ -46,7 +48,7 @@ function AppContent() {
 
   useEffect(() => {
     setBottomBarVisible(true);
-  }, [activeItem, productDetailsOpen, selectedOrder]);
+  }, [activeItem, productDetailsOpen, moreDetailsOpen, selectedOrder]);
 
   useEffect(() => {
     let mounted = true;
@@ -103,7 +105,7 @@ function AppContent() {
 
   return (
     <View className="flex-1 bg-white">
-      {!productDetailsOpen && !selectedOrder ? (
+      {!productDetailsOpen && !moreDetailsOpen && !selectedOrder ? (
         <TopHeader
           onMenuPress={() => console.log('Menu')}
           onNotificationPress={() => console.log('Notifications')}
@@ -141,12 +143,15 @@ function AppContent() {
             onOrderPress={order => setSelectedOrder(order)}
           />
         )
+      ) : activeItem === 'More' ? (
+        <More
+          onScrollVisibilityChange={setBottomBarVisible}
+          onDetailsVisibilityChange={setMoreDetailsOpen}
+        />
       ) : (
         <View className="flex-1 items-center justify-center">
           <View className="rounded-[18px] bg-[#FFF7E6] px-6 py-5">
-            <Text className="text-[14px] font-bold text-[#073E56]">
-              {activeItem} section
-            </Text>
+            <Text className="text-[14px] font-bold text-[#073E56]">{activeItem} section</Text>
           </View>
         </View>
       )}
@@ -155,7 +160,7 @@ function AppContent() {
         onItemPress={item => setActiveItem(item)}
         onAddPress={() => setActiveItem('Products')}
         badgeCount={5}
-        visible={bottomBarVisible && !productDetailsOpen && !selectedOrder}
+        visible={bottomBarVisible && !productDetailsOpen && !moreDetailsOpen && !selectedOrder}
       />
     </View>
   );

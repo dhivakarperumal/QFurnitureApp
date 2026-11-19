@@ -526,29 +526,59 @@ export default function Orders({
         style={{ paddingTop: insets.top + 84 }}>
         
 
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          className="mb-2">
-          {summaryStats.map(stat => (
-            <View
-              key={stat.label}
-              className="mr-3 mb-3 w-[158px] rounded-[17px] border border-[#ECE8DF] bg-white p-3 shadow-sm elevation-[2]">
+        <View className="mb-4 flex-row flex-wrap justify-between">
+          {summaryStats.map(stat => {
+            const borderColors: Record<string, string> = {
+              '#F59E0B': '#FDECC8',
+              '#10B981': '#D5F5E9',
+              '#3B82F6': '#DBEAFE',
+              '#EF4444': '#FFE0E7',
+            };
+            const watermarkColors: Record<string, string> = {
+              '#F59E0B': '#FFF4D8',
+              '#10B981': '#DDF8ED',
+              '#3B82F6': '#E8F1FF',
+              '#EF4444': '#FFE9EE',
+            };
+
+            return (
               <View
-                className="mb-2 h-[34px] w-[34px] items-center justify-center rounded-[11px]"
-                style={{ backgroundColor: stat.color }}>
-                <Text className="text-[16px] font-black text-white">{stat.icon}</Text>
+                key={stat.label}
+                className="relative mb-3 h-[118px] w-[49%] justify-center overflow-hidden rounded-[16px] border bg-white pl-3 pr-2 shadow-sm elevation-[3]"
+                style={{ borderColor: borderColors[stat.color] || '#ECE8DF' }}>
+                <View
+                  className="absolute left-0 top-[16px] h-[86px] w-[4px] rounded-r-full"
+                  style={{ backgroundColor: stat.color }}
+                />
+                <Text
+                  className="absolute bottom-1 right-1 text-[48px] font-black leading-[48px]"
+                  style={{ color: watermarkColors[stat.color] || '#F1F5F9' }}>
+                  {stat.icon}
+                </Text>
+                <View className="flex-row items-center">
+                  <View
+                    className="h-[48px] w-[48px] items-center justify-center rounded-[12px] shadow-sm elevation-[3]"
+                    style={{ backgroundColor: stat.color }}>
+                    <Text className="text-[21px] font-black text-white">
+                      {stat.icon}
+                    </Text>
+                  </View>
+                  <View className="ml-3 flex-1">
+                    <Text numberOfLines={2} className="text-[13px] font-bold text-[#17191C]">
+                      {stat.label}
+                    </Text>
+                    <Text className="text-[24px] font-black leading-[29px] text-[#17191C]">
+                      {loading ? '—' : stat.value}
+                    </Text>
+                    <Text numberOfLines={2} className="text-[10px] text-[#64748B]">
+                      {stat.note}
+                    </Text>
+                  </View>
+                </View>
               </View>
-              <Text className="text-[10px] font-bold text-[#718080]">
-                {stat.label}
-              </Text>
-              <Text className="mt-0.5 text-[23px] font-black text-[#17191C]">
-                {stat.value}
-              </Text>
-              <Text className="mt-0.5 text-[9px] text-[#94A3B8]">{stat.note}</Text>
-            </View>
-          ))}
-        </ScrollView>
+            );
+          })}
+        </View>
 
         <View className="mb-4 rounded-[18px] border border-[#ECE8DF] bg-white p-3">
           <View className="mb-3 h-[46px] flex-row items-center rounded-[13px] bg-[#F5F7F8] px-3">

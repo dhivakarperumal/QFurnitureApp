@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Eye, EyeOff, LockKeyhole, UserRound } from 'lucide-react-native';
+import Svg, { Path } from 'react-native-svg';
 import api, { setTokenCache } from '../api';
 import { colors } from '../theme/colors';
 import { googleAuthError, signInWithGoogle } from '../services/googleAuth';
@@ -231,9 +232,28 @@ export default function Login({ onLogin, onRegisterPress }: LoginProps) {
                 <ActivityIndicator color="#4285F4" />
               ) : (
                 <>
-                  <View className="mr-3 h-[22px] w-[22px] items-center justify-center rounded-full bg-white">
-                    <Text className="text-[18px] font-black text-[#4285F4]">G</Text>
-                  </View>
+                  <Svg
+                    width={22}
+                    height={22}
+                    viewBox="0 0 24 24"
+                    className="mr-3">
+                    <Path
+                      fill="#4285F4"
+                      d="M23.49 12.27c0-.79-.07-1.55-.2-2.27H12v4.3h6.44a5.5 5.5 0 0 1-2.39 3.61v2.95h3.88c2.27-2.09 3.56-5.17 3.56-8.59Z"
+                    />
+                    <Path
+                      fill="#34A853"
+                      d="M12 24c3.24 0 5.96-1.08 7.95-2.92l-3.88-2.95c-1.08.72-2.45 1.15-4.07 1.15-3.13 0-5.78-2.11-6.73-4.96H1.26v3.04A12 12 0 0 0 12 24Z"
+                    />
+                    <Path
+                      fill="#FBBC05"
+                      d="M5.27 14.32a7.2 7.2 0 0 1 0-4.64V6.64H1.26a12 12 0 0 0 0 10.72l4.01-3.04Z"
+                    />
+                    <Path
+                      fill="#EA4335"
+                      d="M12 4.72c1.77 0 3.35.61 4.6 1.8l3.45-3.45C17.95 1.13 15.24 0 12 0A12 12 0 0 0 1.26 6.64l4.01 3.04C6.22 6.83 8.87 4.72 12 4.72Z"
+                    />
+                  </Svg>
                   <Text className="text-[15px] font-bold text-[#202124]">
                     Continue with Google
                   </Text>
