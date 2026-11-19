@@ -540,8 +540,8 @@ export default function Storefront({
             <Text className="text-[13px] font-bold text-white">Try again</Text>
           </Pressable>
         </View>
-      ) : activeTab === 'Profile' ? (
-        // Account screens manage their own scroll — render directly without wrapper
+      ) : activeTab === 'Profile' || activeTab === 'Explore' ? (
+        // Profile screens and the shop manage their own scroll/layout.
         // paddingBottom accounts for the absolute-positioned tab bar (~65px) + home indicator
         <View
           className="flex-1"
