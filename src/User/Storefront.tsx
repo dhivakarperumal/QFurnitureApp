@@ -8,6 +8,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ArrowLeft } from 'lucide-react-native';
 import api from '../api';
 import Header from './Header';
 import Home from './Home/Home';
@@ -32,6 +33,43 @@ import ProfileScreen from './Account/ProfileScreen';
 import AddressesScreen from './Account/AddressesScreen';
 import OrdersScreen from './Account/OrdersScreen';
 import SetPasswordScreen from './Account/SetPasswordScreen';
+
+// ─── Inner page header (fixed, no main header / no bottom tabs) ───────────────
+function InnerPageHeader({
+  title,
+  subtitle,
+  onBack,
+  topInset,
+}: {
+  title: string;
+  subtitle?: string;
+  onBack: () => void;
+  topInset: number;
+}) {
+  return (
+    <View
+      style={{ paddingTop: topInset }}
+      className="bg-white border-b border-[#F0E7DE]"
+    >
+      <View className="flex-row items-center px-4 py-3">
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+          onPress={onBack}
+          className="mr-3 h-[40px] w-[40px] items-center justify-center rounded-full bg-[#F4EDE6]"
+        >
+          <ArrowLeft size={20} color="#351D0E" />
+        </Pressable>
+        <View className="flex-1">
+          <Text className="text-[17px] font-black text-[#351D0E]">{title}</Text>
+          {subtitle ? (
+            <Text className="text-[12px] text-[#8B735E]">{subtitle}</Text>
+          ) : null}
+        </View>
+      </View>
+    </View>
+  );
+}
 
 type StoreData = {
   categories: StoreCategory[];
@@ -379,6 +417,39 @@ export default function Storefront({
     setDetailTarget({ itemId: String(numericId), itemType });
   };
 
+  // ── Determine whether we're on an "inner page" ──────────────────────────────
+  // Inner pages: product/combo detail view, or any account sub-screen
+  const isDetailPage = Boolean(detailTarget);
+  const isAccountSubPage =
+    activeTab === 'Profile' && accountSubScreen !== 'menu';
+  const isInnerPage = isDetailPage || isAccountSubPage;
+
+  // Title / subtitle shown in the inner header
+  const innerPageTitle = (() => {
+    if (isDetailPage) return detailTarget!.itemType === 'combo' ? 'Combo Details' : 'Product Details';
+    if (accountSubScreen === 'profile') return 'Profile';
+    if (accountSubScreen === 'addresses') return 'Addresses';
+    if (accountSubScreen === 'orders') return 'Your Orders';
+    if (accountSubScreen === 'password') return 'Set Password';
+    return '';
+  })();
+
+  const innerPageSubtitle = (() => {
+    if (accountSubScreen === 'profile') return 'Update your personal information';
+    if (accountSubScreen === 'addresses') return 'Manage your delivery addresses';
+    if (accountSubScreen === 'orders') return 'Track and manage your orders';
+    if (accountSubScreen === 'password') return 'Change or set your account password';
+    return undefined;
+  })();
+
+  const handleInnerBack = () => {
+    if (isDetailPage) {
+      setDetailTarget(null);
+    } else {
+      setAccountSubScreen('menu');
+    }
+  };
+
   const renderTabContent = () => {
     if (detailTarget) {
       const actionId =
@@ -497,24 +568,56 @@ export default function Storefront({
       );
     }
 
-    return (
-      // Account sub-screens (each screen manages its own scroll/layout)
-      accountSubScreen === 'profile' ? (
-        <ProfileScreen onBack={() => setAccountSubScreen('menu')} />
-      ) : accountSubScreen === 'addresses' ? (
-        <AddressesScreen onBack={() => setAccountSubScreen('menu')} />
-      ) : accountSubScreen === 'orders' ? (
-        <OrdersScreen onBack={() => setAccountSubScreen('menu')} />
-      ) : accountSubScreen === 'password' ? (
-        <SetPasswordScreen onBack={() => setAccountSubScreen('menu')} />
-      ) : (
-        <AccountScreen
-          onLogoutPress={onLogoutPress}
-          onSubScreenChange={screen => setAccountSubScreen(screen)}
-        />
-      )
+    // Account tab
+    return accountSubScreen === 'profile' ? (
+      <ProfileScreen onBack={() => setAccountSubScreen('menu')} />
+    ) : accountSubScreen === 'addresses' ? (
+      <AddressesScreen onBack={() => setAccountSubScreen('menu')} />
+    ) : accountSubScreen === 'orders' ? (
+      <OrdersScreen onBack={() => setAccountSubScreen('menu')} />
+    ) : accountSubScreen === 'password' ? (
+      <SetPasswordScreen onBack={() => setAccountSubScreen('menu')} />
+    ) : (
+      <AccountScreen
+        onLogoutPress={onLogoutPress}
+        onSubScreenChange={screen => setAccountSubScreen(screen)}
+      />
     );
   };
+
+  // ── Layout ────────────────────────────────────────────────────────────────
+  if (isInnerPage) {
+    // Inner page: fixed header at top (with safe-area inset baked in), no bottom tab bar
+    return (
+      <View className="flex-1 bg-[#FCFAF7]">
+        <InnerPageHeader
+          title={innerPageTitle}
+          subtitle={innerPageSubtitle}
+          onBack={handleInnerBack}
+          topInset={insets.top}
+        />
+        {isDetailPage ? (
+          // Detail pages use a ScrollView; the inner content already has padding
+          <ScrollView
+            key={`${detailTarget!.itemType}-${detailTarget!.itemId}`}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{ paddingBottom: Math.max(insets.bottom + 24, 32) }}
+          >
+            {renderTabContent()}
+          </ScrollView>
+        ) : (
+          // Account sub-screens manage their own scroll
+          <View
+            className="flex-1"
+            style={{ paddingBottom: insets.bottom }}
+          >
+            {renderTabContent()}
+          </View>
+        )}
+      </View>
+    );
+  }
 
   return (
     <View style={{ paddingTop: insets.top }} className="flex-1 bg-[#FCFAF7]">
@@ -541,7 +644,7 @@ export default function Storefront({
           </Pressable>
         </View>
       ) : activeTab === 'Profile' || activeTab === 'Explore' ? (
-        // Profile screens and the shop manage their own scroll/layout.
+        // Profile (menu) and Shop manage their own scroll/layout.
         // paddingBottom accounts for the absolute-positioned tab bar (~65px) + home indicator
         <View
           className="flex-1"
@@ -551,11 +654,7 @@ export default function Storefront({
         </View>
       ) : (
         <ScrollView
-          key={
-            detailTarget
-              ? `${detailTarget.itemType}-${detailTarget.itemId}`
-              : activeTab
-          }
+          key={activeTab}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
           contentContainerClassName="pb-[115px]"

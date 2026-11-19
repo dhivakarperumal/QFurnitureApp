@@ -15,9 +15,8 @@ describe('checkout GST calculation', () => {
       {
         id: 1,
         name: 'Furniture',
-        quantity: 1,
-        price: 83975,
-        total_price: '83975',
+        quantity: 2,
+        price: 41987.5,
       },
     ]);
 

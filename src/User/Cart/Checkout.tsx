@@ -46,6 +46,7 @@ type Address = {
   id: string | number;
   label: string;
   customer_name: string;
+  customer_email?: string;
   customer_phone: string;
   street_address: string;
   city: string;
@@ -166,6 +167,7 @@ export default function Checkout({
   const [gstSettings, setGstSettings] = useState<GstSettings | null>(null);
   const [gstSettingsLoading, setGstSettingsLoading] = useState(true);
   const [gstSettingsError, setGstSettingsError] = useState('');
+  const [gstSettingsLoadKey, setGstSettingsLoadKey] = useState(0);
   const [savingAddress, setSavingAddress] = useState(false);
   const [addressModalOpen, setAddressModalOpen] = useState(false);
   const [addressDraft, setAddressDraft] = useState<AddressDraft>(emptyAddress);
@@ -209,8 +211,10 @@ export default function Checkout({
 
   useEffect(() => {
     let active = true;
+    setGstSettingsLoading(true);
+    setGstSettingsError('');
     api
-      .get<unknown>('/settings/gst')
+      .get<unknown>('/settings/gst/public')
       .then(({ data }) => {
         const settings = parseGstSettings(data);
         if (active) setGstSettings(settings);
@@ -225,7 +229,7 @@ export default function Checkout({
     return () => {
       active = false;
     };
-  }, []);
+  }, [gstSettingsLoadKey]);
 
   useEffect(() => {
     if (fulfillment !== 'pickup') return;
@@ -389,6 +393,31 @@ export default function Checkout({
     items: quoteRequestBody.items,
   });
 
+  const checkoutPayload = () => {
+    const deliveryAddress =
+      fulfillment === 'delivery'
+        ? addresses.find(address => address.id === selectedAddressId)
+        : undefined;
+    const contactAddress =
+      deliveryAddress ??
+      addresses.find(address => Boolean(Number(address.is_default))) ??
+      addresses[0];
+
+    return {
+      customer_name: contactAddress?.customer_name ?? '',
+      customer_email: contactAddress?.customer_email ?? '',
+      customer_phone: contactAddress?.customer_phone ?? '',
+      fulfillment_type: fulfillment === 'pickup' ? 'Pickup' : 'Delivery',
+      street_address: deliveryAddress?.street_address ?? '',
+      city: deliveryAddress?.city ?? '',
+      district: deliveryAddress?.district ?? '',
+      state: deliveryAddress?.state ?? '',
+      country: deliveryAddress?.country ?? '',
+      zip_code: deliveryAddress?.zip_code ?? '',
+      payment_method: paymentMethod === 'cod' ? 'Cash' : 'Razorpay',
+    };
+  };
+
   const checkPaymentStatus = useCallback(
     async (orderId: string | number) => {
       try {
@@ -444,16 +473,17 @@ export default function Checkout({
     setSubmitError('');
     try {
       if (paymentMethod === 'cod') {
-        const { data } = await api.post('/orders', orderPayload());
+        const { data } = await api.post('/orders/checkout', checkoutPayload());
         const order = data?.order ?? data;
-        if (order?.id == null) {
+        const orderId = order?.order_id ?? order?.id;
+        if (orderId == null) {
           throw new Error(
             'The server did not confirm the order. Please try again.',
           );
         }
         Alert.alert(
           'Order placed',
-          `Your order ${order.order_id ?? `#${order.id}`} is confirmed.`,
+          `Your order ${order.order_id ?? `#${orderId}`} is confirmed.`,
         );
         onOrderPlaced();
         return;
@@ -766,10 +796,7 @@ export default function Checkout({
             </Text>
             <Text className="text-[11px] font-semibold text-[#351D0E]">
               {formatPrice(
-                Number(
-                  item.total_price ??
-                    Number(item.price) * Number(item.quantity),
-                ),
+                Number(item.price) * Number(item.quantity),
               )}
             </Text>
           </View>
@@ -810,10 +837,22 @@ export default function Checkout({
             </Text>
           )}
           {quoteError ? (
-            <View className="mt-3 rounded-[11px] bg-red-50 px-3 py-2">
-              <Text className="text-[11px] leading-4 text-red-700">
+            <View className="mt-3 flex-row items-center rounded-[11px] bg-red-50 px-3 py-2">
+              <Text className="flex-1 text-[11px] leading-4 text-red-700">
                 {quoteError}
               </Text>
+              {gstSettingsError ? (
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() =>
+                    setGstSettingsLoadKey(current => current + 1)
+                  }
+                  className="ml-3 rounded-full bg-white px-3 py-2">
+                  <Text className="text-[11px] font-bold text-red-700">
+                    Retry
+                  </Text>
+                </Pressable>
+              ) : null}
             </View>
           ) : null}
         </View>

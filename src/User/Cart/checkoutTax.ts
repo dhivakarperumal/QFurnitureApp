@@ -82,18 +82,14 @@ export function calculateCartSubtotal(items: StoreCartItem[]) {
   for (const item of items) {
     const price = amount(item.price);
     const quantity = amount(item.quantity);
-    const lineTotal =
-      item.total_price != null
-        ? amount(item.total_price)
-        : price !== null && quantity !== null
-        ? price * quantity
-        : null;
+    if (price === null || quantity === null) return null;
+    const lineTotal = roundCurrency(price * quantity);
 
     if (lineTotal === null || lineTotal < 0) return null;
-    subtotal += lineTotal;
+    subtotal = roundCurrency(subtotal + lineTotal);
   }
 
-  return roundCurrency(subtotal);
+  return subtotal;
 }
 
 export function calculateCheckoutQuote(

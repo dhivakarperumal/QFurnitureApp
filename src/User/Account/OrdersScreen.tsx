@@ -18,7 +18,6 @@ import {
 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '../../api';
-import { SubScreenHeader } from './AccountScreen';
 import { mediaUrl } from '../utils';
 import { formatPrice } from '../utils';
 
@@ -124,12 +123,6 @@ export default function OrdersScreen({ onBack }: OrdersScreenProps) {
 
   return (
     <View className="flex-1 bg-[#FCFAF7]">
-      <SubScreenHeader
-        title="Your Orders"
-        subtitle="Track and manage your orders"
-        onBack={onBack}
-      />
-
       {/* Filter tabs */}
       <ScrollView
         horizontal

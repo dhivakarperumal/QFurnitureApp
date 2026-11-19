@@ -7,7 +7,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { ArrowLeft, Armchair, Heart, Star } from 'lucide-react-native';
+import { Armchair, Heart, Star } from 'lucide-react-native';
 import api from '../api';
 import type { StoreProduct } from './types';
 import {
@@ -123,14 +123,6 @@ export default function ItemDetails({
 
   return (
     <View className="px-4 pb-8 pt-3">
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Back to shopping"
-        onPress={onBack}
-        className="mb-4 flex-row items-center self-start rounded-full bg-white px-4 py-2">
-        <ArrowLeft size={17} color="#351D0E" />
-        <Text className="ml-2 text-[13px] font-bold text-[#351D0E]">Back</Text>
-      </Pressable>
 
       {loading ? (
         <View className="h-[300px] items-center justify-center rounded-[20px] bg-white">

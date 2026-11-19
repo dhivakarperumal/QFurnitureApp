@@ -11,7 +11,6 @@ import {
 import { Check, CheckCircle2, Eye, EyeOff, KeyRound } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '../../api';
-import { SubScreenHeader } from './AccountScreen';
 
 type Passwords = {
   current: string;
@@ -146,12 +145,6 @@ export default function SetPasswordScreen({ onBack }: SetPasswordScreenProps) {
 
   return (
     <View className="flex-1 bg-[#FCFAF7]">
-      <SubScreenHeader
-        title="Set Password"
-        subtitle="Create a strong password to keep your account secure"
-        onBack={onBack}
-      />
-
       <ScrollView
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"

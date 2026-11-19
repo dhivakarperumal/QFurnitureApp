@@ -14,7 +14,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '../../api';
 import { mediaUrl } from '../utils';
-import { SubScreenHeader } from './AccountScreen';
 
 type Profile = {
   name: string;
@@ -195,12 +194,6 @@ export default function ProfileScreen({ onBack }: ProfileScreenProps) {
 
   return (
     <View className="flex-1 bg-[#FCFAF7]">
-      <SubScreenHeader
-        title="Profile"
-        subtitle="Update your personal information"
-        onBack={onBack}
-      />
-
       <ScrollView
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"

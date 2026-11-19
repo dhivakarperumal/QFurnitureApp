@@ -22,7 +22,6 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '../../api';
-import { SubScreenHeader } from './AccountScreen';
 import { INDIAN_STATES, INDIAN_UNION_TERRITORIES } from './indianStates';
 
 type Address = {
@@ -447,21 +446,6 @@ export default function AddressesScreen({ onBack }: AddressesScreenProps) {
 
   return (
     <View className="flex-1 bg-[#FCFAF7]">
-      <SubScreenHeader
-        title="Saved Addresses"
-        subtitle="Manage where your furniture orders are delivered"
-        onBack={onBack}
-        right={
-          <Pressable
-            onPress={openNewForm}
-            className="flex-row items-center rounded-full bg-[#F97316] px-3 py-2 active:opacity-80"
-          >
-            <Plus size={14} color="white" />
-            <Text className="ml-1 text-[12px] font-bold text-white">Add New</Text>
-          </Pressable>
-        }
-      />
-
       {loading ? (
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color="#F97316" />
@@ -492,6 +476,14 @@ export default function AddressesScreen({ onBack }: AddressesScreenProps) {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 20, paddingBottom: Math.max(insets.bottom, 100) }}
         >
+          {/* Add New button at top of list */}
+          <Pressable
+            onPress={openNewForm}
+            className="mb-4 flex-row items-center self-end rounded-full bg-[#F97316] px-4 py-2 active:opacity-80"
+          >
+            <Plus size={14} color="white" />
+            <Text className="ml-1 text-[12px] font-bold text-white">Add New</Text>
+          </Pressable>
           {addresses.map(address => {
             const isDefault = Boolean(Number(address.is_default));
             const isHome = address.label?.toLowerCase() === 'home';
