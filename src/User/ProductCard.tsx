@@ -51,7 +51,7 @@ export default function ProductCard({
           onPress={() => onProductPress(id)}
           className="h-full w-full">
           {imageUri ? (
-            <Image source={{ uri: imageUri }} className="h-full w-full" resizeMode="cover" />
+            <Image source={{ uri: imageUri }} className="h-full w-full" resizeMode="contain" />
           ) : (
             <View className="h-full items-center justify-center">
               <Armchair size={46} color="#A78A70" strokeWidth={1.3} />
