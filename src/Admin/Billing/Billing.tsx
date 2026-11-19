@@ -317,7 +317,11 @@ export default function Billing({
         contentContainerClassName="px-4 pb-8"
         style={{ paddingTop: insets.top + 84 }}
       >
-        <View className="mb-4 flex-row flex-wrap justify-between">
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          className="mb-3"
+        >
           {[
             {
               label: 'Total amount',
@@ -351,7 +355,7 @@ export default function Billing({
             return (
               <View
                 key={stat.label}
-                className="relative mb-3 h-[118px] w-[49%] justify-center overflow-hidden rounded-[16px] border bg-white pl-3 pr-2 shadow-sm elevation-[3]"
+                className="relative mr-3 h-[118px] w-[190px] justify-center overflow-hidden rounded-[16px] border bg-white pl-3 pr-2 shadow-sm elevation-[3]"
                 style={{ borderColor: stat.borderColor }}
               >
                 <View
@@ -392,7 +396,7 @@ export default function Billing({
               </View>
             );
           })}
-        </View>
+        </ScrollView>
 
         <View className="mb-3 rounded-[16px] border border-[#E2E8F0] bg-white p-3">
           <View className="mb-3 h-[44px] flex-row items-center rounded-[11px] bg-[#F8FAFC] px-3">
