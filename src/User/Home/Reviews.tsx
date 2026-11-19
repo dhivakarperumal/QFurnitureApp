@@ -30,6 +30,13 @@ function firstString(...values: unknown[]) {
   )?.trim();
 }
 
+function isPublished(review: Record<string, unknown>) {
+  const status = firstString(review.status, review.review_status);
+  if (status) return status.toLowerCase() === 'published';
+
+  return review.is_published !== false && review.published !== false;
+}
+
 function parseReviews(data: unknown): CustomerReview[] {
   const response = asRecord(data);
   const items = Array.isArray(data) ? data : response?.reviews;
@@ -37,7 +44,10 @@ function parseReviews(data: unknown): CustomerReview[] {
     throw new Error('The reviews response did not contain a review list.');
   }
 
-  return items.map((item, index) => {
+  return items.filter(item => {
+    const review = asRecord(item);
+    return !review || isPublished(review);
+  }).map((item, index) => {
     const review = asRecord(item);
     if (!review) {
       throw new Error(`The review at position ${index + 1} is invalid.`);
@@ -107,7 +117,7 @@ export default function Reviews() {
       setLoading(true);
       setError(null);
       try {
-        const { data } = await api.get<unknown>('/reviews/admin/all');
+        const { data } = await api.get<unknown>('/reviews');
         const nextReviews = parseReviews(data);
         if (active) setReviews(nextReviews);
       } catch (requestError) {
