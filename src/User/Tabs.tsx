@@ -1,7 +1,6 @@
 import React from 'react';
 import { Pressable, Text, View } from 'react-native';
 import {
-  Heart,
   Home,
   Search,
   ShoppingCart,
@@ -21,7 +20,6 @@ const tabs = [
   { name: 'Home',      icon: Home },
   { name: 'Explore',   icon: Search },
   { name: 'Combos',    icon: Tag },
-  { name: 'Favorites', icon: Heart },
   { name: 'Cart',      icon: ShoppingCart },
   { name: 'Profile',   icon: UserRound },
 ] as const;
@@ -49,7 +47,7 @@ export default function Tabs({
             className="min-w-0 flex-1 items-center py-1">
             <View className="relative">
               <Icon
-                size={21}
+                size={23}
                 color={active ? '#F97316' : '#351D0E'}
                 fill={active && name === 'Home' ? '#F97316' : 'transparent'}
               />
@@ -60,7 +58,7 @@ export default function Tabs({
               ) : null}
             </View>
             <Text
-              className={`mt-1 text-[9px] ${
+              className={`mt-1 text-[10px] ${
                 active ? 'font-bold text-[#F97316]' : 'text-[#351D0E]'
               }`}>
               {name === 'Profile' ? 'Account' : name}

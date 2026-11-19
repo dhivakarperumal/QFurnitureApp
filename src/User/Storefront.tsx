@@ -643,9 +643,9 @@ export default function Storefront({
   return (
     <View style={{ paddingTop: insets.top }} className="flex-1 bg-[#FCFAF7]">
       <Header
-        cartCount={cartCount}
-        onSearchPress={() => handleTabPress('Explore')}
-        onCartPress={() => handleTabPress('Cart')}
+        activeTab={activeTab}
+        onFavoritesPress={() => handleTabPress('Favorites')}
+        onProfilePress={() => handleTabPress('Profile')}
       />
       {loading ? (
         <View className="flex-1 items-center justify-center">

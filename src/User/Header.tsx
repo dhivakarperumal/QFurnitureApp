@@ -1,17 +1,18 @@
 import React from 'react';
 import { Image, Pressable, Text, View } from 'react-native';
-import { Search, ShoppingCart } from 'lucide-react-native';
+import { Heart, UserRound } from 'lucide-react-native';
+import type { StoreTab } from './types';
 
 type HeaderProps = {
-  cartCount: number;
-  onSearchPress: () => void;
-  onCartPress: () => void;
+  activeTab: StoreTab;
+  onFavoritesPress: () => void;
+  onProfilePress: () => void;
 };
 
 export default function Header({
-  cartCount,
-  onSearchPress,
-  onCartPress,
+  activeTab,
+  onFavoritesPress,
+  onProfilePress,
 }: HeaderProps) {
   return (
     <View className="h-[58px] flex-row items-center justify-between px-4">
@@ -32,22 +33,26 @@ export default function Header({
       <View className="flex-row">
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Search furniture"
-          onPress={onSearchPress}
+          accessibilityLabel="Open favorites"
+          accessibilityState={{ selected: activeTab === 'Favorites' }}
+          onPress={onFavoritesPress}
           className="mr-2 h-[42px] w-[42px] items-center justify-center rounded-full bg-white">
-          <Search size={21} color="#351D0E" />
+          <Heart
+            size={21}
+            color={activeTab === 'Favorites' ? '#F97316' : '#351D0E'}
+            fill={activeTab === 'Favorites' ? '#F97316' : 'transparent'}
+          />
         </Pressable>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`Cart, ${cartCount} items`}
-          onPress={onCartPress}
+          accessibilityLabel="Open profile"
+          accessibilityState={{ selected: activeTab === 'Profile' }}
+          onPress={onProfilePress}
           className="h-[42px] w-[42px] items-center justify-center rounded-full bg-white">
-          <ShoppingCart size={21} color="#351D0E" />
-          {cartCount > 0 ? (
-            <View className="absolute right-[-3px] top-[-3px] min-h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#F97316] px-1">
-              <Text className="text-[10px] font-bold text-white">{cartCount}</Text>
-            </View>
-          ) : null}
+          <UserRound
+            size={21}
+            color={activeTab === 'Profile' ? '#F97316' : '#351D0E'}
+          />
         </Pressable>
       </View>
     </View>
