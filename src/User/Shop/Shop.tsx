@@ -1,11 +1,13 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  Animated,
   Modal,
   Pressable,
   ScrollView,
   Text,
   TextInput,
   View,
+  useWindowDimensions,
 } from 'react-native';
 import {
   Armchair,
@@ -58,11 +60,27 @@ export default function Shop({
   onProductPress,
 }: ShopProps) {
   const [filtersVisible, setFiltersVisible] = useState(false);
+  const { width: screenWidth } = useWindowDimensions();
+  const filtersTranslateX = useRef(new Animated.Value(screenWidth)).current;
   const [maxPrice, setMaxPrice] = useState('');
   const [minRating, setMinRating] = useState(0);
   const [onSale, setOnSale] = useState(false);
   const [inStockOnly, setInStockOnly] = useState(false);
   const [sortOrder, setSortOrder] = useState<SortOrder>('featured');
+
+  useEffect(() => {
+    if (!filtersVisible) return;
+
+    filtersTranslateX.setValue(screenWidth);
+    const animation = Animated.timing(filtersTranslateX, {
+      toValue: 0,
+      duration: 260,
+      useNativeDriver: true,
+    });
+    animation.start();
+
+    return () => animation.stop();
+  }, [filtersVisible, filtersTranslateX, screenWidth]);
 
   const filteredProducts = useMemo(() => {
     const priceLimit = Number(maxPrice);
@@ -272,7 +290,7 @@ export default function Shop({
       <Modal
         visible={filtersVisible}
         transparent
-        animationType="slide"
+        animationType="none"
         onRequestClose={() => setFiltersVisible(false)}>
         <View className="flex-1 flex-row justify-end bg-black/40">
           <Pressable
@@ -281,7 +299,9 @@ export default function Shop({
             onPress={() => setFiltersVisible(false)}
             className="absolute inset-0"
           />
-          <View className="h-full w-[86%] max-w-[420px] rounded-l-[24px] bg-[#FCFAF7] px-5 pb-8 pt-5">
+          <Animated.View
+            style={{ transform: [{ translateX: filtersTranslateX }] }}
+            className="h-full w-full bg-[#FCFAF7] px-5 pb-8 pt-5">
             <View className="mb-4 flex-row items-center justify-between">
               <View>
                 <Text className="text-[20px] font-black text-[#351D0E]">Filters</Text>
@@ -300,13 +320,13 @@ export default function Shop({
 
             <ScrollView showsVerticalScrollIndicator={false}>
               <Text className="mb-2 text-[13px] font-bold text-[#351D0E]">Category</Text>
-              <View className="mb-4 flex-row flex-wrap">
+              <View className="mb-4">
                 <Pressable
                   onPress={() => onCategoryChange('')}
-                  className={`mb-2 mr-2 rounded-full px-3 py-2 ${
+                  className={`mb-2 w-full rounded-[12px] px-4 py-3 ${
                     !selectedCategory ? 'bg-[#F97316]' : 'bg-white'
                   }`}>
-                  <Text className={`text-[12px] ${!selectedCategory ? 'font-bold text-white' : 'text-[#634D3B]'}`}>
+                  <Text className={`text-[13px] ${!selectedCategory ? 'font-bold text-white' : 'text-[#634D3B]'}`}>
                     All
                   </Text>
                 </Pressable>
@@ -316,10 +336,10 @@ export default function Shop({
                     <Pressable
                       key={category.catId ?? category.id ?? category.name}
                       onPress={() => onCategoryChange(active ? '' : category.name)}
-                      className={`mb-2 mr-2 rounded-full px-3 py-2 ${
+                      className={`mb-2 w-full rounded-[12px] px-4 py-3 ${
                         active ? 'bg-[#F97316]' : 'bg-white'
                       }`}>
-                      <Text className={`text-[12px] ${active ? 'font-bold text-white' : 'text-[#634D3B]'}`}>
+                      <Text className={`text-[13px] ${active ? 'font-bold text-white' : 'text-[#634D3B]'}`}>
                         {category.name}
                       </Text>
                     </Pressable>
@@ -344,12 +364,12 @@ export default function Shop({
               ) : null}
 
               <Text className="mb-2 text-[13px] font-bold text-[#351D0E]">Customer rating</Text>
-              <View className="mb-4 flex-row">
+              <View className="mb-4">
                 {[0, 3, 4].map(rating => (
                   <Pressable
                     key={rating}
                     onPress={() => setMinRating(rating)}
-                    className={`mr-2 rounded-full px-3 py-2 ${
+                    className={`mb-2 w-full rounded-full px-4 py-3 ${
                       minRating === rating ? 'bg-[#F97316]' : 'bg-white'
                     }`}>
                     <Text className={`text-[12px] ${
@@ -362,7 +382,7 @@ export default function Shop({
               </View>
 
               <Text className="mb-2 text-[13px] font-bold text-[#351D0E]">Sort by</Text>
-              <View className="mb-4 flex-row flex-wrap">
+              <View className="mb-4">
                 {([
                   ['featured', 'Featured'],
                   ['price-low', 'Price: Low to High'],
@@ -374,7 +394,7 @@ export default function Shop({
                     <Pressable
                       key={value}
                       onPress={() => setSortOrder(value)}
-                      className={`mb-2 mr-2 rounded-full px-3 py-2 ${
+                      className={`mb-2 w-full rounded-full px-4 py-3 ${
                         active ? 'bg-[#F97316]' : 'bg-white'
                       }`}>
                       <Text className={`text-[12px] ${
@@ -429,7 +449,7 @@ export default function Shop({
                 </Text>
               </Pressable>
             </View>
-          </View>
+          </Animated.View>
         </View>
       </Modal>
     </View>
