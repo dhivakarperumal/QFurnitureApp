@@ -3,8 +3,8 @@ import { Pressable, Text, View } from 'react-native';
 import {
   Armchair,
   Boxes,
-  House,
-  Menu,
+  Grid2X2,
+  Home,
   ShoppingCart,
 } from 'lucide-react-native';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
@@ -18,11 +18,11 @@ type TabsProps = {
 };
 
 const tabs = [
-  { name: 'Home', icon: House, label: 'Home' },
+  { name: 'Home', icon: Home, label: 'Home' },
   { name: 'Shop', icon: Armchair, label: 'Shop' },
   { name: 'Cart', icon: ShoppingCart, label: 'Cart' },
   { name: 'Combos', icon: Boxes, label: 'Combo' },
-  { name: 'Profile', icon: Menu, label: 'More' },
+  { name: 'Profile', icon: Grid2X2, label: 'More' },
 ] as const;
 
 export default function Tabs({
