@@ -5,7 +5,6 @@ import {
   PanResponder,
   Pressable,
   RefreshControl,
-  RefreshControl,
   ScrollView,
   Text,
   TextInput,

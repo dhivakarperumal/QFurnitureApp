@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
- 
+  ActivityIndicator,
   Image,
   Pressable,
   RefreshControl,
@@ -134,27 +134,6 @@ export default function Favorites({
               </Pressable>
             </View>
           ) : null}
-          <View className="flex-row flex-wrap justify-between">
-            {favorites.map(item => {
-              const product =
-                item.item_type === 'combo'
-                  ? { ...item, id: `combo-${item.combo_id ?? item.id}` }
-                  : item;
-              return (
-                <ProductCard
-                  key={`${product.item_type ?? 'product'}-${product.id}`}
-                  product={product}
-                  favorite={favoriteIds.includes(String(product.id))}
-                  compact
-                  onFavoritePress={onFavoritePress}
-                  onAddToCart={onAddToCart}
-                  onProductPress={onProductPress}
-                />
-              );
-            })}
-          </View>
-        </>
-        <>
           <ScrollView
             className="flex-1"
             showsVerticalScrollIndicator={false}
