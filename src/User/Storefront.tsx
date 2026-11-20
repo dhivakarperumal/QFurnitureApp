@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
+  RefreshControl,
   ScrollView,
   StatusBar,
   Text,
@@ -167,6 +168,8 @@ export default function Storefront({
     useState<AccountSubScreen>('menu');
   const [moreDestination, setMoreDestination] =
     useState<MoreDestination | 'menu'>('menu');
+  const [refreshing, setRefreshing] = useState(false);
+  const [comboRefreshKey, setComboRefreshKey] = useState(0);
 
   const loadStore = useCallback(async () => {
     setLoading(true);
@@ -276,6 +279,23 @@ export default function Storefront({
         console.warn('[Storefront] Could not reload favorites:', error);
     });
   }, [loadFavorites]);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      if (activeTab === 'Home' || activeTab === 'Shop') {
+        await loadStore();
+      } else if (activeTab === 'Cart') {
+        await loadCart();
+      } else if (activeTab === 'Favorites') {
+        await loadFavorites();
+      } else if (activeTab === 'Combos') {
+        setComboRefreshKey(k => k + 1);
+      }
+    } finally {
+      setRefreshing(false);
+    }
+  }, [activeTab, loadStore, loadCart, loadFavorites]);
 
   const handleTabPress = useCallback(
     (tab: StoreTab) => {
@@ -581,6 +601,7 @@ export default function Storefront({
           onFavoritePress={toggleFavorite}
           onAddToCart={addToCart}
           onProductPress={openItemDetails}
+          onRefresh={() => { loadStore(); }}
         />
       );
     }
@@ -588,6 +609,7 @@ export default function Storefront({
     if (activeTab === 'Combos') {
       return (
         <ComboOffers
+          key={comboRefreshKey}
           favorites={favoriteIds}
           onFavoritePress={toggleFavorite}
           onAddToCart={addToCart}
@@ -757,6 +779,14 @@ export default function Storefront({
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
           contentContainerClassName="pb-[115px]"
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              colors={['#F97316']}
+              tintColor="#F97316"
+            />
+          }
         >
           {renderTabContent()}
         </ScrollView>

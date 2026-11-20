@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Image,
   Pressable,
+  RefreshControl,
   ScrollView,
   Text,
   TextInput,
@@ -78,6 +79,7 @@ export default function AccountScreen({
   });
   const [orderCount, setOrderCount] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   const loadProfile = useCallback(async () => {
     try {
@@ -118,6 +120,15 @@ export default function AccountScreen({
       // silently ignore
     }
   }, []);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await Promise.all([loadProfile(), loadOrderCount()]);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [loadProfile, loadOrderCount]);
 
   useEffect(() => {
     loadProfile();

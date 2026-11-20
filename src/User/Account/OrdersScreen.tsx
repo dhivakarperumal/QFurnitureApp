@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Image,
   Pressable,
+  RefreshControl,
   ScrollView,
   Text,
   View,
@@ -78,6 +79,7 @@ export default function OrdersScreen({ onBack }: OrdersScreenProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [filter, setFilter] = useState<OrderFilter>('All Orders');
+  const [refreshing, setRefreshing] = useState(false);
 
   const loadOrders = useCallback(async () => {
     setLoading(true);
@@ -93,6 +95,15 @@ export default function OrdersScreen({ onBack }: OrdersScreenProps) {
       setLoading(false);
     }
   }, []);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await loadOrders();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [loadOrders]);
 
   useEffect(() => {
     loadOrders();
@@ -182,7 +193,15 @@ export default function OrdersScreen({ onBack }: OrdersScreenProps) {
           </Text>
         </View>
       ) : (
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="px-4 py-4" contentContainerStyle={{ paddingBottom: Math.max(insets.bottom + 65, 100) }}>
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="px-4 py-4" contentContainerStyle={{ paddingBottom: Math.max(insets.bottom + 65, 100) }}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              colors={['#F97316']}
+              tintColor="#F97316"
+            />
+          }>
           {visibleOrders.map(order => {
             const firstItem = Array.isArray(order.items) ? order.items[0] : null;
             const status = order.status || 'Order Placed';

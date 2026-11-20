@@ -4,6 +4,7 @@ import {
   Modal,
   PanResponder,
   Pressable,
+  RefreshControl,
   ScrollView,
   Text,
   TextInput,
@@ -228,6 +229,7 @@ type ShopProps = {
   onFavoritePress: (productId: string) => void;
   onAddToCart: (productId: string) => void;
   onProductPress: (productId: string) => void;
+  onRefresh?: () => void;
 };
 
 export default function Shop({
@@ -241,6 +243,7 @@ export default function Shop({
   onFavoritePress,
   onAddToCart,
   onProductPress,
+  onRefresh,
 }: ShopProps) {
   const [filtersVisible, setFiltersVisible] = useState(false);
   const { width: screenWidth } = useWindowDimensions();
@@ -483,7 +486,17 @@ export default function Shop({
           <ScrollView
             className="flex-1"
             showsVerticalScrollIndicator={false}
-            contentContainerClassName="pb-6">
+            contentContainerClassName="pb-6"
+            refreshControl={
+              onRefresh ? (
+                <RefreshControl
+                  refreshing={false}
+                  onRefresh={onRefresh}
+                  colors={['#F97316']}
+                  tintColor="#F97316"
+                />
+              ) : undefined
+            }>
             {filteredProducts.length ? (
               <View className="flex-row flex-wrap justify-between">
                 {filteredProducts.map(product => (
