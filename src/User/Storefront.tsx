@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArrowLeft } from 'lucide-react-native';
+import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import api from '../api';
 import Header from './Header';
 import Home from './Home/Home';
@@ -53,21 +54,44 @@ function InnerPageHeader({
   return (
     <View
       style={{ paddingTop: topInset }}
-      className="bg-white border-b border-[#F0E7DE]"
-    >
+      className="relative overflow-hidden border-b border-[#FFB46B]">
+      <View pointerEvents="none" className="absolute inset-0">
+        <Svg
+          width="100%"
+          height="100%"
+          viewBox="0 0 400 80"
+          preserveAspectRatio="none">
+          <Defs>
+            <LinearGradient
+              id="innerHeaderOrangeGradient"
+              x1="0%"
+              y1="0%"
+              x2="100%"
+              y2="100%">
+              <Stop offset="0%" stopColor="#E9570D" />
+              <Stop offset="55%" stopColor="#F97316" />
+              <Stop offset="100%" stopColor="#E9570D" />
+            </LinearGradient>
+          </Defs>
+          <Rect
+            width="100%"
+            height="100%"
+            fill="url(#innerHeaderOrangeGradient)"
+          />
+        </Svg>
+      </View>
       <View className="flex-row items-center px-4 py-3">
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Go back"
           onPress={onBack}
-          className="mr-3 h-[40px] w-[40px] items-center justify-center rounded-full bg-[#F4EDE6]"
-        >
-          <ArrowLeft size={20} color="#351D0E" />
+          className="mr-3 h-[40px] w-[40px] items-center justify-center rounded-full bg-white/20">
+          <ArrowLeft size={20} color="white" />
         </Pressable>
         <View className="flex-1">
-          <Text className="text-[17px] font-black text-[#351D0E]">{title}</Text>
+          <Text className="text-[17px] font-black text-white">{title}</Text>
           {subtitle ? (
-            <Text className="text-[12px] text-[#8B735E]">{subtitle}</Text>
+            <Text className="text-[12px] text-[#FFF0E1]">{subtitle}</Text>
           ) : null}
         </View>
       </View>
