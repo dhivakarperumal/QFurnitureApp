@@ -7,14 +7,12 @@ import type { StoreBanner } from '../types';
 type HeroProps = {
   banners: StoreBanner[];
   activeIndex: number;
-  onIndexChange: (index: number) => void;
   onExplorePress: () => void;
 };
 
 export default function Hero({
   banners,
   activeIndex,
-  onIndexChange,
   onExplorePress,
 }: HeroProps) {
   const banner = banners[activeIndex];
@@ -55,23 +53,6 @@ export default function Hero({
           <ArrowRight size={16} color="#FFFFFF" />
         </Pressable>
       </View>
-      {banners.length > 1 ? (
-        <View className="mt-2 flex-row items-center">
-          {banners.map((item, index) => (
-            <Pressable
-              key={item.id ?? index}
-              accessibilityRole="button"
-              accessibilityLabel={`Show promotion ${index + 1}`}
-              onPress={() => onIndexChange(index)}
-              className={`mr-2 h-[9px] rounded-full ${
-                activeIndex === index
-                  ? 'w-[22px] bg-[#F97316]'
-                  : 'w-[9px] bg-[#B7A58F]'
-              }`}
-            />
-          ))}
-        </View>
-      ) : null}
     </View>
   );
 }

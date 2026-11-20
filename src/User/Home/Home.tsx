@@ -62,7 +62,6 @@ export default function Home({
       <Hero
         banners={heroBanners}
         activeIndex={heroIndex}
-        onIndexChange={setHeroIndex}
         onExplorePress={onExplorePress}
       />
       <Category
