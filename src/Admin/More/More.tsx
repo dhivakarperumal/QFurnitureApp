@@ -1,12 +1,11 @@
 import React from 'react';
-import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import {
   BarChart3,
   Boxes,
   ChevronRight,
   FileText,
   LayoutGrid,
-  LogOut,
   Megaphone,
   MessageSquare,
   Percent,
@@ -36,7 +35,6 @@ type MoreProps = {
   onDetailsVisibilityChange?: (visible: boolean) => void;
   initialScreen?: 'menu' | 'categories' | 'users' | 'stock' | 'offers';
   screenRequestId?: number;
-  onLogoutPress?: () => void;
 };
 
 export default function More({
@@ -44,7 +42,6 @@ export default function More({
   onDetailsVisibilityChange,
   initialScreen,
   screenRequestId = 0,
-  onLogoutPress,
 }: MoreProps) {
   const insets = useSafeAreaInsets();
   const lastScrollY = React.useRef(0);
@@ -503,35 +500,6 @@ export default function More({
         </View>
         <ChevronRight size={21} color="#94A3B8" />
       </Pressable>
-      {onLogoutPress ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Log out"
-          onPress={() =>
-            Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
-              { text: 'Cancel', style: 'cancel' },
-              {
-                text: 'Sign Out',
-                style: 'destructive',
-                onPress: onLogoutPress,
-              },
-            ])
-          }
-          className="mt-4 flex-row items-center rounded-[18px] border border-[#FECACA] bg-[#FEF2F2] p-4">
-          <View className="h-[52px] w-[52px] items-center justify-center rounded-[14px] bg-[#FEE2E2]">
-            <LogOut size={25} color="#DC2626" strokeWidth={2} />
-          </View>
-          <View className="ml-3 flex-1">
-            <Text className="text-[15px] font-black text-[#B91C1C]">
-              Logout
-            </Text>
-            <Text className="mt-1 text-[11px] text-[#7F1D1D]">
-              Sign out of your account
-            </Text>
-          </View>
-          <ChevronRight size={21} color="#DC2626" />
-        </Pressable>
-      ) : null}
         </ScrollView>
       </KeepAliveScreen>
       <KeepAliveScreen active={categoriesOpen}>
@@ -556,7 +524,6 @@ export default function More({
         <Profile
           onScrollVisibilityChange={onScrollVisibilityChange}
           onBackPress={closeProfile}
-          onLogoutPress={onLogoutPress}
         />
       </KeepAliveScreen>
       <KeepAliveScreen active={reviewsOpen}>
