@@ -1,7 +1,7 @@
-import React from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
-import { Heart, UserRound } from 'lucide-react-native';
-import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
+import React, { useEffect, useState } from 'react';
+import { Image, ImageBackground, Pressable, Text, View } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Heart, LogOut, UserRound } from 'lucide-react-native';
 import type { StoreTab } from './types';
 
 type HeaderProps = {
@@ -73,74 +73,92 @@ export default function Header({
   }, []);
 
   return (
-    <View
-      style={{ height: topInset + 58 }}
-      className="relative w-full">
-      <Svg
+    <ImageBackground
+      source={require('../Assert/images/topheader1.png')}
+      resizeMode="cover"
+      style={{ height: 58 + topInset, paddingTop: topInset }}
+      className="z-10 flex-row items-center justify-between px-3 shadow-md elevation-[10]">
+      <View
         pointerEvents="none"
-        width="100%"
-        height="100%"
-        style={StyleSheet.absoluteFill}>
-        <Defs>
-          <LinearGradient
-            id="storefrontHeaderGradient"
-            x1="0%"
-            y1="0%"
-            x2="100%"
-            y2="0%">
-            <Stop offset="0%" stopColor="#FF7900" />
-            <Stop offset="55%" stopColor="#F96500" />
-            <Stop offset="100%" stopColor="#EF4D00" />
-          </LinearGradient>
-        </Defs>
-        <Rect
-          x="0"
-          y="0"
-          width="100%"
-          height="100%"
-          fill="url(#storefrontHeaderGradient)"
+        className="absolute inset-0 bg-[#F45B00]/75"
+      />
+      <View className="flex-row items-center">
+        <Image
+          source={require('../Assert/images/appicon.png')}
+          accessibilityLabel="Q Living Furniture"
+          resizeMode="contain"
+          className="h-[44px] w-[44px] rounded-[12px] bg-white"
         />
-      </Svg>
-      <View style={{ height: topInset }} />
-      <View className="h-[58px] flex-row items-center justify-between px-3">
-        <View className="flex-row items-center">
-          <Image
-            source={require('../Assert/images/appicon.png')}
-            accessibilityLabel="Q Living Furniture"
-            resizeMode="contain"
-            className="h-[44px] w-[44px] rounded-[12px] bg-white"
-          />
-          <View className="mx-3 h-[40px] w-px bg-white/45" />
-          <View>
-            <Text className="text-[17px] font-black italic text-white">Q Living</Text>
-            <Text className="text-[8px] font-bold uppercase tracking-[2.4px] text-white/90">
-              Furniture
-            </Text>
-          </View>
+        <View className="mx-3 h-[40px] w-px bg-white/45" />
+        <View>
+          <Text className="text-[17px] font-black italic text-white">Q Living</Text>
+          <Text className="text-[8px] font-bold uppercase tracking-[2.4px] text-white/90">
+            Furniture
+          </Text>
         </View>
-        <View className="flex-row">
+      </View>
+      <View className="flex-row">
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Open favorites"
+          accessibilityState={{ selected: activeTab === 'Favorites' }}
+          onPress={onFavoritesPress}
+          className="mr-2 h-[42px] w-[42px] items-center justify-center rounded-full bg-white/15">
+          <Heart
+            size={22}
+            color="#FFFFFF"
+            fill={activeTab === 'Favorites' ? '#FFFFFF' : 'transparent'}
+          />
+        </Pressable>
+        <View className="relative">
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Open favorites"
-            accessibilityState={{ selected: activeTab === 'Favorites' }}
-            onPress={onFavoritesPress}
-            className="mr-2 h-[42px] w-[42px] items-center justify-center rounded-full bg-white/15">
-            <Heart
-              size={22}
-              color="#FFFFFF"
-              fill={activeTab === 'Favorites' ? '#FFFFFF' : 'transparent'}
-            />
-          </Pressable>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Open profile"
-            accessibilityState={{ selected: activeTab === 'Profile' }}
-            onPress={onProfilePress}
+            accessibilityLabel="Open profile menu"
+            accessibilityState={{ expanded: profileMenuVisible }}
+            onPress={() => setProfileMenuVisible(visible => !visible)}
             className="h-[42px] w-[42px] items-center justify-center rounded-full bg-white/15">
             <UserRound size={22} color="#FFFFFF" />
           </Pressable>
+          {profileMenuVisible ? (
+            <View className="absolute right-0 top-[50px] z-[30] w-[230px] rounded-[12px] border border-[#E5E7EB] bg-white p-2 shadow-lg elevation-[12]">
+              <View className="border-b border-[#E5E7EB] px-2 pb-2">
+                <Text numberOfLines={1} className="text-[14px] font-bold text-[#17191C]">
+                  {userName}
+                </Text>
+                <Text numberOfLines={1} className="mt-1 text-[12px] text-[#6B7280]">
+                  {userEmail || 'Email unavailable'}
+                </Text>
+              </View>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Open account"
+                onPress={() => {
+                  setProfileMenuVisible(false);
+                  onProfilePress();
+                }}
+                className="h-[42px] flex-row items-center rounded-[8px] px-2">
+                <UserRound size={18} color="#17191C" />
+                <Text className="ml-2 text-[14px] font-bold text-[#17191C]">
+                  Account
+                </Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Log out"
+                onPress={() => {
+                  setProfileMenuVisible(false);
+                  onLogoutPress();
+                }}
+                className="h-[42px] flex-row items-center rounded-[8px] px-2">
+                <LogOut size={18} color="#DC2626" />
+                <Text className="ml-2 text-[14px] font-bold text-[#DC2626]">
+                  Logout
+                </Text>
+              </Pressable>
+            </View>
+          ) : null}
         </View>
       </View>
-    </View>
+    </ImageBackground>
   );
 }
