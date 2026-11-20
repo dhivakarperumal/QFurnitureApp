@@ -207,9 +207,15 @@ export default function BannerScreen({ onBackPress }: Props) {
     setOfferError(null);
     setBannerError(null);
 
-    const [offerResult, bannerResult] = await Promise.allSettled([
-      api.get<ListResponse<Offer>>('/offers'),
-      api.get<ListResponse<Banner>>('/admin/banners'),
+    const [offerResult, bannerResult] = await Promise.all([
+      api.get<ListResponse<Offer>>('/offers').then(
+        value => ({ status: 'fulfilled' as const, value }),
+        reason => ({ status: 'rejected' as const, reason }),
+      ),
+      api.get<ListResponse<Banner>>('/admin/banners').then(
+        value => ({ status: 'fulfilled' as const, value }),
+        reason => ({ status: 'rejected' as const, reason }),
+      ),
     ]);
 
     if (offerResult.status === 'fulfilled') {
