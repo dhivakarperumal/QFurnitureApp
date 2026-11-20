@@ -33,6 +33,7 @@ export default function Products({
       itemStep: cardStep,
       contentWidth,
       viewportWidth,
+      intervalMs: 5000,
     });
 
   return (

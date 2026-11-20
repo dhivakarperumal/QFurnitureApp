@@ -62,6 +62,7 @@ export default function FeaturedCombos({
       itemStep: cardStep,
       contentWidth,
       viewportWidth,
+      intervalMs: 5000,
     });
 
   useEffect(() => {
