@@ -6,6 +6,7 @@ import {
   House,
   Menu,
   ShoppingBasket,
+  ShoppingCart,
 } from 'lucide-react-native';
 import type { StoreTab } from './types';
 
@@ -19,7 +20,7 @@ type TabsProps = {
 const tabs = [
   { name: 'Home', icon: House, label: 'Home' },
   { name: 'Shop', icon: Armchair, label: 'Shop' },
-  { name: 'Cart', icon: ShoppingBasket, label: 'Cart' },
+  { name: 'Cart', icon: ShoppingCart, label: 'Cart' },
   { name: 'Combos', icon: Boxes, label: 'Combo' },
   { name: 'Profile', icon: Menu, label: 'More' },
 ] as const;
@@ -47,7 +48,7 @@ export default function Tabs({
                   accessibilityLabel={`Cart tab, ${cartCount} items`}
                   onPress={() => onTabPress('Cart')}
                   className="h-[54px] w-[56px] items-center justify-center rounded-[17px] bg-[#F97316] shadow-sm">
-                  <ShoppingBasket size={24} color="#FFFFFF" strokeWidth={2.2} />
+                  <ShoppingCart size={24} color="#FFFFFF" strokeWidth={2.2} />
                   {cartCount > 0 ? (
                     <View className="absolute right-[-3px] top-[-4px] h-[18px] min-w-[18px] items-center justify-center rounded-full border border-white bg-[#F45112] px-1">
                       <Text className="text-[10px] font-bold text-white">
@@ -73,7 +74,7 @@ export default function Tabs({
               <Icon
                 size={21}
                 color={active ? '#F97316' : '#1E432C'}
-                fill={active && name === 'Home' ? '#F97316' : 'transparent'}
+                fill="transparent"
                 strokeWidth={2.2}
               />
               <Text
