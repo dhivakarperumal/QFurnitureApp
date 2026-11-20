@@ -4,6 +4,7 @@ import {
   Image,
   ImageBackground,
   Pressable,
+  RefreshControl,
   ScrollView,
   Text,
   View,
@@ -19,7 +20,10 @@ import {
   Users,
 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import api, { API_BASE_URL } from '../../api';
+import api, {
+  API_BASE_URL,
+  invalidateApiResponseCache,
+} from '../../api';
 
 type HomeProps = {
   onActionPress?: (label: string) => void;
@@ -294,19 +298,26 @@ export default function Home({
 }: HomeProps) {
   const insets = useSafeAreaInsets();
   const lastScrollY = useRef(0);
+  const hasLoadedDashboard = useRef(false);
   const [products, setProducts] = useState<DashboardProduct[]>([]);
   const [orders, setOrders] = useState<DashboardOrder[]>([]);
   const [customers, setCustomers] = useState<DashboardUser[]>([]);
   const [offers, setOffers] = useState<DashboardOffer[]>([]);
   const [totalProductCount, setTotalProductCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const hour = new Date().getHours();
   const greeting =
     hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
 
-  const loadDashboard = useCallback(async () => {
-    setLoading(true);
+  const loadDashboard = useCallback(async (refresh = false) => {
+    if (refresh) {
+      setRefreshing(true);
+      invalidateApiResponseCache();
+    } else if (!hasLoadedDashboard.current) {
+      setLoading(true);
+    }
     setLoadError(null);
 
     try {
@@ -371,6 +382,7 @@ export default function Home({
       setOrders(ordersResponse.data);
       setCustomers(allCustomers);
       setOffers(offerList);
+      hasLoadedDashboard.current = true;
     } catch (error: unknown) {
       const message =
         typeof error === 'object' &&
@@ -382,6 +394,7 @@ export default function Home({
       setLoadError(message);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }, []);
 
@@ -570,6 +583,14 @@ export default function Home({
         }
         lastScrollY.current = currentScrollY;
       }}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={() => loadDashboard(true)}
+          tintColor="#F97316"
+          colors={['#F97316']}
+        />
+      }
       contentContainerClassName="px-3 pb-[255px]"
       style={{ paddingTop: insets.top + 84 }}>
       <ImageBackground
@@ -594,7 +615,7 @@ export default function Home({
           </Text>
           <Pressable
             accessibilityRole="button"
-            onPress={loadDashboard}
+            onPress={() => loadDashboard()}
             className="self-start rounded-[8px] bg-[#DC2626] px-3 py-2">
             <Text className="text-[12px] font-bold text-white">Retry</Text>
           </Pressable>

@@ -53,6 +53,7 @@ type ProductDetailsResponse = {
   inventory_status?: string;
   images?: string[] | null;
   main_image_index?: number | string | null;
+  combo_items?: Product['comboItems'];
   variants?: Array<{
     image?: string | null;
     images?: string[] | null;
@@ -69,14 +70,16 @@ type ProductDetailsResponse = {
   }>;
 };
 
-const statusStyles: Record<Product['status'], { background: string; color: string }> = {
+const statusStyles: Record<
+  Product['status'],
+  { background: string; color: string }
+> = {
   Active: { background: '#DCFCE7', color: '#15803D' },
   'Low Stock': { background: '#FEF3C7', color: '#B45309' },
   'Out of Stock': { background: '#FFE4E6', color: '#BE123C' },
 };
 
-const formatRupees = (value: number) =>
-  `₹${value.toLocaleString('en-IN')}`;
+const formatRupees = (value: number) => `₹${value.toLocaleString('en-IN')}`;
 
 const toNumber = (value: number | string | null | undefined, fallback = 0) => {
   const parsed = Number(value);
@@ -112,6 +115,88 @@ export default function ProductsDetails({
 
     const fetchDetails = async () => {
       setLoading(true);
+      if (product.itemType === 'Combo') {
+        const comboDetails: ProductDetailsResponse = {
+          id: product.id,
+          name: product.name,
+          product_code: product.sku,
+          category: product.category,
+          selling_price: product.price,
+          mrp: product.mrp,
+          available_stock: product.stock,
+          combo_items: product.comboItems,
+        };
+        setDetails(comboDetails);
+        try {
+          const detailedItems = await Promise.all(
+            (product.comboItems ?? []).map(async item => {
+              const productId = item.product_id ?? item.id;
+              if (productId == null) {
+                return { ...item, detailUnavailable: true };
+              }
+              try {
+                const response = await api.get<ProductDetailsResponse>(
+                  `/products/${productId}`,
+                );
+                const itemDetails = response.data;
+                const imageIndex = Math.max(
+                  0,
+                  toNumber(itemDetails.main_image_index),
+                );
+                const detailImage =
+                  itemDetails.images?.[imageIndex] ??
+                  itemDetails.images?.[0] ??
+                  itemDetails.variants?.find(variant => variant.image)?.image;
+                const providedImage = Array.isArray(item.images)
+                  ? item.images[0]
+                  : item.images;
+                return {
+                  ...item,
+                  product_id: item.product_id ?? itemDetails.id ?? productId,
+                  product_name:
+                    item.product_name ?? item.name ?? itemDetails.name,
+                  product_code: item.product_code ?? itemDetails.product_code,
+                  category: item.category ?? itemDetails.category,
+                  selling_price:
+                    item.selling_price ??
+                    item.offer_price ??
+                    item.price ??
+                    itemDetails.selling_price ??
+                    itemDetails.offer_price ??
+                    itemDetails.mrp,
+                  mrp: item.mrp ?? itemDetails.mrp,
+                  available_stock:
+                    item.available_stock ??
+                    item.stock ??
+                    itemDetails.available_stock ??
+                    itemDetails.total_stock ??
+                    itemDetails.stock,
+                  image: item.image ?? providedImage ?? detailImage,
+                  description: item.description ?? itemDetails.description,
+                  material_type:
+                    item.material_type ?? itemDetails.material_type,
+                  material: item.material ?? itemDetails.material,
+                  colour: item.colour ?? itemDetails.colour,
+                };
+              } catch (error: unknown) {
+                if (__DEV__) {
+                  console.warn(
+                    '[ProductsDetails] Could not load combo item details:',
+                    error,
+                  );
+                }
+                return { ...item, detailUnavailable: true };
+              }
+            }),
+          );
+          if (mounted) {
+            setDetails({ ...comboDetails, combo_items: detailedItems });
+          }
+        } finally {
+          if (mounted) setLoading(false);
+        }
+        return;
+      }
       try {
         const response = await api.get<ProductDetailsResponse>(
           `/products/${product.id}`,
@@ -119,7 +204,10 @@ export default function ProductsDetails({
         if (mounted) setDetails(response.data);
       } catch (error) {
         if (__DEV__) {
-          console.warn('[ProductsDetails] Could not load product details:', error);
+          console.warn(
+            '[ProductsDetails] Could not load product details:',
+            error,
+          );
         }
       } finally {
         if (mounted) setLoading(false);
@@ -130,7 +218,7 @@ export default function ProductsDetails({
     return () => {
       mounted = false;
     };
-  }, [product.id]);
+  }, [product]);
 
   const name = details?.name ?? product.name;
   const sku = details?.product_code ?? product.sku;
@@ -144,15 +232,16 @@ export default function ProductsDetails({
     details?.available_stock ?? details?.total_stock ?? details?.stock,
     product.stock,
   );
-  const inventoryStatus =
-    `${details?.status ?? ''} ${details?.inventory_status ?? ''}`.toLowerCase();
+  const inventoryStatus = `${details?.status ?? ''} ${
+    details?.inventory_status ?? ''
+  }`.toLowerCase();
   const minimumStock = toNumber(details?.minimum_stock, 10);
   const resolvedStatus: Product['status'] =
     stock <= 0 || inventoryStatus.includes('out of stock')
       ? 'Out of Stock'
       : inventoryStatus.includes('low stock') || stock <= minimumStock
-        ? 'Low Stock'
-        : 'Active';
+      ? 'Low Stock'
+      : 'Active';
   const images = details?.images ?? [];
   const requestedImageIndex = toNumber(details?.main_image_index);
   const imageIndex =
@@ -172,13 +261,10 @@ export default function ProductsDetails({
   const variantImages = Array.isArray(currentVariant.images)
     ? currentVariant.images
     : currentVariant.image
-      ? [currentVariant.image]
-      : images;
-  const displayImages = variantImages.length > 0
-    ? variantImages
-    : imageUri
-      ? [imageUri]
-      : [];
+    ? [currentVariant.image]
+    : images;
+  const displayImages =
+    variantImages.length > 0 ? variantImages : imageUri ? [imageUri] : [];
   const variantStock = variants.length
     ? toNumber(
         currentVariant.stock ??
@@ -220,10 +306,11 @@ export default function ProductsDetails({
     { label: 'Mattress size', value: details?.mattress_size },
     { label: 'Warranty', value: details?.warranty_period },
     { label: 'Origin', value: details?.country_of_origin },
-  ].filter(spec =>
-    spec.value !== undefined &&
-    spec.value !== null &&
-    String(spec.value).trim() !== '',
+  ].filter(
+    spec =>
+      spec.value !== undefined &&
+      spec.value !== null &&
+      String(spec.value).trim() !== '',
   );
 
   return (
@@ -236,7 +323,8 @@ export default function ProductsDetails({
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerClassName="px-4 pb-[255px]"
-        style={{ paddingTop: insets.top + 72 }}>
+        style={{ paddingTop: insets.top + 72 }}
+      >
         <View className="mb-4 overflow-hidden rounded-[20px] border border-[#FCE6D7] bg-white shadow-sm elevation-[3]">
           <View className="w-full overflow-hidden bg-[#FFF6E8]">
             <Image
@@ -251,10 +339,12 @@ export default function ProductsDetails({
             />
             <View
               className="absolute left-4 top-4 rounded-full px-3 py-1.5"
-              style={{ backgroundColor: status.background }}>
+              style={{ backgroundColor: status.background }}
+            >
               <Text
                 className="text-[11px] font-bold"
-                style={{ color: status.color }}>
+                style={{ color: status.color }}
+              >
                 {resolvedStatus}
               </Text>
             </View>
@@ -264,10 +354,12 @@ export default function ProductsDetails({
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
-              className="px-3 py-3">
+              className="px-3 py-3"
+            >
               {displayImages.map((image, index) => {
                 const thumbnailUri =
-                  resolveImageUri(image) ?? (image.startsWith('http') ? image : undefined);
+                  resolveImageUri(image) ??
+                  (image.startsWith('http') ? image : undefined);
                 return (
                   <Pressable
                     key={`${image}-${index}`}
@@ -277,7 +369,8 @@ export default function ProductsDetails({
                       activeImage === index
                         ? 'border-[#F97316]'
                         : 'border-transparent'
-                    }`}>
+                    }`}
+                  >
                     {thumbnailUri ? (
                       <Image
                         source={{ uri: thumbnailUri }}
@@ -299,11 +392,27 @@ export default function ProductsDetails({
               {name}
             </Text>
             <Text className="mt-1 text-[12px] text-[#64748B]">
-              SKU: {sku || 'Not available'}
+              {product.itemType === 'Combo' ? 'Combo code: ' : 'SKU: '}
+              {sku || 'Not available'}
             </Text>
+            <View
+              className={`mt-2 self-start rounded-full px-2.5 py-1 ${
+                product.itemType === 'Combo' ? 'bg-[#FFF7ED]' : 'bg-[#F1F5F9]'
+              }`}
+            >
+              <Text
+                className={`text-[9px] font-bold ${
+                  product.itemType === 'Combo'
+                    ? 'text-[#C2410C]'
+                    : 'text-[#475569]'
+                }`}
+              >
+                {product.itemType === 'Combo' ? 'Combo' : 'Single'}
+              </Text>
+            </View>
             {toNumber(details?.rating) > 0 ? (
               <Text className="mt-2 text-[12px] font-bold text-[#D97706]">
-                ★ {details?.rating}  Boutique Standard
+                ★ {details?.rating} Boutique Standard
               </Text>
             ) : null}
             {loading ? (
@@ -355,7 +464,8 @@ export default function ProductsDetails({
                   {specs.map(spec => (
                     <View
                       key={spec.label}
-                      className="mb-2 mr-2 min-w-[145px] flex-1 rounded-[12px] border border-[#F1F5F9] bg-[#F8FAFC] p-3">
+                      className="mb-2 mr-2 min-w-[145px] flex-1 rounded-[12px] border border-[#F1F5F9] bg-[#F8FAFC] p-3"
+                    >
                       <Text className="text-[9px] font-bold uppercase tracking-[0.8px] text-[#94A3B8]">
                         {spec.label}
                       </Text>
@@ -385,10 +495,9 @@ export default function ProductsDetails({
                     0,
                   ),
               );
-              const variantLabel = [
-                variant.size,
-                variant.material,
-              ].filter(Boolean).join(' · ');
+              const variantLabel = [variant.size, variant.material]
+                .filter(Boolean)
+                .join(' · ');
 
               return (
                 <Pressable
@@ -402,7 +511,8 @@ export default function ProductsDetails({
                     activeVariant === index
                       ? 'border-[#FDBA74] bg-[#FFF7ED]'
                       : 'border-[#F1F5F9] bg-[#F8FAFC]'
-                  }`}>
+                  }`}
+                >
                   <View className="mr-3 flex-1">
                     <Text className="text-[13px] font-black text-[#334155]">
                       {variantName}
@@ -424,6 +534,115 @@ export default function ProductsDetails({
                     ) : null}
                   </View>
                 </Pressable>
+              );
+            })}
+          </View>
+        ) : null}
+        {product.itemType === 'Combo' && product.comboItems?.length ? (
+          <View className="mb-4 rounded-[20px] border border-[#FCE6D7] bg-white p-4 shadow-sm elevation-[2]">
+            <Text className="mb-3 text-[13px] font-bold uppercase tracking-[1px] text-[#17191C]">
+              Included Products
+            </Text>
+            {product.comboItems.map((item, index) => {
+              const itemName =
+                item.product_name ||
+                item.name ||
+                `Product #${item.product_id ?? index + 1}`;
+              const itemImage = Array.isArray(item.images)
+                ? item.images[0]
+                : item.images;
+              const comboItemImageUri = resolveImageUri(
+                item.image ?? itemImage,
+              );
+              const rawPrice =
+                item.selling_price ??
+                item.offer_price ??
+                item.price ??
+                item.mrp;
+              const itemPrice = rawPrice == null ? null : toNumber(rawPrice);
+              const quantity = toNumber(item.quantity, 1);
+              const itemStock = item.available_stock ?? item.stock;
+              const importantDetails = [
+                item.product_code ? `SKU: ${item.product_code}` : null,
+                item.category,
+                item.material_type || item.material,
+                item.colour ? `Color: ${item.colour}` : null,
+                itemStock != null ? `Stock: ${toNumber(itemStock)}` : null,
+              ]
+                .filter(Boolean)
+                .join(' · ');
+
+              return (
+                <View
+                  key={`${item.product_id ?? item.id ?? index}-${index}`}
+                  className="flex-row items-start border-t border-[#F1F5F9] py-3"
+                >
+                  {comboItemImageUri ? (
+                    <Image
+                      source={{ uri: comboItemImageUri }}
+                      accessibilityLabel={`${itemName} image`}
+                      className="mr-3 h-[68px] w-[68px] rounded-[10px] bg-[#F8FAFC]"
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <View className="mr-3 h-[68px] w-[68px] items-center justify-center rounded-[10px] bg-[#FFF7ED]">
+                      <Text className="text-[18px] font-black text-[#C2410C]">
+                        P
+                      </Text>
+                    </View>
+                  )}
+                  <View className="mr-2 flex-1">
+                    <Text
+                      numberOfLines={2}
+                      className="text-[12px] font-bold text-[#334155]"
+                    >
+                      {itemName}
+                    </Text>
+                    {importantDetails ? (
+                      <Text
+                        numberOfLines={2}
+                        className="mt-1 text-[9px] leading-[14px] text-[#64748B]"
+                      >
+                        {importantDetails}
+                      </Text>
+                    ) : null}
+                    <Text className="mt-1 text-[9px] font-semibold text-[#64748B]">
+                      Qty {quantity}
+                    </Text>
+                    {item.description ? (
+                      <Text
+                        numberOfLines={2}
+                        className="mt-1 text-[9px] leading-[13px] text-[#94A3B8]"
+                      >
+                        {item.description}
+                      </Text>
+                    ) : null}
+                    {item.detailUnavailable ? (
+                      <Text className="mt-1 text-[8px] text-[#B45309]">
+                        Additional details unavailable
+                      </Text>
+                    ) : null}
+                  </View>
+                  <View className="items-end">
+                    <Text className="text-[11px] font-black text-[#C2410C]">
+                      {itemPrice == null
+                        ? 'Price unavailable'
+                        : formatRupees(itemPrice)}
+                    </Text>
+                    {itemPrice != null && quantity > 1 ? (
+                      <Text className="mt-1 text-[8px] text-[#94A3B8]">
+                        {formatRupees(itemPrice * quantity)} total
+                      </Text>
+                    ) : null}
+                    {itemPrice != null &&
+                    item.mrp != null &&
+                    toNumber(item.mrp) > itemPrice ? (
+                      <Text className="mt-1 text-[8px] text-[#94A3B8] line-through">
+                        {formatRupees(toNumber(item.mrp))}
+                      </Text>
+                    ) : null}
+                  </View>
+                </View>
               );
             })}
           </View>

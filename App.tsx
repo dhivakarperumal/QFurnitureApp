@@ -6,16 +6,31 @@
  */
 
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, StatusBar, Text, useColorScheme, View } from 'react-native';
+import {
+  ActivityIndicator,
+  StatusBar,
+  useColorScheme,
+  View,
+} from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Bottombar from './src/Admin/Navigation/Bottombar';
 import TopHeader from './src/Admin/Navigation/TopHeader';
+import type { DrawerDestination } from './src/Admin/Navigation/TopHeader';
 import Home from './src/Admin/Home/Home';
 import Products from './src/Admin/Products/Products';
+import Billing from './src/Admin/Billing/Billing';
+import CreateBill from './src/Admin/Billing/CreateBill';
 import Orders from './src/Admin/Order/Orders';
 import OrdersDetails from './src/Admin/Order/OrdersDetails';
 import type { Order } from './src/Admin/Order/Orders';
+import More from './src/Admin/More/More';
+import Profile from './src/Admin/More/Profile';
+import DrawerCustomers from './src/Admin/Navigation/DrawerCustomers';
+import ReportScreen from './src/Admin/More/Report';
+import BannerScreen from './src/Admin/More/Banner';
+import DrawerSettings from './src/Admin/Navigation/DrawerSettings';
+import KeepAliveScreen from './src/Admin/Navigation/KeepAliveScreen';
 import { signOutGoogle } from './src/services/googleAuth';
 import Login from './src/Auth/Login';
 import Register from './src/Auth/Register';
@@ -40,16 +55,39 @@ function AppContent() {
   const [userRole, setUserRole] = useState<AppRole>('user');
   const [checkingSession, setCheckingSession] = useState(true);
   const [authScreen, setAuthScreen] = useState<'login' | 'register'>('login');
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [billingOpen, setBillingOpen] = useState(false);
+  const [drawerScreen, setDrawerScreen] = useState<
+    'customers' | 'reports' | 'offers' | 'settings' | null
+  >(null);
+  const [moreInitialScreen, setMoreInitialScreen] = useState<
+    'menu' | 'categories' | 'users' | 'stock' | 'offers'
+  >('menu');
+  const [moreScreenRequestId, setMoreScreenRequestId] = useState(0);
+  const [createBillOpen, setCreateBillOpen] = useState(false);
+  const [billingRefreshKey, setBillingRefreshKey] = useState(0);
   const [productDetailsOpen, setProductDetailsOpen] = useState(false);
+  const [moreDetailsOpen, setMoreDetailsOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [detailsOrder, setDetailsOrder] = useState<Order | null>(null);
   const [activeItem, setActiveItem] = useState<
     'Home' | 'Products' | 'Orders' | 'More'
   >('Home');
+  const [activeDrawerItem, setActiveDrawerItem] =
+    useState<DrawerDestination | null>('Dashboard');
   const [bottomBarVisible, setBottomBarVisible] = useState(true);
 
   useEffect(() => {
     setBottomBarVisible(true);
-  }, [activeItem, productDetailsOpen, selectedOrder]);
+  }, [
+    activeItem,
+    profileOpen,
+    billingOpen,
+    createBillOpen,
+    productDetailsOpen,
+    moreDetailsOpen,
+    selectedOrder,
+  ]);
 
   useEffect(() => {
     let mounted = true;
@@ -89,8 +127,93 @@ function AppContent() {
     await AsyncStorage.removeItem('user');
     clearTokenCache();
     setActiveItem('Home');
+    setActiveDrawerItem('Dashboard');
+    setProfileOpen(false);
+    setBillingOpen(false);
+    setDrawerScreen(null);
+    setCreateBillOpen(false);
+    setBillingRefreshKey(0);
+    setSelectedOrder(null);
+    setDetailsOrder(null);
     setUserRole('user');
     setAuthenticated(false);
+  };
+
+  const handleDrawerItemPress = (item: DrawerDestination) => {
+    setProfileOpen(false);
+    setBillingOpen(false);
+    setCreateBillOpen(false);
+    setSelectedOrder(null);
+    setMoreDetailsOpen(false);
+    setActiveDrawerItem(item);
+
+    switch (item) {
+      case 'Dashboard':
+        setDrawerScreen(null);
+        setActiveItem('Home');
+        setMoreInitialScreen('menu');
+        setMoreScreenRequestId(requestId => requestId + 1);
+        break;
+      case 'Products':
+        setDrawerScreen(null);
+        setActiveItem('Products');
+        setMoreInitialScreen('menu');
+        setMoreScreenRequestId(requestId => requestId + 1);
+        break;
+      case 'Orders':
+        setDrawerScreen(null);
+        setActiveItem('Orders');
+        setMoreInitialScreen('menu');
+        setMoreScreenRequestId(requestId => requestId + 1);
+        break;
+      case 'Categories':
+        setDrawerScreen(null);
+        setActiveItem('More');
+        setMoreInitialScreen('categories');
+        setMoreScreenRequestId(requestId => requestId + 1);
+        break;
+      case 'Inventory / Stock':
+        setDrawerScreen(null);
+        setActiveItem('More');
+        setMoreInitialScreen('stock');
+        setMoreScreenRequestId(requestId => requestId + 1);
+        break;
+      case 'Users & Roles':
+        setDrawerScreen(null);
+        setActiveItem('More');
+        setMoreInitialScreen('users');
+        setMoreScreenRequestId(requestId => requestId + 1);
+        break;
+      case 'Customers':
+        setDrawerScreen('customers');
+        break;
+      case 'Sales & Reports':
+        setDrawerScreen('reports');
+        break;
+      case 'Offers & Banners':
+        setDrawerScreen('offers');
+        break;
+      case 'Settings':
+        setDrawerScreen('settings');
+        break;
+    }
+  };
+
+  const closeDrawerScreen = () => {
+    setDrawerScreen(null);
+    if (activeItem === 'More') {
+      setMoreInitialScreen('menu');
+      setMoreScreenRequestId(requestId => requestId + 1);
+    }
+    setActiveDrawerItem(
+      activeItem === 'Home'
+        ? 'Dashboard'
+        : activeItem === 'Products'
+          ? 'Products'
+          : activeItem === 'Orders'
+            ? 'Orders'
+            : null,
+    );
   };
 
   if (checkingSession) {
@@ -119,61 +242,154 @@ function AppContent() {
     return <Storefront onLogoutPress={handleLogout} />;
   }
 
+  if (userRole === 'user') {
+    return <Storefront onLogoutPress={handleLogout} />;
+  }
+
+  const tabsVisible =
+    !profileOpen && !billingOpen && selectedOrder === null && drawerScreen === null;
+
   return (
     <View className="flex-1 bg-white">
-      {!productDetailsOpen && !selectedOrder ? (
+      {!profileOpen &&
+      !createBillOpen &&
+      !productDetailsOpen &&
+      !moreDetailsOpen &&
+      !selectedOrder &&
+      drawerScreen === null ? (
         <TopHeader
+          activeDrawerItem={activeDrawerItem}
           onMenuPress={() => console.log('Menu')}
           onNotificationPress={() => console.log('Notifications')}
-          onProfilePress={() => console.log('Profile')}
+          onProfilePress={() => setProfileOpen(true)}
           onLogoutPress={handleLogout}
-          onDrawerItemPress={item => setActiveItem(item)}
+          onDrawerItemPress={handleDrawerItemPress}
         />
       ) : null}
-      {activeItem === 'Home' ? (
+      <KeepAliveScreen active={profileOpen}>
+        <Profile
+          onBackPress={() => setProfileOpen(false)}
+          onScrollVisibilityChange={setBottomBarVisible}
+        />
+      </KeepAliveScreen>
+      <KeepAliveScreen active={!profileOpen && billingOpen && !createBillOpen}>
+        <Billing
+          onCreateBill={() => setCreateBillOpen(true)}
+          refreshKey={billingRefreshKey}
+          onScrollVisibilityChange={setBottomBarVisible}
+          onOrderPress={order => {
+            setBillingOpen(false);
+            setCreateBillOpen(false);
+            setActiveItem('Orders');
+            setDetailsOrder(order);
+            setSelectedOrder(order);
+          }}
+        />
+      </KeepAliveScreen>
+      <KeepAliveScreen active={!profileOpen && billingOpen && createBillOpen}>
+        <CreateBill
+          onBackPress={() => setCreateBillOpen(false)}
+          onOrderCreated={() => {
+            setBillingRefreshKey(key => key + 1);
+            setCreateBillOpen(false);
+          }}
+        />
+      </KeepAliveScreen>
+      <KeepAliveScreen active={tabsVisible && activeItem === 'Home'}>
         <Home
           onScrollVisibilityChange={setBottomBarVisible}
           onActionPress={action => {
-            if (action === 'Add Product' || action === 'Categories' || action === 'Stock') {
+            if (
+              action === 'Add Product' ||
+              action === 'Categories' ||
+              action === 'Stock'
+            ) {
               setActiveItem('Products');
             } else if (action === 'New Order') {
               setActiveItem('Orders');
             }
           }}
         />
-      ) : activeItem === 'Products' ? (
+      </KeepAliveScreen>
+      <KeepAliveScreen active={tabsVisible && activeItem === 'Products'}>
         <Products
           onScrollVisibilityChange={setBottomBarVisible}
           onActionPress={action => console.log(action)}
           onDetailsVisibilityChange={setProductDetailsOpen}
         />
-      ) : activeItem === 'Orders' ? (
-        selectedOrder ? (
+      </KeepAliveScreen>
+      <KeepAliveScreen active={tabsVisible && activeItem === 'Orders'}>
+        <Orders
+          onScrollVisibilityChange={setBottomBarVisible}
+          onOrderPress={order => {
+            setDetailsOrder(order);
+            setSelectedOrder(order);
+          }}
+        />
+      </KeepAliveScreen>
+      <KeepAliveScreen active={selectedOrder !== null}>
+        {detailsOrder ? (
           <OrdersDetails
-            order={selectedOrder}
+            order={detailsOrder}
             onBack={() => setSelectedOrder(null)}
           />
-        ) : (
-          <Orders
-            onScrollVisibilityChange={setBottomBarVisible}
-            onOrderPress={order => setSelectedOrder(order)}
-          />
-        )
-      ) : (
-        <View className="flex-1 items-center justify-center">
-          <View className="rounded-[18px] bg-[#FFF7E6] px-6 py-5">
-            <Text className="text-[14px] font-bold text-[#073E56]">
-              {activeItem} section
-            </Text>
-          </View>
-        </View>
-      )}
+        ) : null}
+      </KeepAliveScreen>
+      <KeepAliveScreen active={tabsVisible && activeItem === 'More'}>
+        <More
+          onScrollVisibilityChange={setBottomBarVisible}
+          onDetailsVisibilityChange={setMoreDetailsOpen}
+          initialScreen={moreInitialScreen}
+          screenRequestId={moreScreenRequestId}
+        />
+      </KeepAliveScreen>
+      <KeepAliveScreen active={drawerScreen === 'customers'}>
+        <DrawerCustomers onBackPress={closeDrawerScreen} />
+      </KeepAliveScreen>
+      <KeepAliveScreen active={drawerScreen === 'reports'}>
+        <ReportScreen onBackPress={closeDrawerScreen} />
+      </KeepAliveScreen>
+      <KeepAliveScreen active={drawerScreen === 'offers'}>
+        <BannerScreen onBackPress={closeDrawerScreen} />
+      </KeepAliveScreen>
+      <KeepAliveScreen active={drawerScreen === 'settings'}>
+        <DrawerSettings onBackPress={closeDrawerScreen} />
+      </KeepAliveScreen>
       <Bottombar
         activeItem={activeItem}
-        onItemPress={item => setActiveItem(item)}
-        onAddPress={() => setActiveItem('Products')}
+        onItemPress={item => {
+          setBillingOpen(false);
+          setCreateBillOpen(false);
+          setDrawerScreen(null);
+          setActiveItem(item);
+          setActiveDrawerItem(
+            item === 'Home'
+              ? 'Dashboard'
+              : item === 'Products'
+                ? 'Products'
+                : item === 'Orders'
+                  ? 'Orders'
+                  : null,
+          );
+          if (item === 'More') {
+            setMoreInitialScreen('menu');
+            setMoreScreenRequestId(requestId => requestId + 1);
+          }
+        }}
+        onAddPress={() => {
+          setBillingOpen(true);
+          setCreateBillOpen(true);
+        }}
         badgeCount={5}
-        visible={bottomBarVisible && !productDetailsOpen && !selectedOrder}
+        visible={
+          bottomBarVisible &&
+          drawerScreen === null &&
+          !profileOpen &&
+          !createBillOpen &&
+          !productDetailsOpen &&
+          !moreDetailsOpen &&
+          !selectedOrder
+        }
       />
     </View>
   );
