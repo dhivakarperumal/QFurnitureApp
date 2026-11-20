@@ -6,6 +6,7 @@ import type { StoreTab } from './types';
 
 type HeaderProps = {
   activeTab: StoreTab;
+  favoriteCount: number;
   topInset: number;
   onFavoritesPress: () => void;
   onProfilePress: () => void;
@@ -14,6 +15,7 @@ type HeaderProps = {
 
 export default function Header({
   activeTab,
+  favoriteCount,
   topInset,
   onFavoritesPress,
   onProfilePress,
@@ -98,18 +100,29 @@ export default function Header({
         </View>
       </View>
       <View className="flex-row">
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Open favorites"
-          accessibilityState={{ selected: activeTab === 'Favorites' }}
-          onPress={onFavoritesPress}
-          className="mr-2 h-[42px] w-[42px] items-center justify-center rounded-full bg-white/15">
-          <Heart
-            size={22}
-            color="#FFFFFF"
-            fill={activeTab === 'Favorites' ? '#FFFFFF' : 'transparent'}
-          />
-        </Pressable>
+        <View className="relative mr-2">
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Open favorites, ${favoriteCount} saved ${
+              favoriteCount === 1 ? 'item' : 'items'
+            }`}
+            accessibilityState={{ selected: activeTab === 'Favorites' }}
+            onPress={onFavoritesPress}
+            className="h-[42px] w-[42px] items-center justify-center rounded-full bg-white/15">
+            <Heart
+              size={22}
+              color="#FFFFFF"
+              fill={activeTab === 'Favorites' ? '#FFFFFF' : 'transparent'}
+            />
+          </Pressable>
+          {favoriteCount > 0 ? (
+            <View className="absolute right-0 top-0 min-h-[16px] min-w-[16px] items-center justify-center rounded-full border border-white bg-[#C2410C] px-1">
+              <Text className="text-[9px] font-black text-white">
+                {favoriteCount > 99 ? '99+' : favoriteCount}
+              </Text>
+            </View>
+          ) : null}
+        </View>
         <View className="relative">
           <Pressable
             accessibilityRole="button"

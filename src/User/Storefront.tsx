@@ -114,6 +114,12 @@ const emptyStoreData: StoreData = {
   offerBanners: [],
 };
 
+function favoriteKey(item: StoreFavorite) {
+  return item.item_type === 'combo'
+    ? `combo-${String(item.combo_id ?? item.id).replace(/^combo-/, '')}`
+    : String(item.product_id ?? item.id);
+}
+
 function errorMessage(error: unknown) {
   if (
     typeof error === 'object' &&
@@ -159,6 +165,8 @@ export default function Storefront({
   const [favoritesLoading, setFavoritesLoading] = useState(true);
   const [favoritesError, setFavoritesError] = useState<string | null>(null);
   const [pendingFavoriteIds, setPendingFavoriteIds] = useState<string[]>([]);
+  const [clearingFavorites, setClearingFavorites] = useState(false);
+  const [addingFavoritesToCart, setAddingFavoritesToCart] = useState(false);
   const [cartItems, setCartItems] = useState<StoreCartItem[]>([]);
   const [cartLoading, setCartLoading] = useState(true);
   const [cartError, setCartError] = useState<string | null>(null);
@@ -327,12 +335,7 @@ export default function Storefront({
   }, [loadCart, loadFavorites]);
 
   const favoriteIds = useMemo(
-    () =>
-      favoriteItems.map(item =>
-        item.item_type === 'combo'
-          ? `combo-${item.combo_id ?? String(item.id).replace(/^combo-/, '')}`
-          : String(item.product_id ?? item.id),
-      ),
+    () => favoriteItems.map(favoriteKey),
     [favoriteItems],
   );
   const cartCount = cartItems.reduce(
@@ -362,12 +365,15 @@ export default function Storefront({
   );
 
   const toggleFavorite = async (productId: string) => {
-    if (pendingFavoriteIds.includes(productId)) return;
-    const savedFavorite = favoriteItems.find(item =>
-      item.item_type === 'combo'
-        ? `combo-${item.combo_id ?? String(item.id).replace(/^combo-/, '')}` ===
-          productId
-        : String(item.product_id ?? item.id) === productId,
+    if (
+      pendingFavoriteIds.includes(productId) ||
+      clearingFavorites ||
+      addingFavoritesToCart
+    ) {
+      return;
+    }
+    const savedFavorite = favoriteItems.find(
+      item => favoriteKey(item) === productId,
     );
     const isCombo =
       savedFavorite?.item_type === 'combo' || productId.startsWith('combo-');
@@ -387,12 +393,16 @@ export default function Storefront({
             ? `/favorites/combos/${numericId}`
             : `/favorites/${numericId}`,
         );
+        setFavoriteItems(current =>
+          current.filter(item => favoriteKey(item) !== productId),
+        );
       } else if (isCombo) {
         await api.post(`/favorites/combos/${numericId}`);
+        await loadFavorites();
       } else {
         await api.post('/favorites', { product_id: numericId });
+        await loadFavorites();
       }
-      await loadFavorites();
     } catch (error) {
       showUserAlert('Favorites could not be updated', errorMessage(error));
     } finally {
@@ -400,7 +410,90 @@ export default function Storefront({
     }
   };
 
-  const addToCart = async (productId: string): Promise<boolean> => {
+  const confirmRemoveFavorite = (productId: string) => {
+    const favorite = favoriteItems.find(
+      item => favoriteKey(item) === productId,
+    );
+    if (
+      !favorite ||
+      pendingFavoriteIds.includes(productId) ||
+      clearingFavorites ||
+      addingFavoritesToCart
+    ) {
+      return;
+    }
+
+    showUserAlert(
+      'Remove favorite?',
+      `Remove ${favorite.name} from your favorites?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: () => toggleFavorite(productId),
+        },
+      ],
+    );
+  };
+
+  const clearFavorites = () => {
+    if (
+      !favoriteItems.length ||
+      clearingFavorites ||
+      addingFavoritesToCart ||
+      pendingFavoriteIds.length > 0
+    ) {
+      return;
+    }
+
+    showUserAlert(
+      'Clear favorites?',
+      `Remove all ${favoriteItems.length} saved items?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear All',
+          style: 'destructive',
+          onPress: async () => {
+            setClearingFavorites(true);
+            try {
+              for (const favorite of favoriteItems) {
+                const key = favoriteKey(favorite);
+                const isCombo = favorite.item_type === 'combo';
+                const numericId = Number(key.replace(/^combo-/, ''));
+                if (!Number.isSafeInteger(numericId) || numericId < 1) {
+                  throw new Error('A favorite item has an invalid ID.');
+                }
+
+                await api.delete(
+                  isCombo
+                    ? `/favorites/combos/${numericId}`
+                    : `/favorites/${numericId}`,
+                );
+                setFavoriteItems(current =>
+                  current.filter(item => favoriteKey(item) !== key),
+                );
+              }
+              setFavoritesError(null);
+            } catch (error) {
+              showUserAlert(
+                'Favorites could not be cleared',
+                errorMessage(error),
+              );
+            } finally {
+              setClearingFavorites(false);
+            }
+          },
+        },
+      ],
+    );
+  };
+
+  const addToCart = async (
+    productId: string,
+    options: { refreshCart?: boolean; showError?: boolean } = {},
+  ): Promise<boolean> => {
     if (pendingCartIds.includes(productId)) return false;
     setPendingCartIds(current => [...current, productId]);
     try {
@@ -412,8 +505,9 @@ export default function Storefront({
         await api.post('/cart', { combo_id: comboId, quantity: 1 });
       } else {
         const product =
-          storeData.products.find(item => String(item.id) === productId) ??
-          favoriteItems.find(item => String(item.id) === productId);
+          storeData.products.find(
+            item => String(item.product_id ?? item.id) === productId,
+          ) ?? favoriteItems.find(item => favoriteKey(item) === productId);
         const numericProductId = Number(product?.product_id ?? product?.id);
         if (
           !product ||
@@ -438,13 +532,65 @@ export default function Storefront({
           quantity: 1,
         });
       }
-      await loadCart();
+      if (options.refreshCart !== false) await loadCart();
       return true;
     } catch (error) {
-      showUserAlert('Could not add to cart', errorMessage(error));
+      if (options.showError === false) {
+        if (__DEV__) console.warn('[Storefront] Could not add favorite to cart:', error);
+      } else {
+        showUserAlert('Could not add to cart', errorMessage(error));
+      }
       return false;
     } finally {
       setPendingCartIds(current => current.filter(id => id !== productId));
+    }
+  };
+
+  const addAllFavoritesToCart = async () => {
+    if (
+      !favoriteItems.length ||
+      addingFavoritesToCart ||
+      clearingFavorites ||
+      pendingCartIds.length > 0
+    ) {
+      return;
+    }
+
+    setAddingFavoritesToCart(true);
+    let addedCount = 0;
+    let failedCount = 0;
+    try {
+      for (const favorite of favoriteItems) {
+        const added = await addToCart(favoriteKey(favorite), {
+          refreshCart: false,
+          showError: false,
+        });
+        if (added) addedCount += 1;
+        else failedCount += 1;
+      }
+
+      if (addedCount > 0) {
+        try {
+          await loadCart();
+        } catch (error) {
+          showUserAlert('Cart could not be refreshed', errorMessage(error));
+          return;
+        }
+      }
+
+      if (failedCount > 0) {
+        showUserAlert(
+          'Some favorites could not be added',
+          `${addedCount} added, ${failedCount} could not be added. Check availability and try again.`,
+        );
+      } else {
+        showUserAlert(
+          'Added to cart',
+          `${addedCount} favorite ${addedCount === 1 ? 'item was' : 'items were'} added to your cart.`,
+        );
+      }
+    } finally {
+      setAddingFavoritesToCart(false);
     }
   };
 
@@ -667,13 +813,17 @@ export default function Storefront({
       return (
         <Favorites
           favorites={favoriteProducts}
-          favoriteIds={favoriteIds}
+          pendingFavoriteIds={pendingFavoriteIds}
           loading={favoritesLoading}
           error={favoritesError}
+          clearing={clearingFavorites}
+          addingAllToCart={addingFavoritesToCart}
           onRetry={retryFavorites}
-          onFavoritePress={toggleFavorite}
-          onAddToCart={addToCart}
+          onRemoveFavorite={confirmRemoveFavorite}
           onProductPress={openItemDetails}
+          onClearAll={clearFavorites}
+          onAddAllToCart={addAllFavoritesToCart}
+          onExplorePress={() => setActiveTab('Shop')}
         />
       );
     }
@@ -783,6 +933,7 @@ export default function Storefront({
       <StatusBar barStyle="light-content" />
       <Header
         activeTab={activeTab}
+        favoriteCount={favoriteItems.length}
         topInset={insets.top}
         onFavoritesPress={() => handleTabPress('Favorites')}
         onProfilePress={() => {
@@ -813,8 +964,9 @@ export default function Storefront({
         </View>
       ) : activeTab === 'Profile' ||
         activeTab === 'Shop' ||
+        activeTab === 'Favorites' ||
         (activeTab === 'Cart' && !checkoutOpen) ? (
-        // Profile, Shop, and Cart manage their own scroll/layout.
+        // Profile, Shop, Cart, and Favorites manage their own scroll/layout.
         // paddingBottom accounts for the absolute-positioned tab bar (~65px) + home indicator
         <View
           className="flex-1"
