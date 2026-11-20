@@ -8,6 +8,7 @@
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   StatusBar,
   useColorScheme,
   View,
@@ -35,6 +36,7 @@ import { signOutGoogle } from './src/services/googleAuth';
 import Login from './src/Auth/Login';
 import Register from './src/Auth/Register';
 import { normalizeRole, type AppRole } from './src/Auth/roles';
+import Welcome from './src/Assert/Welcome/Welcome';
 import Storefront from './src/User/Storefront';
 import { UserAlertProvider } from './src/User/UserAlert';
 import { clearTokenCache, setTokenCache } from './src/api';
@@ -55,6 +57,7 @@ function AppContent() {
   const [authenticated, setAuthenticated] = useState(false);
   const [userRole, setUserRole] = useState<AppRole>('user');
   const [checkingSession, setCheckingSession] = useState(true);
+  const [showWelcome, setShowWelcome] = useState(false);
   const [authScreen, setAuthScreen] = useState<'login' | 'register'>('login');
   const [profileOpen, setProfileOpen] = useState(false);
   const [billingOpen, setBillingOpen] = useState(false);
@@ -95,6 +98,14 @@ function AppContent() {
 
     const restoreSession = async () => {
       try {
+        const welcomeSeen = await AsyncStorage.getItem('hasSeenWelcome');
+        if (mounted && welcomeSeen !== 'true') setShowWelcome(true);
+      } catch (error) {
+        if (__DEV__) console.warn('[App] Could not read welcome status:', error);
+        if (mounted) setShowWelcome(true);
+      }
+
+      try {
         const token = await AsyncStorage.getItem('userToken');
         if (token) {
           const serializedUser = await AsyncStorage.getItem('user');
@@ -117,6 +128,21 @@ function AppContent() {
       mounted = false;
     };
   }, []);
+
+  const completeWelcome = async () => {
+    try {
+      await AsyncStorage.setItem('hasSeenWelcome', 'true');
+      setShowWelcome(false);
+    } catch (error) {
+      if (__DEV__) console.warn('[App] Could not save welcome status:', error);
+      Alert.alert(
+        'Could not save welcome status',
+        'You can continue now, but this welcome screen may appear again next time.',
+        [{ text: 'Continue', onPress: () => setShowWelcome(false) }],
+        { cancelable: false },
+      );
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -216,6 +242,10 @@ function AppContent() {
             : null,
     );
   };
+
+  if (showWelcome) {
+    return <Welcome onComplete={completeWelcome} />;
+  }
 
   if (checkingSession) {
     return (
