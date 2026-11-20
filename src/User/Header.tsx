@@ -82,7 +82,7 @@ export default function Header({
       className="z-10 flex-row items-center justify-between overflow-hidden px-3 shadow-md elevation-[10]">
       <Image
         source={require('../Assert/images/topheader1.png')}
-        resizeMode="cover"
+        resizeMode="stretch"
         style={StyleSheet.absoluteFill}
       />
       <View
