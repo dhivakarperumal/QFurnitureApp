@@ -1,8 +1,16 @@
-import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { Pressable, Text, View } from 'react-native';
 import ProductCard from './ProductCard';
+import { SkeletonList } from './Skeletons';
 import api from '../api';
 import type { StoreProduct } from './types';
+import {
+  fetchCachedApiData,
+  getCachedApiData,
+  hasCachedApiData,
+} from '../apiCache';
+
+const COMBOS_CACHE_KEY = 'user.combos';
 
 type ComboOffer = StoreProduct & {
   offer_product?: boolean | number;
@@ -16,6 +24,7 @@ type CombosResponse = {
 };
 
 type ComboOffersProps = {
+  refreshKey?: number;
   favorites: string[];
   onFavoritePress: (productId: string) => void;
   onAddToCart: (productId: string) => void;
@@ -35,32 +44,50 @@ function getErrorMessage(error: unknown) {
 }
 
 export default function ComboOffers({
+  refreshKey = 0,
   favorites,
   onFavoritePress,
   onAddToCart,
   onProductPress,
 }: ComboOffersProps) {
-  const [combos, setCombos] = useState<ComboOffer[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [combos, setCombos] = useState<ComboOffer[]>(
+    () => getCachedApiData<ComboOffer[]>(COMBOS_CACHE_KEY) ?? [],
+  );
+  const [loading, setLoading] = useState(
+    () => !hasCachedApiData(COMBOS_CACHE_KEY),
+  );
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
+  const lastRetryCount = useRef(retryCount);
 
   useEffect(() => {
     let active = true;
+    const forceRefresh = lastRetryCount.current !== retryCount;
+    lastRetryCount.current = retryCount;
 
     const loadCombos = async () => {
-      setLoading(true);
-      setError(null);
+      if (!hasCachedApiData(COMBOS_CACHE_KEY)) setLoading(true);
+      if (hasCachedApiData(COMBOS_CACHE_KEY)) setError(null);
       try {
-        const { data } = await api.get<CombosResponse>('/combos', {
-          params: { page: 1, limit: 100, status: 'Active' },
-        });
-        if (!Array.isArray(data?.combos)) {
-          throw new Error('The combos response did not contain a combo list.');
-        }
+        const allCombos = await fetchCachedApiData(
+          COMBOS_CACHE_KEY,
+          async force => {
+            const { data } = await api.get<CombosResponse>('/combos', {
+              params: { page: 1, limit: 100, status: 'Active' },
+              headers: force ? { 'Cache-Control': 'no-store' } : undefined,
+            });
+            if (!Array.isArray(data?.combos)) {
+              throw new Error(
+                'The combos response did not contain a combo list.',
+              );
+            }
+            return data.combos;
+          },
+          forceRefresh,
+        );
 
         const today = new Date().toISOString().slice(0, 10);
-        const availableCombos = data.combos.filter(combo => {
+        const availableCombos = allCombos.filter(combo => {
           if (combo.offer_product === false || combo.offer_product === 0) {
             return false;
           }
@@ -85,7 +112,7 @@ export default function ComboOffers({
     return () => {
       active = false;
     };
-  }, [retryCount]);
+  }, [refreshKey, retryCount]);
 
   return (
     <View className="px-4 pb-8 pt-5">
@@ -100,10 +127,8 @@ export default function ComboOffers({
       </Text>
 
       {loading ? (
-        <View className="items-center py-10">
-          <ActivityIndicator size="large" color="#F97316" />
-        </View>
-      ) : error ? (
+        <SkeletonList count={4} compact />
+      ) : error && !hasCachedApiData(COMBOS_CACHE_KEY) ? (
         <View className="items-center rounded-[20px] border border-[#F0E7DE] bg-white px-5 py-8">
           <Text accessibilityRole="alert" className="text-center text-[14px] text-[#8B2D20]">
             {error}

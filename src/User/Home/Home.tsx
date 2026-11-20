@@ -11,6 +11,7 @@ import TopRatedProducts from './TopRatedProducts';
 import type { StoreBanner, StoreCategory, StoreProduct } from '../types';
 
 type HomeProps = {
+  refreshKey?: number;
   categories: StoreCategory[];
   products: StoreProduct[];
   heroBanners: StoreBanner[];
@@ -26,6 +27,7 @@ type HomeProps = {
 };
 
 export default function Home({
+  refreshKey = 0,
   categories,
   products,
   heroBanners,
@@ -76,7 +78,7 @@ export default function Home({
         onAddToCart={onAddToCart}
         onProductPress={onProductPress}
       />
-      <ShopByRoom onRoomPress={onRoomPress} />
+      <ShopByRoom refreshKey={refreshKey} onRoomPress={onRoomPress} />
       <TopRatedProducts
         products={products}
         favorites={favorites}
@@ -86,13 +88,14 @@ export default function Home({
       />
       <OfferBanners banners={offerBanners} onShopPress={onExplorePress} />
       <FeaturedCombos
+        refreshKey={refreshKey}
         favorites={favorites}
         onFavoritePress={onFavoritePress}
         onAddToCart={onAddToCart}
         onProductPress={onProductPress}
       />
       <CustomFurniture onRequestPress={onCustomFurniturePress} />
-      <Reviews />
+      <Reviews refreshKey={refreshKey} />
     </>
   );
 }

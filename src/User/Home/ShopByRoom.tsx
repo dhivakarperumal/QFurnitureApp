@@ -14,6 +14,12 @@ import type {
 } from 'react-native';
 import { ArrowRight } from 'lucide-react-native';
 import api from '../../api';
+import {
+  fetchCachedApiData,
+  getCachedApiData,
+} from '../../apiCache';
+
+const ROOMS_CACHE_KEY = 'user.rooms';
 
 type Room = {
   name: string;
@@ -60,15 +66,25 @@ const ALL_ROOMS: Room[] = [
 ];
 
 type ShopByRoomProps = {
+  refreshKey?: number;
   onRoomPress: (roomSlug: string) => void;
 };
 
-export default function ShopByRoom({ onRoomPress }: ShopByRoomProps) {
+export default function ShopByRoom({
+  refreshKey = 0,
+  onRoomPress,
+}: ShopByRoomProps) {
   const scrollRef = useRef<ScrollViewInstance>(null);
   const scrollPositionRef = useRef(0);
-  const [rooms, setRooms] = useState(ALL_ROOMS);
+  const cachedRoomSlugs = getCachedApiData<string[]>(ROOMS_CACHE_KEY);
+  const [rooms, setRooms] = useState(() =>
+    cachedRoomSlugs
+      ? ALL_ROOMS.filter(room => cachedRoomSlugs.includes(room.slug))
+      : ALL_ROOMS,
+  );
   const [viewportWidth, setViewportWidth] = useState(0);
   const [isUserScrolling, setIsUserScrolling] = useState(false);
+  const lastRefreshKey = useRef(refreshKey);
   const roomWidth = viewportWidth > 0 ? (viewportWidth - 24) / 3 : 112;
   const roomStep = roomWidth + 12;
   const carouselRooms =
@@ -91,20 +107,29 @@ export default function ShopByRoom({ onRoomPress }: ShopByRoomProps) {
 
   useEffect(() => {
     let active = true;
-    api.get<RoomSummary[]>('/products/rooms')
-      .then(({ data }) => {
+    const forceRefresh = lastRefreshKey.current !== refreshKey;
+    lastRefreshKey.current = refreshKey;
+    fetchCachedApiData(
+      ROOMS_CACHE_KEY,
+      async force => {
+        const { data } = await api.get<RoomSummary[]>('/products/rooms', {
+          headers: force ? { 'Cache-Control': 'no-store' } : undefined,
+        });
         if (!Array.isArray(data)) {
           throw new Error('The rooms response did not contain a room list.');
         }
-        const roomsWithProducts = new Set(
-          data
-            .filter(room => Number(room.productCount) > 0)
-            .map(room => room.slug),
-        );
+        return data
+          .filter(room => Number(room.productCount) > 0)
+          .map(room => room.slug)
+          .filter((slug): slug is string => typeof slug === 'string');
+      },
+      forceRefresh,
+    )
+      .then(roomSlugs => {
         if (active) {
           scrollPositionRef.current = 0;
           scrollRef.current?.scrollTo({ x: 0, animated: false });
-          setRooms(ALL_ROOMS.filter(room => roomsWithProducts.has(room.slug)));
+          setRooms(ALL_ROOMS.filter(room => roomSlugs.includes(room.slug)));
         }
       })
       .catch(error => {
@@ -114,7 +139,7 @@ export default function ShopByRoom({ onRoomPress }: ShopByRoomProps) {
     return () => {
       active = false;
     };
-  }, []);
+  }, [refreshKey]);
 
   if (!rooms.length) return null;
 

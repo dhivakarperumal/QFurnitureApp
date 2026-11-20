@@ -5,6 +5,7 @@ import {
   PanResponder,
   Pressable,
   RefreshControl,
+  RefreshControl,
   ScrollView,
   Text,
   TextInput,
@@ -219,6 +220,8 @@ function PriceRangeSlider({
 }
 
 type ShopProps = {
+  refreshing: boolean;
+  onRefresh: () => void;
   categories: StoreCategory[];
   products: StoreProduct[];
   favorites: string[];
@@ -233,6 +236,8 @@ type ShopProps = {
 };
 
 export default function Shop({
+  refreshing,
+  onRefresh,
   categories,
   products,
   favorites,
@@ -486,6 +491,13 @@ export default function Shop({
           <ScrollView
             className="flex-1"
             showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                tintColor="#F97316"
+              />
+            }
             contentContainerClassName="pb-6"
             refreshControl={
               onRefresh ? (

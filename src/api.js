@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
+import { clearCachedApiData } from "./apiCache";
 
 export const API_BASE_URL = "https://qfurniture.qtechx.com/api";
 // export const API_BASE_URL = "http://192.168.1.7:5000/api";
@@ -147,6 +148,7 @@ api.defaults.adapter = async (config) => {
 export function setTokenCache(token) {
   if (cachedToken !== token) {
     invalidateApiResponseCache();
+    clearCachedApiData();
   }
   cachedToken = token;
 }
@@ -154,6 +156,7 @@ export function setTokenCache(token) {
 export function clearTokenCache() {
   cachedToken = null;
   invalidateApiResponseCache();
+  clearCachedApiData();
 }
 
 api.interceptors.request.use(async (config) => {
@@ -171,6 +174,7 @@ api.interceptors.request.use(async (config) => {
   if (activeToken !== cachedToken) {
     cachedToken = activeToken;
     invalidateApiResponseCache();
+    clearCachedApiData();
   }
 
   if (activeToken) {

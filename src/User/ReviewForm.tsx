@@ -20,6 +20,7 @@ import {
   type ImagePickerResponse,
 } from 'react-native-image-picker';
 import api from '../api';
+import { invalidateCachedApiData } from '../apiCache';
 import { mediaUrl } from './utils';
 
 type ReviewItemType = 'product' | 'combo';
@@ -232,6 +233,7 @@ export default function ReviewForm({ itemId, itemType }: ReviewFormProps) {
           review_image: reviewImage,
         },
       );
+      invalidateCachedApiData('user.published-reviews');
       setComment('');
       setReviewImage(null);
       setOpen(false);

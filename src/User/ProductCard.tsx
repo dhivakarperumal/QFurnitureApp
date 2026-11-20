@@ -15,8 +15,8 @@ type ProductCardProps = {
   favorite: boolean;
   compact?: boolean;
   cardWidth?: number;
-  onFavoritePress: (productId: string) => void;
-  onAddToCart: (productId: string) => void;
+  onFavoritePress: (productId: string, productName?: string) => void;
+  onAddToCart: (productId: string, productName?: string) => void;
   onProductPress: (productId: string) => void;
 };
 
@@ -74,7 +74,7 @@ export default function ProductCard({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={favorite ? 'Remove from favorites' : 'Add to favorites'}
-          onPress={() => onFavoritePress(id)}
+          onPress={() => onFavoritePress(id, product.name)}
           className={`absolute items-center justify-center rounded-full bg-white ${
             compact ? 'right-2 top-2 h-[32px] w-[32px]' : 'right-3 top-3 h-[36px] w-[36px]'
           }`}>
@@ -129,7 +129,7 @@ export default function ProductCard({
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={`Add ${product.name} to cart`}
-            onPress={() => onAddToCart(id)}
+            onPress={() => onAddToCart(id, product.name)}
             className={`items-center justify-center rounded-[12px] bg-[#F97316] ${
               compact ? 'h-[36px] w-[36px]' : 'h-[42px] w-[42px]'
             }`}>

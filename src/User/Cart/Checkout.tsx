@@ -25,6 +25,11 @@ import {
 } from 'lucide-react-native';
 import RazorpayCheckout from 'react-native-razorpay';
 import api from '../../api';
+import {
+  fetchCachedApiData,
+  getCachedApiData,
+  hasCachedApiData,
+} from '../../apiCache';
 import type { StoreCartItem } from '../types';
 import { formatPrice } from '../utils';
 import { useUserAlert } from '../UserAlert';
@@ -50,6 +55,7 @@ type Address = {
   zip_code: string;
   is_default?: boolean | number;
 };
+const ADDRESSES_CACHE_KEY = 'user.addresses';
 
 type Coordinates = {
   latitude: number;
@@ -167,11 +173,15 @@ export default function Checkout({
     'delivery',
   );
   const [paymentMethod, setPaymentMethod] = useState<'cod' | 'razorpay'>('cod');
-  const [addresses, setAddresses] = useState<Address[]>([]);
+  const [addresses, setAddresses] = useState<Address[]>(
+    () => getCachedApiData<Address[]>(ADDRESSES_CACHE_KEY) ?? [],
+  );
   const [selectedAddressId, setSelectedAddressId] = useState<
     string | number | null
   >(null);
-  const [addressesLoading, setAddressesLoading] = useState(true);
+  const [addressesLoading, setAddressesLoading] = useState(
+    () => !hasCachedApiData(ADDRESSES_CACHE_KEY),
+  );
   const [addressesError, setAddressesError] = useState('');
   const [customerDetails, setCustomerDetails] = useState<CustomerDetails>({
     customer_name: '',
@@ -191,15 +201,28 @@ export default function Checkout({
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
 
-  const loadAddresses = useCallback(async () => {
-    setAddressesLoading(true);
-    setAddressesError('');
+  const loadAddresses = useCallback(async (forceRefresh = false) => {
+    if (!hasCachedApiData(ADDRESSES_CACHE_KEY)) setAddressesLoading(true);
+    if (hasCachedApiData(ADDRESSES_CACHE_KEY)) setAddressesError('');
     try {
-      const { data } = await api.get<Address[]>('/users/me/addresses');
-      if (!Array.isArray(data)) {
-        throw new Error('The saved-address response was invalid.');
-      }
+      const data = await fetchCachedApiData(
+        ADDRESSES_CACHE_KEY,
+        async force => {
+          const { data: responseData } = await api.get<Address[]>(
+            '/users/me/addresses',
+            {
+              headers: force ? { 'Cache-Control': 'no-store' } : undefined,
+            },
+          );
+          if (!Array.isArray(responseData)) {
+            throw new Error('The saved-address response was invalid.');
+          }
+          return responseData;
+        },
+        forceRefresh,
+      );
       setAddresses(data);
+      setAddressesError('');
       const defaultAddress =
         data.find(address => Boolean(Number(address.is_default))) ?? data[0];
       if (defaultAddress) {
@@ -336,7 +359,7 @@ export default function Checkout({
         ...addressDraft,
         is_default: addresses.length === 0,
       });
-      const refreshedAddresses = await loadAddresses();
+      const refreshedAddresses = await loadAddresses(true);
       const savedAddress = data?.id
         ? data
         : refreshedAddresses.find(
@@ -598,21 +621,27 @@ export default function Checkout({
           </View>
           {addressesLoading ? (
             <ActivityIndicator color="#F97316" />
-          ) : addressesError ? (
+          ) : addressesError && addresses.length === 0 ? (
             <Text className="text-[12px] text-[#8B2D20]">{addressesError}</Text>
           ) : addresses.length === 0 ? (
             <Text className="text-[12px] leading-5 text-[#8B735E]">
               Add a delivery address to continue.
             </Text>
           ) : (
-            addresses.map(address => {
-              const selected = address.id === selectedAddressId;
-              return (
-                <Pressable
-                  key={address.id}
-                  accessibilityRole="radio"
-                  accessibilityState={{ selected }}
-                  onPress={() => {
+            <>
+              {addressesError ? (
+                <Text className="mb-2 text-[12px] text-[#8B2D20]">
+                  {addressesError}
+                </Text>
+              ) : null}
+              {addresses.map(address => {
+                const selected = address.id === selectedAddressId;
+                return (
+                  <Pressable
+                    key={address.id}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected }}
+                    onPress={() => {
                     setSelectedAddressId(address.id);
                     setCustomerDetails(current => ({
                       customer_name:
@@ -623,39 +652,40 @@ export default function Checkout({
                         address.customer_phone || current.customer_phone,
                     }));
                   }}
-                  className={`mb-2 flex-row items-start rounded-[13px] border p-3 ${
-                    selected
-                      ? 'border-[#F97316] bg-[#FFF9F4]'
-                      : 'border-[#EFE6DC]'
-                  }`}
-                >
-                  <View className="mr-3 mt-0.5">
-                    <RadioMark selected={selected} />
-                  </View>
-                  <View className="flex-1">
-                    <Text className="text-[12px] font-bold text-[#351D0E]">
-                      {address.label || 'Address'} · {address.customer_name}
-                    </Text>
-                    <Text className="mt-1 text-[11px] leading-4 text-[#725D4B]">
-                      {[
-                        address.street_address,
-                        address.city,
-                        address.state,
-                        address.zip_code,
-                      ]
-                        .filter(Boolean)
-                        .join(', ')}
-                    </Text>
-                    <Text className="mt-1 text-[11px] text-[#8B735E]">
-                      {address.customer_phone}
-                    </Text>
-                  </View>
-                </Pressable>
-              );
-            })
+                    className={`mb-2 flex-row items-start rounded-[13px] border p-3 ${
+                      selected
+                        ? 'border-[#F97316] bg-[#FFF9F4]'
+                        : 'border-[#EFE6DC]'
+                    }`}
+                  >
+                    <View className="mr-3 mt-0.5">
+                      <RadioMark selected={selected} />
+                    </View>
+                    <View className="flex-1">
+                      <Text className="text-[12px] font-bold text-[#351D0E]">
+                        {address.label || 'Address'} · {address.customer_name}
+                      </Text>
+                      <Text className="mt-1 text-[11px] leading-4 text-[#725D4B]">
+                        {[
+                          address.street_address,
+                          address.city,
+                          address.state,
+                          address.zip_code,
+                        ]
+                          .filter(Boolean)
+                          .join(', ')}
+                      </Text>
+                      <Text className="mt-1 text-[11px] text-[#8B735E]">
+                        {address.customer_phone}
+                      </Text>
+                    </View>
+                  </Pressable>
+                );
+              })}
+            </>
           )}
           {addressesError ? (
-            <Pressable onPress={loadAddresses} className="mt-2 self-start">
+            <Pressable onPress={() => loadAddresses(true)} className="mt-2 self-start">
               <Text className="text-[12px] font-bold text-[#B94719]">
                 Try loading addresses again
               </Text>
