@@ -469,18 +469,39 @@ export default function Storefront({
     }
   };
 
-  const removeFromCart = async (item: StoreCartItem) => {
+  const removeFromCart = (item: StoreCartItem) => {
     const itemId = String(item.id);
     if (pendingCartIds.includes(itemId)) return;
-    setPendingCartIds(current => [...current, itemId]);
-    try {
-      await api.delete(`/cart/${item.id}`);
-      await loadCart();
-    } catch (error) {
-      showUserAlert('Cart item could not be removed', errorMessage(error));
-    } finally {
-      setPendingCartIds(current => current.filter(id => id !== itemId));
-    }
+    showUserAlert(
+      'Remove item?',
+      `Remove ${item.name} from your cart?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            if (pendingCartIds.includes(itemId)) return;
+            setPendingCartIds(current => [...current, itemId]);
+            try {
+              await api.delete(`/cart/${item.id}`);
+              setCartItems(current =>
+                current.filter(cartItem => String(cartItem.id) !== itemId),
+              );
+            } catch (error) {
+              showUserAlert(
+                'Cart item could not be removed',
+                errorMessage(error),
+              );
+            } finally {
+              setPendingCartIds(current =>
+                current.filter(id => id !== itemId),
+              );
+            }
+          },
+        },
+      ],
+    );
   };
 
   const clearCart = () => {
