@@ -5,7 +5,6 @@ import {
   Boxes,
   House,
   Menu,
-  ShoppingBasket,
   ShoppingCart,
 } from 'lucide-react-native';
 import type { StoreTab } from './types';
