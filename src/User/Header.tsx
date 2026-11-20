@@ -76,8 +76,8 @@ export default function Header({
     <ImageBackground
       source={require('../Assert/images/topheader1.png')}
       resizeMode="cover"
-      style={{ height: 58 + topInset, paddingTop: topInset, zIndex: 10, elevation: 10 }}
-      className="flex-row items-center justify-between px-3 shadow-md">
+      style={{ height: 58 + topInset, paddingTop: topInset }}
+      className="z-10 flex-row items-center justify-between px-3 shadow-md elevation-[10]">
       <View
         pointerEvents="none"
         className="absolute inset-0 bg-[#F45B00]/75"
