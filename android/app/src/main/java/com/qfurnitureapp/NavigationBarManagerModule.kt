@@ -19,7 +19,7 @@ class NavigationBarManagerModule(
 
   @ReactMethod
   fun setUserNavigationBarAppearance(enabled: Boolean, promise: Promise) {
-    val activity = currentActivity
+    val activity = reactApplicationContext.currentActivity
     if (activity == null) {
       promise.reject("E_NO_ACTIVITY", "No current Android activity.")
       return
