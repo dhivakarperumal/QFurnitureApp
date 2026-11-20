@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ScrollView, Text, useWindowDimensions, View } from 'react-native';
 import ProductCard from '../ProductCard';
 import type { StoreProduct } from '../types';
+import { useAutoSwiper } from './useAutoSwiper';
 
 type ProductsProps = {
   products: StoreProduct[];
@@ -19,7 +20,20 @@ export default function Products({
   onProductPress,
 }: ProductsProps) {
   const { width } = useWindowDimensions();
-  const cardWidth = (width - 40) / 2;
+  const [contentWidth, setContentWidth] = useState(0);
+  const [viewportWidth, setViewportWidth] = useState(0);
+  const featuredProducts = products.slice(0, 10);
+  const cardWidth = (width - 56) / 2;
+  const cardStep = cardWidth + 12;
+  const snapOffsets = featuredProducts.map((_, index) => index * cardStep);
+  const { scrollRef, handleScrollBeginDrag, handleScrollSettled } =
+    useAutoSwiper({
+      itemCount: featuredProducts.length,
+      visibleCount: 2,
+      itemStep: cardStep,
+      contentWidth,
+      viewportWidth,
+    });
 
   return (
     <View className="mt-8">
@@ -32,8 +46,22 @@ export default function Products({
         </Text>
       </View>
       {products.length ? (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="px-4">
-          {products.slice(0, 10).map(product => (
+        <ScrollView
+          ref={scrollRef}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          onLayout={event => setViewportWidth(event.nativeEvent.layout.width)}
+          onContentSizeChange={setContentWidth}
+          onScrollBeginDrag={handleScrollBeginDrag}
+          onScrollEndDrag={handleScrollSettled}
+          onMomentumScrollEnd={handleScrollSettled}
+          snapToInterval={cardStep}
+          snapToAlignment="start"
+          snapToOffsets={snapOffsets}
+          decelerationRate="fast"
+          disableIntervalMomentum
+          contentContainerClassName="px-4">
+          {featuredProducts.map(product => (
             <ProductCard
               key={product.id}
               product={product}
