@@ -27,37 +27,50 @@ export default function Category({
   onViewAllPress,
 }: CategoryProps) {
   const scrollRef = useRef<ScrollViewInstance>(null);
-  const scrollPositionRef = useRef(0);
+  const snapIndexRef = useRef(0);
   const [contentWidth, setContentWidth] = useState(0);
   const [viewportWidth, setViewportWidth] = useState(0);
   const [isUserScrolling, setIsUserScrolling] = useState(false);
-  const categoryWidth = viewportWidth > 0 ? (viewportWidth - 24) / 3 : 112;
+  const categoryWidth = viewportWidth > 0 ? (viewportWidth - 40) / 3 : 104;
   const categoryStep = categoryWidth + 12;
   const snapOffsets = categories.map((_, index) => index * categoryStep);
+  const maxSnapIndex = Math.max(
+    0,
+    Math.round((contentWidth - viewportWidth) / categoryStep),
+  );
 
   useEffect(() => {
     if (isUserScrolling || categories.length <= 3) {
       return;
     }
 
-    const maxScroll = Math.max(0, contentWidth - viewportWidth);
-    if (maxScroll <= 0) {
+    if (maxSnapIndex <= 0) {
       return;
     }
 
     const interval = setInterval(() => {
-      const nextPosition = scrollPositionRef.current + categoryStep;
-      const targetPosition = nextPosition >= maxScroll ? 0 : nextPosition;
+      const nextIndex =
+        snapIndexRef.current >= maxSnapIndex ? 0 : snapIndexRef.current + 1;
+      const targetPosition = nextIndex * categoryStep;
 
       scrollRef.current?.scrollTo({ x: targetPosition, animated: true });
-      scrollPositionRef.current = targetPosition;
+      snapIndexRef.current = nextIndex;
     }, 3000);
 
     return () => clearInterval(interval);
-  }, [categories.length, categoryStep, contentWidth, isUserScrolling, viewportWidth]);
+  }, [categories.length, categoryStep, isUserScrolling, maxSnapIndex]);
 
-  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    scrollPositionRef.current = event.nativeEvent.contentOffset.x;
+  const handleScrollSettled = (
+    event: NativeSyntheticEvent<NativeScrollEvent>,
+  ) => {
+    snapIndexRef.current = Math.min(
+      maxSnapIndex,
+      Math.max(
+        0,
+        Math.round(event.nativeEvent.contentOffset.x / categoryStep),
+      ),
+    );
+    setIsUserScrolling(false);
   };
 
   return (
@@ -81,16 +94,15 @@ export default function Category({
           showsHorizontalScrollIndicator={false}
           onLayout={event => setViewportWidth(event.nativeEvent.layout.width)}
           onContentSizeChange={width => setContentWidth(width)}
-          onScroll={handleScroll}
-          scrollEventThrottle={16}
           onScrollBeginDrag={() => setIsUserScrolling(true)}
-          onScrollEndDrag={() => setIsUserScrolling(false)}
-          onMomentumScrollEnd={() => setIsUserScrolling(false)}
+          onScrollEndDrag={handleScrollSettled}
+          onMomentumScrollEnd={handleScrollSettled}
           snapToInterval={categoryStep}
           snapToAlignment="start"
           snapToOffsets={snapOffsets}
           decelerationRate="fast"
-          disableIntervalMomentum>
+          disableIntervalMomentum
+          contentContainerClassName="px-2">
           {categories.map((category, index) => {
             const imageUri = categoryImage(category);
             return (
