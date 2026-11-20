@@ -65,7 +65,7 @@ export default function Hero({
           </Text>
         ) : null}
         {subtitle ? (
-          <Text className="mt-1 text-[14px] font-semibold leading-[18px] text-[#E87424]">
+          <Text className="mt-1 text-[22px] font-semibold leading-[26px] text-[#E87424]">
             {subtitle}
           </Text>
         ) : null}
