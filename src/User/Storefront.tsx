@@ -401,13 +401,13 @@ export default function Storefront({
         ) {
           throw new Error('This product is no longer available.');
         }
-        const variants = product.variants ?? [];
+        const variants = Array.isArray(product.variants) ? product.variants : [];
         const variant = variants[0];
         const variantColor =
-          variant?.colorName ?? variant?.color ?? variant?.colour ?? 'Default';
+          variant?.colorName || variant?.color || variant?.colour || 'Default';
         const variantSize =
-          variant?.size ??
-          variant?.selectedSizes?.[0] ??
+          variant?.size ||
+          variant?.selectedSizes?.[0] ||
           (variants.length ? 'Free Size' : '');
 
         await api.post('/cart', {
