@@ -74,21 +74,12 @@ export default function Tabs({
               className={`relative h-[58px] flex-1 items-center justify-center rounded-[18px] ${
                 active ? 'border border-white bg-white' : ''
               }`}>
-              <View className="relative">
-                <Icon
-                  size={23}
-                  color={active ? '#F97316' : '#FFFFFF'}
-                  fill="transparent"
-                  strokeWidth={2.2}
-                />
-                {name === 'Cart' && cartCount > 0 ? (
-                  <View className="absolute right-[-7px] top-[-6px] h-[18px] min-w-[18px] items-center justify-center rounded-full border border-white bg-[#F45112] px-1">
-                    <Text className="text-[10px] font-bold text-white">
-                      {cartCount}
-                    </Text>
-                  </View>
-                ) : null}
-              </View>
+              <Icon
+                size={23}
+                color={active ? '#F97316' : '#FFFFFF'}
+                fill="transparent"
+                strokeWidth={2.2}
+              />
               <Text
                 className={`mt-[3px] text-[10px] leading-[12px] ${
                   active
@@ -97,6 +88,13 @@ export default function Tabs({
                 }`}>
                 {label}
               </Text>
+              {name === 'Cart' && cartCount > 0 ? (
+                <View className="absolute right-2 top-1 h-[18px] min-w-[18px] items-center justify-center rounded-full border border-white bg-[#F45112] px-1">
+                    <Text className="text-[10px] font-bold text-white">
+                      {cartCount}
+                    </Text>
+                </View>
+              ) : null}
               {name === 'Combos' ? (
                 <View className="absolute bottom-[8px] right-[-1px] h-[20px] w-px bg-white/35" />
               ) : null}
