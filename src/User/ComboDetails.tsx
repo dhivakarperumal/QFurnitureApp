@@ -5,16 +5,19 @@ import {
   Pressable,
   ScrollView,
   Text,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { Armchair, ShoppingCart, Star } from 'lucide-react-native';
 import api from '../api';
 import type { StoreProduct } from './types';
+import ProductCard from './ProductCard';
 import ReviewForm from './ReviewForm';
 import {
   formatPrice,
   mediaUrl,
   parseImages,
+  productCategory,
   productDiscountPercent,
   productPrice,
 } from './utils';
@@ -36,8 +39,12 @@ type Combo = StoreProduct & {
 
 type ComboDetailsProps = {
   itemId: string;
+  onFavoritePress: (productId: string) => void;
   onAddToCart: (productId: string) => void;
   onBuyNow?: (productId: string) => void;
+  relatedProducts?: StoreProduct[];
+  favoriteIds?: string[];
+  onProductPress?: (productId: string) => void;
 };
 
 function getErrorMessage(error: unknown) {
@@ -65,9 +72,14 @@ function getGallery(combo: Combo) {
 
 export default function ComboDetails({
   itemId,
+  onFavoritePress,
   onAddToCart,
   onBuyNow,
+  relatedProducts = [],
+  favoriteIds = [],
+  onProductPress,
 }: ComboDetailsProps) {
+  const { width } = useWindowDimensions();
   const [combo, setCombo] = useState<Combo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -113,6 +125,37 @@ export default function ComboDetails({
     combo?.available_stock ?? combo?.total_stock ?? combo?.stock,
   );
   const components = combo?.combo_items ?? [];
+  const includedProductIds = new Set(
+    components
+      .map(component => component.product_id)
+      .filter((id): id is string | number => id !== undefined && id !== null)
+      .map(String),
+  );
+  const componentCategories = new Set(
+    relatedProducts
+      .filter(
+        product =>
+          includedProductIds.has(String(product.id)) ||
+          includedProductIds.has(String(product.product_id)),
+      )
+      .map(product => productCategory(product).trim().toLowerCase())
+      .filter(Boolean),
+  );
+  const otherProducts = relatedProducts.filter(
+    product =>
+      !includedProductIds.has(String(product.id)) &&
+      !includedProductIds.has(String(product.product_id)),
+  );
+  const categoryMatches = componentCategories.size
+    ? otherProducts.filter(product =>
+        componentCategories.has(productCategory(product).trim().toLowerCase()),
+      )
+    : [];
+  const relatedItems = (categoryMatches.length ? categoryMatches : otherProducts).slice(
+    0,
+    6,
+  );
+  const relatedCardWidth = Math.min(258, Math.floor((width - 65) / 2));
   const description =
     combo?.description?.trim() || combo?.long_description?.trim() || '';
   const specifications =
@@ -317,6 +360,37 @@ export default function ComboDetails({
               </Text>
             </Pressable>
           </View>
+
+          {relatedItems.length > 0 && onProductPress ? (
+            <View className="mt-6">
+              <View className="mb-3 px-1">
+                <Text className="text-[10px] font-bold uppercase tracking-[1.6px] text-[#A06E46]">
+                  More to explore
+                </Text>
+                <Text className="mt-1 text-[20px] font-black text-[#351D0E]">
+                  Related products
+                </Text>
+              </View>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerClassName="px-1">
+                {relatedItems.map(product => (
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    favorite={favoriteIds.includes(
+                      String(product.product_id ?? product.id),
+                    )}
+                    cardWidth={relatedCardWidth}
+                    onFavoritePress={onFavoritePress}
+                    onAddToCart={onAddToCart}
+                    onProductPress={onProductPress}
+                  />
+                ))}
+              </ScrollView>
+            </View>
+          ) : null}
         </>
       ) : null}
     </View>

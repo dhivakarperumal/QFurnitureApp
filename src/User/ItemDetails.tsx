@@ -148,7 +148,7 @@ export default function ItemDetails({
       .map(String),
   );
   const currentCategory = item ? productCategory(item).trim().toLowerCase() : '';
-  const relatedCardWidth = Math.min(258, Math.floor((width - 72) / 2));
+  const relatedCardWidth = Math.min(258, Math.floor((width - 64) / 2));
   const relatedItems =
     itemType === 'product'
       ? relatedProducts
@@ -384,7 +384,7 @@ export default function ItemDetails({
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
-                contentContainerClassName="px-2">
+                contentContainerClassName="px-1">
                 {relatedItems.map(product => (
                   <ProductCard
                     key={product.id}
