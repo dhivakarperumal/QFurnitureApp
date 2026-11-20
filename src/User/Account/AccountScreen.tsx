@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Image,
   Pressable,
   ScrollView,
@@ -23,6 +22,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '../../api';
 import { mediaUrl } from '../utils';
+import { useUserAlert } from '../UserAlert';
 
 export type AccountSubScreen =
   | 'menu'
@@ -74,6 +74,7 @@ export default function AccountScreen({
   onSubScreenChange,
 }: AccountScreenProps) {
   const insets = useSafeAreaInsets();
+  const showUserAlert = useUserAlert();
   const [profile, setProfile] = useState<UserProfile>({
     name: '',
     email: '',
@@ -133,7 +134,7 @@ export default function AccountScreen({
   const avatarUri = profile.profile_image ? mediaUrl(profile.profile_image) : undefined;
 
   const handleLogout = () => {
-    Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
+    showUserAlert('Sign Out', 'Are you sure you want to sign out?', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Sign Out', style: 'destructive', onPress: onLogoutPress },
     ]);

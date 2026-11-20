@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Image,
   Pressable,
   ScrollView,
@@ -14,6 +13,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '../../api';
 import { mediaUrl } from '../utils';
+import { useUserAlert } from '../UserAlert';
 
 type Profile = {
   name: string;
@@ -82,6 +82,7 @@ export default function ProfileScreen({
   deletingAccount,
 }: ProfileScreenProps) {
   const insets = useSafeAreaInsets();
+  const showUserAlert = useUserAlert();
   const [profile, setProfile] = useState<Profile>({
     name: '',
     email: '',
@@ -177,7 +178,7 @@ export default function ProfileScreen({
         const user = JSON.parse(serializedUser);
         await AsyncStorage.setItem('user', JSON.stringify({ ...user, ...data.user }));
       }
-      Alert.alert('Success', 'Profile updated successfully.');
+      showUserAlert('Success', 'Profile updated successfully.');
     } catch (err: unknown) {
       const msg =
         typeof err === 'object' && err !== null && 'message' in err

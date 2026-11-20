@@ -19,7 +19,7 @@ class NavigationBarManagerModule(
 
   @ReactMethod
   fun setUserNavigationBarAppearance(enabled: Boolean, promise: Promise) {
-    val activity = currentActivity
+    val activity = reactApplicationContext.currentActivity
     if (activity == null) {
       promise.reject("E_NO_ACTIVITY", "No current Android activity.")
       return
@@ -36,10 +36,11 @@ class NavigationBarManagerModule(
           }
         }
 
-        window.navigationBarColor = Color.WHITE
+        window.navigationBarColor = Color.rgb(52, 58, 70)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
           window.decorView.systemUiVisibility =
-            window.decorView.systemUiVisibility or View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
+            window.decorView.systemUiVisibility and
+              View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR.inv()
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
           window.isNavigationBarContrastEnforced = false

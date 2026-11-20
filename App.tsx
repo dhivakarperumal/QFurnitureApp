@@ -36,6 +36,7 @@ import Login from './src/Auth/Login';
 import Register from './src/Auth/Register';
 import { normalizeRole, type AppRole } from './src/Auth/roles';
 import Storefront from './src/User/Storefront';
+import { UserAlertProvider } from './src/User/UserAlert';
 import { clearTokenCache, setTokenCache } from './src/api';
 import './global.css';
 
@@ -239,11 +240,11 @@ function AppContent() {
   }
 
   if (userRole === 'user') {
-    return <Storefront onLogoutPress={handleLogout} />;
-  }
-
-  if (userRole === 'user') {
-    return <Storefront onLogoutPress={handleLogout} />;
+    return (
+      <UserAlertProvider>
+        <Storefront onLogoutPress={handleLogout} />
+      </UserAlertProvider>
+    );
   }
 
   const tabsVisible =
