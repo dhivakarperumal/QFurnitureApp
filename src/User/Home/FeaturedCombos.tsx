@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Pressable,
   ScrollView,
+  StyleSheet,
   Text,
   useWindowDimensions,
   View,
@@ -11,6 +12,12 @@ import api from '../../api';
 import ProductCard from '../ProductCard';
 import type { StoreProduct } from '../types';
 import { useAutoSwiper } from './useAutoSwiper';
+
+const styles = StyleSheet.create({
+  carouselContent: {
+    paddingHorizontal: 16,
+  },
+});
 
 type FeaturedCombo = StoreProduct & {
   featured?: boolean | number;
@@ -52,7 +59,7 @@ export default function FeaturedCombos({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
-  const cardWidth = ((viewportWidth || width) - 40) / 2;
+  const cardWidth = ((viewportWidth || width) - 36) / 2;
   const cardStep = cardWidth + 12;
   const snapOffsets = combos.map((_, index) => index * cardStep);
   const { scrollRef, handleScrollBeginDrag, handleScrollSettled } =
@@ -143,7 +150,7 @@ export default function FeaturedCombos({
           snapToOffsets={snapOffsets}
           decelerationRate="fast"
           disableIntervalMomentum
-          contentContainerClassName="px-4">
+          contentContainerStyle={styles.carouselContent}>
           {combos.map(combo => {
             const productId = `combo-${combo.id}`;
             const product: StoreProduct = {

@@ -1,8 +1,20 @@
 import React, { useState } from 'react';
-import { ScrollView, Text, useWindowDimensions, View } from 'react-native';
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import ProductCard from '../ProductCard';
 import type { StoreProduct } from '../types';
 import { useAutoSwiper } from './useAutoSwiper';
+
+const styles = StyleSheet.create({
+  carouselContent: {
+    paddingHorizontal: 16,
+  },
+});
 
 type ProductsProps = {
   products: StoreProduct[];
@@ -23,7 +35,7 @@ export default function Products({
   const [contentWidth, setContentWidth] = useState(0);
   const [viewportWidth, setViewportWidth] = useState(0);
   const featuredProducts = products.slice(0, 10);
-  const cardWidth = ((viewportWidth || width) - 40) / 2;
+  const cardWidth = ((viewportWidth || width) - 36) / 2;
   const cardStep = cardWidth + 12;
   const snapOffsets = featuredProducts.map((_, index) => index * cardStep);
   const { scrollRef, handleScrollBeginDrag, handleScrollSettled } =
@@ -61,7 +73,7 @@ export default function Products({
           snapToOffsets={snapOffsets}
           decelerationRate="fast"
           disableIntervalMomentum
-          contentContainerClassName="px-4">
+          contentContainerStyle={styles.carouselContent}>
           {featuredProducts.map(product => (
             <ProductCard
               key={product.id}
