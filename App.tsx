@@ -5,7 +5,7 @@
  * @format
  */
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -239,7 +239,7 @@ function AppContent() {
     }
   };
 
-  const closeDrawerScreen = () => {
+  const closeDrawerScreen = useCallback(() => {
     setDrawerScreen(null);
     if (activeItem === 'More') {
       setMoreInitialScreen('menu');
@@ -254,15 +254,11 @@ function AppContent() {
             ? 'Orders'
             : null,
     );
-  };
-
-  if (showWelcome) {
-    return <Welcome onComplete={completeWelcome} />;
-  }
+  }, [activeItem]);
 
   // ── Android hardware back button (Admin) ──────────────────────────────────
   useEffect(() => {
-    if (!authenticated) return;
+    if (!authenticated || showWelcome) return;
 
     const onBackPress = () => {
       // Step 1: Close order details → back to Orders list
@@ -345,10 +341,16 @@ function AppContent() {
     drawerScreen,
     profileOpen,
     activeItem,
+    closeDrawerScreen,
     productDetailsOpen,
     moreDetailsOpen,
     showAdminAlert,
+    showWelcome,
   ]);
+
+  if (showWelcome) {
+    return <Welcome onComplete={completeWelcome} />;
+  }
 
   if (checkingSession) {
     return (
