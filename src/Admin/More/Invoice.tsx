@@ -108,6 +108,7 @@ type InvoiceForm = {
 type InvoiceProps = {
   onBackPress?: () => void;
   onScrollVisibilityChange?: (visible: boolean) => void;
+  initialDealerId?: number | string;
 };
 
 type ImportPreviewRow = {
@@ -262,6 +263,7 @@ async function fetchAllPages<T>(
 export default function Invoice({
   onBackPress,
   onScrollVisibilityChange,
+  initialDealerId,
 }: InvoiceProps) {
   const insets = useSafeAreaInsets();
   const lastScrollY = useRef(0);
@@ -345,6 +347,19 @@ export default function Invoice({
       active = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (initialDealerId == null) return;
+    const selected = dealers.find(
+      row => String(row.id) === String(initialDealerId),
+    );
+    if (!selected) return;
+    setDealer(selected);
+    setForm(current => ({
+      ...current,
+      place_of_supply: selected.state || current.place_of_supply,
+    }));
+  }, [dealers, initialDealerId]);
 
   const totals = useMemo(() => {
     const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -1238,7 +1253,9 @@ export default function Invoice({
         transparent
         onRequestClose={() => setPicker(null)}>
         <View className="flex-1 justify-end bg-black/40">
-          <View className="max-h-[82%] rounded-t-3xl bg-white px-4 pb-8 pt-5">
+          <View
+            className="max-h-[82%] rounded-t-3xl bg-white px-4 pt-5"
+            style={{ paddingBottom: Math.max(insets.bottom, 32) }}>
             <View className="mb-4 flex-row items-center justify-between">
               <Text className="text-lg font-black text-[#17191C]">
                 {isDealerPicker
