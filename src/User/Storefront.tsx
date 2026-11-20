@@ -235,8 +235,6 @@ export default function Storefront({
     useState<AccountSubScreen>('menu');
   const [moreDestination, setMoreDestination] =
     useState<MoreDestination | 'menu'>('menu');
-  const [refreshing, setRefreshing] = useState(false);
-  const [comboRefreshKey, setComboRefreshKey] = useState(0);
   const [deletingAccount, setDeletingAccount] = useState(false);
 
   const loadStore = useCallback(async (forceRefresh = false) => {
@@ -1363,7 +1361,6 @@ export default function Storefront({
               tintColor="#F97316"
             />
           }
-          contentContainerClassName="pb-[115px]"
         >
           {storeAvailable && loadError ? (
             <View className="mx-4 mt-3 rounded-[14px] bg-[#FFF0E1] p-3">

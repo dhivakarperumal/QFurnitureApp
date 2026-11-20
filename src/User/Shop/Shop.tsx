@@ -496,16 +496,7 @@ export default function Shop({
               />
             }
             contentContainerClassName="pb-6"
-            refreshControl={
-              onRefresh ? (
-                <RefreshControl
-                  refreshing={false}
-                  onRefresh={onRefresh}
-                  colors={['#F97316']}
-                  tintColor="#F97316"
-                />
-              ) : undefined
-            }>
+          >
             {filteredProducts.length ? (
               <View className="flex-row flex-wrap justify-between">
                 {filteredProducts.map(product => (
