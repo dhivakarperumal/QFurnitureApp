@@ -1,6 +1,7 @@
 import React from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import {
+  BarChart3,
   Boxes,
   ChevronRight,
   LayoutGrid,
@@ -23,6 +24,7 @@ import BannerScreen from './Banner';
 import Topheaderoffer from './Topheaderoffer';
 import Coupens from './Coupens';
 import YoutubeVideos from './Youtuble';
+import Report from './Report';
 
 type MoreProps = {
   onScrollVisibilityChange?: (visible: boolean) => void;
@@ -48,6 +50,7 @@ export default function More({
   const [offerManagementOpen, setOfferManagementOpen] = React.useState(false);
   const [couponsOpen, setCouponsOpen] = React.useState(false);
   const [videosOpen, setVideosOpen] = React.useState(false);
+  const [reportsOpen, setReportsOpen] = React.useState(false);
 
   React.useEffect(() => {
     if (!initialScreen || screenRequestId === 0) return;
@@ -56,6 +59,7 @@ export default function More({
     setStockOpen(initialScreen === 'stock');
     setProfileOpen(false);
     setReviewsOpen(false);
+    setReportsOpen(false);
     setOffersOpen(initialScreen === 'offers');
     onDetailsVisibilityChange?.(initialScreen !== 'menu');
     onScrollVisibilityChange?.(true);
@@ -174,6 +178,18 @@ export default function More({
     onScrollVisibilityChange?.(true);
   };
 
+  const openReports = () => {
+    setReportsOpen(true);
+    onDetailsVisibilityChange?.(true);
+    onScrollVisibilityChange?.(true);
+  };
+
+  const closeReports = () => {
+    setReportsOpen(false);
+    onDetailsVisibilityChange?.(false);
+    onScrollVisibilityChange?.(true);
+  };
+
   const detailOpen =
     categoriesOpen ||
     usersOpen ||
@@ -183,7 +199,8 @@ export default function More({
     offersOpen ||
     offerManagementOpen ||
     couponsOpen ||
-    videosOpen;
+    videosOpen ||
+    reportsOpen;
   return (
     <View className="flex-1">
       <KeepAliveScreen active={!detailOpen}>
@@ -275,6 +292,23 @@ export default function More({
           </Text>
           <Text className="mt-1 text-[11px] text-[#64748B]">
             View inventory and update product stock
+          </Text>
+        </View>
+        <ChevronRight size={21} color="#94A3B8" />
+      </Pressable>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Open reports"
+        onPress={openReports}
+        className="mt-3 flex-row items-center rounded-[18px] border border-[#FCE6D7] bg-white p-4 shadow-sm elevation-[2]"
+      >
+        <View className="h-[52px] w-[52px] items-center justify-center rounded-[14px] bg-[#FFF1D6]">
+          <BarChart3 size={25} color="#F97316" strokeWidth={2} />
+        </View>
+        <View className="ml-3 flex-1">
+          <Text className="text-[15px] font-black text-[#17191C]">Reports</Text>
+          <Text className="mt-1 text-[11px] text-[#64748B]">
+            View sales, inventory, payments, and business reports
           </Text>
         </View>
         <ChevronRight size={21} color="#94A3B8" />
@@ -415,6 +449,9 @@ export default function More({
       </KeepAliveScreen>
       <KeepAliveScreen active={videosOpen}>
         <YoutubeVideos onBackPress={closeVideos} />
+      </KeepAliveScreen>
+      <KeepAliveScreen active={reportsOpen}>
+        <Report onBackPress={closeReports} />
       </KeepAliveScreen>
     </View>
   );

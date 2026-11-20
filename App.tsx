@@ -27,7 +27,7 @@ import type { Order } from './src/Admin/Order/Orders';
 import More from './src/Admin/More/More';
 import Profile from './src/Admin/More/Profile';
 import DrawerCustomers from './src/Admin/Navigation/DrawerCustomers';
-import DrawerSalesReports from './src/Admin/Navigation/DrawerSalesReports';
+import ReportScreen from './src/Admin/More/Report';
 import BannerScreen from './src/Admin/More/Banner';
 import DrawerSettings from './src/Admin/Navigation/DrawerSettings';
 import KeepAliveScreen from './src/Admin/Navigation/KeepAliveScreen';
@@ -325,7 +325,7 @@ function AppContent() {
         <DrawerCustomers onBackPress={closeDrawerScreen} />
       </KeepAliveScreen>
       <KeepAliveScreen active={drawerScreen === 'reports'}>
-        <DrawerSalesReports onBackPress={closeDrawerScreen} />
+        <ReportScreen onBackPress={closeDrawerScreen} />
       </KeepAliveScreen>
       <KeepAliveScreen active={drawerScreen === 'offers'}>
         <BannerScreen onBackPress={closeDrawerScreen} />
