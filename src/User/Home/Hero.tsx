@@ -69,11 +69,11 @@ export default function Hero({
             {subtitle}
           </Text>
         ) : null}
-        {description ? (
+        {/* {description ? (
           <Text numberOfLines={3} className="mt-1 text-[12px] leading-[17px] text-[#49392D]">
             {description}
           </Text>
-        ) : null}
+        ) : null} */}
         <Pressable
           accessibilityRole="button"
           onPress={onExplorePress}
