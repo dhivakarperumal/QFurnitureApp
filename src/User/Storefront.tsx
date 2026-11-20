@@ -296,7 +296,7 @@ export default function Storefront({
     if (deletingAccount) return;
     Alert.alert(
       'Confirm account deletion',
-      'Are you sure you want to permanently delete your account? This action cannot be undone.',
+      'Are you sure you want to  delete your account?',
       [
         { text: 'Cancel', style: 'cancel' },
         {
