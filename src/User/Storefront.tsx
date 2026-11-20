@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  BackHandler,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -782,6 +783,66 @@ export default function Storefront({
       setAccountSubScreen('menu');
     }
   };
+
+  // ── Android hardware back button ──────────────────────────────────────────
+  useEffect(() => {
+    const onBackPress = () => {
+      // Step 1: Close checkout → go back to Cart
+      if (checkoutOpen) {
+        setCheckoutOpen(false);
+        return true;
+      }
+
+      // Step 2: Close any detail / inner page (product, combo, account sub-screen)
+      if (isDetailPage) {
+        setDetailTarget(null);
+        return true;
+      }
+      if (isMoreContentPage) {
+        setMoreDestination('menu');
+        return true;
+      }
+      if (isAccountSubPage) {
+        setAccountSubScreen('menu');
+        return true;
+      }
+
+      // Step 3: Non-home tabs → navigate to Home
+      if (activeTab !== 'Home') {
+        handleTabPress('Home');
+        return true;
+      }
+
+      // Step 4: Already on Home → show exit confirmation
+      showUserAlert(
+        'Exit App',
+        'Are you sure you want to exit?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Exit',
+            style: 'destructive',
+            onPress: () => BackHandler.exitApp(),
+          },
+        ],
+      );
+      return true;
+    };
+
+    const subscription = BackHandler.addEventListener(
+      'hardwareBackPress',
+      onBackPress,
+    );
+    return () => subscription.remove();
+  }, [
+    checkoutOpen,
+    isDetailPage,
+    isMoreContentPage,
+    isAccountSubPage,
+    activeTab,
+    handleTabPress,
+    showUserAlert,
+  ]);
 
   const renderTabContent = () => {
     if (detailTarget) {

@@ -8,6 +8,8 @@
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
+  BackHandler,
   StatusBar,
   useColorScheme,
   View,
@@ -216,6 +218,94 @@ function AppContent() {
             : null,
     );
   };
+
+  // ── Android hardware back button (Admin) ──────────────────────────────────
+  useEffect(() => {
+    if (!authenticated) return;
+
+    const onBackPress = () => {
+      // Step 1: Close order details → go back to Orders list
+      if (selectedOrder !== null) {
+        setSelectedOrder(null);
+        return true;
+      }
+
+      // Step 2: Close CreateBill → go back to Billing list
+      if (createBillOpen) {
+        setCreateBillOpen(false);
+        return true;
+      }
+
+      // Step 3: Close Billing → go back to active tab
+      if (billingOpen) {
+        setBillingOpen(false);
+        return true;
+      }
+
+      // Step 4: Close any drawer screen → go back to current tab
+      if (drawerScreen !== null) {
+        closeDrawerScreen();
+        return true;
+      }
+
+      // Step 5: Close profile → go back to current tab
+      if (profileOpen) {
+        setProfileOpen(false);
+        return true;
+      }
+
+      // Step 6: Close product / more details overlay → go back to current tab
+      if (productDetailsOpen) {
+        setProductDetailsOpen(false);
+        return true;
+      }
+      if (moreDetailsOpen) {
+        setMoreDetailsOpen(false);
+        return true;
+      }
+
+      // Step 7: Non-home tabs → navigate to Home
+      if (activeItem !== 'Home') {
+        setActiveItem('Home');
+        setActiveDrawerItem('Dashboard');
+        setMoreInitialScreen('menu');
+        setMoreScreenRequestId(id => id + 1);
+        return true;
+      }
+
+      // Step 8: Already on Home → exit confirmation popup
+      Alert.alert(
+        'Exit App',
+        'Are you sure you want to exit?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Exit',
+            style: 'destructive',
+            onPress: () => BackHandler.exitApp(),
+          },
+        ],
+        { cancelable: true },
+      );
+      return true;
+    };
+
+    const subscription = BackHandler.addEventListener(
+      'hardwareBackPress',
+      onBackPress,
+    );
+    return () => subscription.remove();
+  }, [
+    authenticated,
+    selectedOrder,
+    createBillOpen,
+    billingOpen,
+    drawerScreen,
+    profileOpen,
+    productDetailsOpen,
+    moreDetailsOpen,
+    activeItem,
+  ]);
 
   if (checkingSession) {
     return (
