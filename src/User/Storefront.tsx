@@ -509,13 +509,13 @@ export default function Storefront({
           favorites={favoriteIds}
           onCategoryPress={category => {
             setSelectedCategory(category);
-            setActiveTab('Explore');
+            setActiveTab('Shop');
           }}
-          onExplorePress={() => setActiveTab('Explore')}
+          onExplorePress={() => setActiveTab('Shop')}
           onRoomPress={roomSlug => {
             setSelectedCategory('');
             setSearch(roomSlug.replace(/-/g, ' '));
-            setActiveTab('Explore');
+            setActiveTab('Shop');
           }}
           onCustomFurniturePress={() =>
             Alert.alert(
@@ -530,7 +530,7 @@ export default function Storefront({
       );
     }
 
-    if (activeTab === 'Explore') {
+    if (activeTab === 'Shop') {
       return (
         <Shop
           categories={storeData.categories}
@@ -602,7 +602,7 @@ export default function Storefront({
           onRetry={retryCart}
           onQuantityChange={updateCartQuantity}
           onRemove={removeFromCart}
-          onExplorePress={() => setActiveTab('Explore')}
+          onExplorePress={() => setActiveTab('Shop')}
           onCheckoutPress={() => setCheckoutOpen(true)}
         />
       );
@@ -704,7 +704,7 @@ export default function Storefront({
             <Text className="text-[13px] font-bold text-white">Try again</Text>
           </Pressable>
         </View>
-      ) : activeTab === 'Profile' || activeTab === 'Explore' ? (
+      ) : activeTab === 'Profile' || activeTab === 'Shop' ? (
         // Profile (menu) and Shop manage their own scroll/layout.
         // paddingBottom accounts for the absolute-positioned tab bar (~65px) + home indicator
         <View

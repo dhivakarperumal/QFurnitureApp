@@ -482,7 +482,8 @@ export default function Shop({
           </Text>
           <ScrollView
             className="flex-1"
-            showsVerticalScrollIndicator={false}>
+            showsVerticalScrollIndicator={false}
+            contentContainerClassName="pb-6">
             {filteredProducts.length ? (
               <View className="flex-row flex-wrap justify-between">
                 {filteredProducts.map(product => (
