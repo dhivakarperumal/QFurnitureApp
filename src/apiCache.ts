@@ -8,6 +8,14 @@ const inFlightRequests = new Map<string, Promise<unknown>>();
 const keyGenerations = new Map<string, number>();
 let cacheGeneration = 0;
 
+function trimCache() {
+  while (cachedData.size > MAX_CACHE_ENTRIES) {
+    const oldestKey = cachedData.keys().next().value;
+    if (typeof oldestKey !== 'string') break;
+    cachedData.delete(oldestKey);
+  }
+}
+
 export function getCachedApiData<T>(key: string): T | undefined {
   return cachedData.get(key)?.value as T | undefined;
 }
@@ -21,6 +29,7 @@ export function setCachedApiData<T>(key: string, value: T) {
   inFlightRequests.delete(key);
   cachedData.delete(key);
   cachedData.set(key, { value });
+  trimCache();
 }
 
 export function fetchCachedApiData<T>(
@@ -46,11 +55,7 @@ export function fetchCachedApiData<T>(
       ) {
         cachedData.delete(key);
         cachedData.set(key, { value });
-        while (cachedData.size > MAX_CACHE_ENTRIES) {
-          const oldestKey = cachedData.keys().next().value;
-          if (typeof oldestKey !== 'string') break;
-          cachedData.delete(oldestKey);
-        }
+        trimCache();
       }
       return value;
     })

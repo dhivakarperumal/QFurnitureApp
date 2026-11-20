@@ -183,7 +183,7 @@ export default function OrdersScreen({ onBack: _onBack }: OrdersScreenProps) {
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color="#F97316" />
         </View>
-      ) : error && !hasCachedApiData(ORDERS_CACHE_KEY) ? (
+      ) : error && orders.length === 0 ? (
         <View className="flex-1 items-center justify-center px-6">
           <Text className="text-center text-[14px] text-red-700">{error}</Text>
           <Pressable onPress={() => loadOrders(true)} className="mt-4 rounded-full bg-[#F97316] px-5 py-3">
@@ -191,25 +191,47 @@ export default function OrdersScreen({ onBack: _onBack }: OrdersScreenProps) {
           </Pressable>
         </View>
       ) : orders.length === 0 ? (
-        <View className="flex-1 items-center justify-center px-8">
-          <View className="h-[72px] w-[72px] items-center justify-center rounded-full bg-[#FFF0E1]">
-            <ShoppingBag size={32} color="#F97316" />
+        <ScrollView
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={refreshOrders}
+              tintColor="#F97316"
+            />
+          }
+          contentContainerClassName="flex-grow items-center justify-center px-8"
+        >
+          <View className="items-center">
+            <View className="h-[72px] w-[72px] items-center justify-center rounded-full bg-[#FFF0E1]">
+              <ShoppingBag size={32} color="#F97316" />
+            </View>
+            <Text className="mt-4 text-[16px] font-bold text-[#351D0E]">No orders yet</Text>
+            <Text className="mt-2 text-center text-[13px] text-[#8B735E]">
+              Your furniture orders will appear here.
+            </Text>
           </View>
-          <Text className="mt-4 text-[16px] font-bold text-[#351D0E]">No orders yet</Text>
-          <Text className="mt-2 text-center text-[13px] text-[#8B735E]">
-            Your furniture orders will appear here.
-          </Text>
-        </View>
+        </ScrollView>
       ) : visibleOrders.length === 0 ? (
-        <View className="flex-1 items-center justify-center px-8">
-          <PackageCheck size={36} color="#C0A99A" />
-          <Text className="mt-4 text-[15px] font-bold text-[#351D0E]">
-            No {filter.toLowerCase()} orders
-          </Text>
-          <Text className="mt-1 text-center text-[13px] text-[#8B735E]">
-            Choose another filter to see more orders.
-          </Text>
-        </View>
+        <ScrollView
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={refreshOrders}
+              tintColor="#F97316"
+            />
+          }
+          contentContainerClassName="flex-grow items-center justify-center px-8"
+        >
+          <View className="items-center">
+            <PackageCheck size={36} color="#C0A99A" />
+            <Text className="mt-4 text-[15px] font-bold text-[#351D0E]">
+              No {filter.toLowerCase()} orders
+            </Text>
+            <Text className="mt-1 text-center text-[13px] text-[#8B735E]">
+              Choose another filter to see more orders.
+            </Text>
+          </View>
+        </ScrollView>
       ) : (
         <ScrollView
           showsVerticalScrollIndicator={false}
@@ -222,6 +244,20 @@ export default function OrdersScreen({ onBack: _onBack }: OrdersScreenProps) {
           }
           contentContainerClassName="px-4 py-4"
           contentContainerStyle={{ paddingBottom: Math.max(insets.bottom + 65, 100) }}>
+          {error ? (
+            <View className="mb-3 rounded-[14px] bg-[#FFF0E1] p-3">
+              <Text className="text-[12px] text-[#8B2D20]">{error}</Text>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => loadOrders(true)}
+                className="mt-2 self-start"
+              >
+                <Text className="text-[12px] font-bold text-[#9B4E17]">
+                  Try again
+                </Text>
+              </Pressable>
+            </View>
+          ) : null}
           {visibleOrders.map(order => {
             const firstItem = Array.isArray(order.items) ? order.items[0] : null;
             const status = order.status || 'Order Placed';

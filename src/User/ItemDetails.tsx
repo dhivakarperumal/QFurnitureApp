@@ -10,6 +10,11 @@ import {
 } from 'react-native';
 import { Armchair, Heart, ShoppingCart, Star } from 'lucide-react-native';
 import api from '../api';
+import {
+  fetchCachedApiData,
+  getCachedApiData,
+  hasCachedApiData,
+} from '../apiCache';
 import type { StoreProduct } from './types';
 import ProductCard from './ProductCard';
 import ReviewForm from './ReviewForm';
@@ -88,8 +93,13 @@ export default function ItemDetails({
   onProductPress,
 }: ItemDetailsProps) {
   const { width } = useWindowDimensions();
-  const [item, setItem] = useState<DetailItem | null>(null);
-  const [loading, setLoading] = useState(true);
+  const cacheKey = `user.detail.${itemType}.${itemId}`;
+  const [item, setItem] = useState<DetailItem | null>(
+    () => getCachedApiData<DetailItem>(cacheKey) ?? null,
+  );
+  const [loading, setLoading] = useState(
+    () => !hasCachedApiData(cacheKey),
+  );
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
@@ -99,14 +109,26 @@ export default function ItemDetails({
     let active = true;
 
     const loadItem = async () => {
-      setLoading(true);
-      setError(null);
+      if (!hasCachedApiData(cacheKey)) setLoading(true);
+      if (hasCachedApiData(cacheKey)) setError(null);
       try {
         const resource = itemType === 'combo' ? 'combos' : 'products';
-        const { data } = await api.get<DetailItem>(`/${resource}/${itemId}`);
-        if (!data || typeof data !== 'object') {
-          throw new Error('The item details response was invalid.');
-        }
+        const data = await fetchCachedApiData(
+          cacheKey,
+          async force => {
+            const { data: responseData } = await api.get<DetailItem>(
+              `/${resource}/${itemId}`,
+              {
+                headers: force ? { 'Cache-Control': 'no-store' } : undefined,
+              },
+            );
+            if (!responseData || typeof responseData !== 'object') {
+              throw new Error('The item details response was invalid.');
+            }
+            return responseData;
+          },
+          retryCount > 0,
+        );
         if (active) {
           setItem(data);
           setActiveImageIndex(0);
@@ -123,7 +145,7 @@ export default function ItemDetails({
     return () => {
       active = false;
     };
-  }, [itemId, itemType, retryCount]);
+  }, [cacheKey, itemId, itemType, retryCount]);
 
   const gallery = item ? getGallery(item) : [];
   const price = item ? productPrice(item) : 0;
@@ -171,7 +193,7 @@ export default function ItemDetails({
         <View className="h-[300px] items-center justify-center rounded-[20px] bg-white">
           <ActivityIndicator size="large" color="#F97316" />
         </View>
-      ) : error ? (
+      ) : error && !hasCachedApiData(cacheKey) ? (
         <View className="items-center rounded-[20px] border border-[#F0E7DE] bg-white px-5 py-8">
           <Text accessibilityRole="alert" className="text-center text-[14px] text-[#8B2D20]">
             {error}

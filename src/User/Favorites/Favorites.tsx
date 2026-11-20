@@ -31,7 +31,7 @@ export default function Favorites({
       <Text className="mb-4 text-[25px] font-black text-[#351D0E]">Your favorites</Text>
       {loading ? (
         <SkeletonList count={4} compact />
-      ) : error ? (
+      ) : error && favorites.length === 0 ? (
         <View className="items-center rounded-[20px] bg-white px-6 py-8">
           <Text className="text-center text-[13px] text-[#8B2D20]">{error}</Text>
           <Pressable
@@ -42,25 +42,41 @@ export default function Favorites({
           </Pressable>
         </View>
       ) : favorites.length ? (
-        <View className="flex-row flex-wrap justify-between">
-          {favorites.map(item => {
-            const product =
-              item.item_type === 'combo'
-                ? { ...item, id: `combo-${item.combo_id ?? item.id}` }
-                : item;
-            return (
-              <ProductCard
-                key={`${product.item_type ?? 'product'}-${product.id}`}
-                product={product}
-                favorite={favoriteIds.includes(String(product.id))}
-                compact
-                onFavoritePress={onFavoritePress}
-                onAddToCart={onAddToCart}
-                onProductPress={onProductPress}
-              />
-            );
-          })}
-        </View>
+        <>
+          {error ? (
+            <View className="mb-3 rounded-[14px] bg-[#FFF0E1] p-3">
+              <Text className="text-[12px] text-[#8B2D20]">{error}</Text>
+              <Pressable
+                accessibilityRole="button"
+                onPress={onRetry}
+                className="mt-2 self-start"
+              >
+                <Text className="text-[12px] font-bold text-[#9B4E17]">
+                  Try again
+                </Text>
+              </Pressable>
+            </View>
+          ) : null}
+          <View className="flex-row flex-wrap justify-between">
+            {favorites.map(item => {
+              const product =
+                item.item_type === 'combo'
+                  ? { ...item, id: `combo-${item.combo_id ?? item.id}` }
+                  : item;
+              return (
+                <ProductCard
+                  key={`${product.item_type ?? 'product'}-${product.id}`}
+                  product={product}
+                  favorite={favoriteIds.includes(String(product.id))}
+                  compact
+                  onFavoritePress={onFavoritePress}
+                  onAddToCart={onAddToCart}
+                  onProductPress={onProductPress}
+                />
+              );
+            })}
+          </View>
+        </>
       ) : (
         <View className="items-center rounded-[20px] bg-white px-6 py-10">
           <Heart size={34} color="#F97316" />

@@ -10,6 +10,11 @@ import {
 } from 'react-native';
 import { Armchair, ShoppingCart, Star } from 'lucide-react-native';
 import api from '../api';
+import {
+  fetchCachedApiData,
+  getCachedApiData,
+  hasCachedApiData,
+} from '../apiCache';
 import type { StoreProduct } from './types';
 import ProductCard from './ProductCard';
 import ReviewForm from './ReviewForm';
@@ -80,8 +85,13 @@ export default function ComboDetails({
   onProductPress,
 }: ComboDetailsProps) {
   const { width } = useWindowDimensions();
-  const [combo, setCombo] = useState<Combo | null>(null);
-  const [loading, setLoading] = useState(true);
+  const cacheKey = `user.detail.combo.${itemId}`;
+  const [combo, setCombo] = useState<Combo | null>(
+    () => getCachedApiData<Combo>(cacheKey) ?? null,
+  );
+  const [loading, setLoading] = useState(
+    () => !hasCachedApiData(cacheKey),
+  );
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
@@ -91,13 +101,25 @@ export default function ComboDetails({
     let active = true;
 
     const loadCombo = async () => {
-      setLoading(true);
-      setError(null);
+      if (!hasCachedApiData(cacheKey)) setLoading(true);
+      if (hasCachedApiData(cacheKey)) setError(null);
       try {
-        const { data } = await api.get<Combo>(`/combos/${itemId}`);
-        if (!data || typeof data !== 'object') {
-          throw new Error('The combo details response was invalid.');
-        }
+        const data = await fetchCachedApiData(
+          cacheKey,
+          async force => {
+            const { data: responseData } = await api.get<Combo>(
+              `/combos/${itemId}`,
+              {
+                headers: force ? { 'Cache-Control': 'no-store' } : undefined,
+              },
+            );
+            if (!responseData || typeof responseData !== 'object') {
+              throw new Error('The combo details response was invalid.');
+            }
+            return responseData;
+          },
+          retryCount > 0,
+        );
         if (active) {
           setCombo(data);
           setActiveImageIndex(0);
@@ -114,7 +136,7 @@ export default function ComboDetails({
     return () => {
       active = false;
     };
-  }, [itemId, retryCount]);
+  }, [cacheKey, itemId, retryCount]);
 
   const gallery = combo ? getGallery(combo) : [];
   const price = combo ? productPrice(combo) : 0;
@@ -176,7 +198,7 @@ export default function ComboDetails({
         <View className="h-[300px] items-center justify-center rounded-[20px] bg-white">
           <ActivityIndicator size="large" color="#F97316" />
         </View>
-      ) : error ? (
+      ) : error && !hasCachedApiData(cacheKey) ? (
         <View className="items-center rounded-[20px] border border-[#F0E7DE] bg-white px-5 py-8">
           <Text accessibilityRole="alert" className="text-center text-[14px] text-[#8B2D20]">
             {error}

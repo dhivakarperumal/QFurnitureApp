@@ -42,7 +42,7 @@ export default function Cart({
       </Text>
       {loading ? (
         <ActivityIndicator color="#F97316" />
-      ) : error ? (
+      ) : error && items.length === 0 ? (
         <View className="items-center rounded-[20px] bg-white px-6 py-8">
           <Text className="text-center text-[13px] text-[#8B2D20]">
             {error}
@@ -57,6 +57,20 @@ export default function Cart({
         </View>
       ) : items.length ? (
         <>
+          {error ? (
+            <View className="mb-3 rounded-[14px] bg-[#FFF0E1] p-3">
+              <Text className="text-[12px] text-[#8B2D20]">{error}</Text>
+              <Pressable
+                accessibilityRole="button"
+                onPress={onRetry}
+                className="mt-2 self-start"
+              >
+                <Text className="text-[12px] font-bold text-[#9B4E17]">
+                  Try again
+                </Text>
+              </Pressable>
+            </View>
+          ) : null}
           {items.map(item => {
             const imageUri = mediaUrl(item.image) ?? productImage(item);
             const itemQuantity = Number(item.quantity);

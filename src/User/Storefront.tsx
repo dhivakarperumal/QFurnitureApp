@@ -45,6 +45,7 @@ import {
   fetchCachedApiData,
   getCachedApiData,
   hasCachedApiData,
+  invalidateCachedApiData,
 } from '../apiCache';
 
 // ─── Inner page header (fixed, no main header / no bottom tabs) ───────────────
@@ -722,6 +723,7 @@ export default function Storefront({
       };
       return detailTarget.itemType === 'combo' ? (
         <ComboDetails
+          key={`combo-${detailTarget.itemId}`}
           {...detailProps}
           relatedProducts={storeData.products}
           favoriteIds={favoriteIds}
@@ -729,6 +731,7 @@ export default function Storefront({
         />
       ) : (
         <ProductDetails
+          key={`product-${detailTarget.itemId}`}
           {...detailProps}
           relatedProducts={storeData.products}
           favoriteIds={favoriteIds}
@@ -806,7 +809,7 @@ export default function Storefront({
           favorites={favoriteProducts}
           favoriteIds={favoriteIds}
           loading={favoritesLoading}
-          error={hasCachedApiData(FAVORITES_CACHE_KEY) ? null : favoritesError}
+          error={favoritesError}
           onRetry={retryFavorites}
           onFavoritePress={toggleFavorite}
           onAddToCart={addToCart}
@@ -823,7 +826,8 @@ export default function Storefront({
             onBack={() => setCheckoutOpen(false)}
             onOrderPlaced={() => {
               setCheckoutOpen(false);
-              loadCart().catch(error => {
+              invalidateCachedApiData('user.orders');
+              loadCart(true).catch(error => {
                 if (__DEV__)
                   console.warn(
                     '[Storefront] Could not reload cart after checkout:',
@@ -839,7 +843,7 @@ export default function Storefront({
           items={cartItems}
           total={cartTotal}
           loading={cartLoading}
-          error={hasCachedApiData(CART_CACHE_KEY) ? null : cartError}
+          error={cartError}
           pendingItemIds={pendingCartIds}
           onRetry={retryCart}
           onQuantityChange={updateCartQuantity}

@@ -103,21 +103,21 @@ export default function AccountScreen({
 
   const loadProfile = useCallback(async (forceRefresh = false) => {
     try {
-      // Try loading from AsyncStorage first for instant display
-      const serializedUser = await AsyncStorage.getItem('user');
-      if (serializedUser) {
-        const user: unknown = JSON.parse(serializedUser);
-        if (typeof user === 'object' && user !== null) {
-          const u = user as Record<string, unknown>;
-          setProfile({
-            name: (u.name as string) || (u.username as string) || '',
-            email: (u.email as string) || '',
-            phone: (u.phone as string) || '',
-            profile_image: (u.profile_image as string) || '',
-          });
+      if (!hasCachedApiData(PROFILE_CACHE_KEY)) {
+        const serializedUser = await AsyncStorage.getItem('user');
+        if (serializedUser) {
+          const user: unknown = JSON.parse(serializedUser);
+          if (typeof user === 'object' && user !== null) {
+            const u = user as Record<string, unknown>;
+            setProfile({
+              name: (u.name as string) || (u.username as string) || '',
+              email: (u.email as string) || '',
+              phone: (u.phone as string) || '',
+              profile_image: (u.profile_image as string) || '',
+            });
+          }
         }
       }
-      // Then load from API for fresh data
       const data = await fetchCachedApiData(
         PROFILE_CACHE_KEY,
         async force => {

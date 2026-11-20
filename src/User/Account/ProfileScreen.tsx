@@ -118,20 +118,22 @@ export default function ProfileScreen({
       setError('');
     }
     try {
-      const serializedUser = await AsyncStorage.getItem('user');
-      if (serializedUser) {
-        const user: unknown = JSON.parse(serializedUser);
-        if (typeof user === 'object' && user !== null) {
-          const u = user as Record<string, unknown>;
-          const cached: Profile = {
-            name: (u.name as string) || (u.username as string) || '',
-            email: (u.email as string) || '',
-            phone: (u.phone as string) || '',
-            date_of_birth: ((u.date_of_birth as string) || '').slice(0, 10),
-            profile_image: (u.profile_image as string) || '',
-          };
-          setProfile(cached);
-          setSavedProfile(cached);
+      if (!hasCachedApiData(PROFILE_CACHE_KEY)) {
+        const serializedUser = await AsyncStorage.getItem('user');
+        if (serializedUser) {
+          const user: unknown = JSON.parse(serializedUser);
+          if (typeof user === 'object' && user !== null) {
+            const u = user as Record<string, unknown>;
+            const cached: Profile = {
+              name: (u.name as string) || (u.username as string) || '',
+              email: (u.email as string) || '',
+              phone: (u.phone as string) || '',
+              date_of_birth: ((u.date_of_birth as string) || '').slice(0, 10),
+              profile_image: (u.profile_image as string) || '',
+            };
+            setProfile(cached);
+            setSavedProfile(cached);
+          }
         }
       }
       const data = await fetchCachedApiData(
@@ -201,7 +203,7 @@ export default function ProfileScreen({
       };
       setProfile(updated);
       setSavedProfile(updated);
-      setCachedApiData(PROFILE_CACHE_KEY, data.user ?? updated);
+      setCachedApiData(PROFILE_CACHE_KEY, updated);
       // Update AsyncStorage cache
       const serializedUser = await AsyncStorage.getItem('user');
       if (serializedUser) {

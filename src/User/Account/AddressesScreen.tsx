@@ -505,23 +505,34 @@ export default function AddressesScreen({ onBack: _onBack }: AddressesScreenProp
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color="#F97316" />
         </View>
-      ) : error && !hasCachedApiData(ADDRESSES_CACHE_KEY) ? (
+      ) : error && addresses.length === 0 ? (
         <View className="flex-1 items-center justify-center px-6">
           <Text className="text-center text-[14px] text-red-700">{error}</Text>
-          <Pressable onPress={loadAddresses} className="mt-4 rounded-full bg-[#F97316] px-5 py-3">
+          <Pressable onPress={() => loadAddresses(true)} className="mt-4 rounded-full bg-[#F97316] px-5 py-3">
             <Text className="text-[13px] font-bold text-white">Try Again</Text>
           </Pressable>
         </View>
       ) : addresses.length === 0 ? (
-        <View className="flex-1 items-center justify-center px-8">
-          <View className="h-[72px] w-[72px] items-center justify-center rounded-full bg-[#FFF0E1]">
-            <MapPin size={32} color="#F97316" />
+        <ScrollView
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => refreshAddresses()}
+              tintColor="#F97316"
+            />
+          }
+          contentContainerClassName="flex-grow items-center justify-center px-8"
+        >
+          <View className="items-center">
+            <View className="h-[72px] w-[72px] items-center justify-center rounded-full bg-[#FFF0E1]">
+              <MapPin size={32} color="#F97316" />
+            </View>
+            <Text className="mt-4 text-[16px] font-bold text-[#351D0E]">No saved addresses yet</Text>
+            <Text className="mt-2 text-center text-[13px] text-[#8B735E]">
+              Add an address to save your delivery details for future orders.
+            </Text>
           </View>
-          <Text className="mt-4 text-[16px] font-bold text-[#351D0E]">No saved addresses yet</Text>
-          <Text className="mt-2 text-center text-[13px] text-[#8B735E]">
-            Add an address to save your delivery details for future orders.
-          </Text>
-        </View>
+        </ScrollView>
       ) : (
         <ScrollView
           showsVerticalScrollIndicator={false}
@@ -534,6 +545,20 @@ export default function AddressesScreen({ onBack: _onBack }: AddressesScreenProp
           }
           contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 20, paddingBottom: Math.max(insets.bottom, 100) }}
         >
+          {error ? (
+            <View className="mb-3 rounded-[14px] bg-[#FFF0E1] p-3">
+              <Text className="text-[12px] text-[#8B2D20]">{error}</Text>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => loadAddresses(true)}
+                className="mt-2 self-start"
+              >
+                <Text className="text-[12px] font-bold text-[#9B4E17]">
+                  Try again
+                </Text>
+              </Pressable>
+            </View>
+          ) : null}
           {addresses.map(address => {
             const isDefault = Boolean(Number(address.is_default));
             const isHome = address.label?.toLowerCase() === 'home';
