@@ -1,19 +1,22 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState } from 'react';
 import {
   Image,
   Pressable,
   ScrollView,
+  StyleSheet,
   Text,
   View,
-} from 'react-native';
-import type {
-  NativeScrollEvent,
-  NativeSyntheticEvent,
-  ScrollViewInstance,
 } from 'react-native';
 import { Armchair, ArrowRight } from 'lucide-react-native';
 import type { StoreCategory } from '../types';
 import { categoryImage } from '../utils';
+import { useAutoSwiper } from './useAutoSwiper';
+
+const styles = StyleSheet.create({
+  scrollContent: {
+    paddingLeft: 8,
+  },
+});
 
 type CategoryProps = {
   categories: StoreCategory[];
@@ -26,39 +29,19 @@ export default function Category({
   onCategoryPress,
   onViewAllPress,
 }: CategoryProps) {
-  const scrollRef = useRef<ScrollViewInstance>(null);
-  const scrollPositionRef = useRef(0);
   const [contentWidth, setContentWidth] = useState(0);
   const [viewportWidth, setViewportWidth] = useState(0);
-  const [isUserScrolling, setIsUserScrolling] = useState(false);
-  const categoryWidth = viewportWidth > 0 ? (viewportWidth - 24) / 3 : 112;
+  const categoryWidth = viewportWidth > 0 ? (viewportWidth - 32) / 3 : 110;
   const categoryStep = categoryWidth + 12;
   const snapOffsets = categories.map((_, index) => index * categoryStep);
-
-  useEffect(() => {
-    if (isUserScrolling || categories.length <= 3) {
-      return;
-    }
-
-    const maxScroll = Math.max(0, contentWidth - viewportWidth);
-    if (maxScroll <= 0) {
-      return;
-    }
-
-    const interval = setInterval(() => {
-      const nextPosition = scrollPositionRef.current + categoryStep;
-      const targetPosition = nextPosition >= maxScroll ? 0 : nextPosition;
-
-      scrollRef.current?.scrollTo({ x: targetPosition, animated: true });
-      scrollPositionRef.current = targetPosition;
-    }, 3000);
-
-    return () => clearInterval(interval);
-  }, [categories.length, categoryStep, contentWidth, isUserScrolling, viewportWidth]);
-
-  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    scrollPositionRef.current = event.nativeEvent.contentOffset.x;
-  };
+  const { scrollRef, handleScrollBeginDrag, handleScrollSettled } =
+    useAutoSwiper({
+      itemCount: categories.length,
+      visibleCount: 3,
+      itemStep: categoryStep,
+      contentWidth,
+      viewportWidth,
+    });
 
   return (
     <View className="mt-7">
@@ -81,16 +64,15 @@ export default function Category({
           showsHorizontalScrollIndicator={false}
           onLayout={event => setViewportWidth(event.nativeEvent.layout.width)}
           onContentSizeChange={width => setContentWidth(width)}
-          onScroll={handleScroll}
-          scrollEventThrottle={16}
-          onScrollBeginDrag={() => setIsUserScrolling(true)}
-          onScrollEndDrag={() => setIsUserScrolling(false)}
-          onMomentumScrollEnd={() => setIsUserScrolling(false)}
+          onScrollBeginDrag={handleScrollBeginDrag}
+          onScrollEndDrag={handleScrollSettled}
+          onMomentumScrollEnd={handleScrollSettled}
           snapToInterval={categoryStep}
           snapToAlignment="start"
           snapToOffsets={snapOffsets}
           decelerationRate="fast"
-          disableIntervalMomentum>
+          disableIntervalMomentum
+          contentContainerStyle={styles.scrollContent}>
           {categories.map((category, index) => {
             const imageUri = categoryImage(category);
             return (

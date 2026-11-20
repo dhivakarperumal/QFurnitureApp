@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Pressable,
   ScrollView,
+  StyleSheet,
   Text,
   useWindowDimensions,
   View,
@@ -10,6 +11,13 @@ import {
 import api from '../../api';
 import ProductCard from '../ProductCard';
 import type { StoreProduct } from '../types';
+import { useAutoSwiper } from './useAutoSwiper';
+
+const styles = StyleSheet.create({
+  carouselContent: {
+    paddingHorizontal: 16,
+  },
+});
 
 type FeaturedCombo = StoreProduct & {
   featured?: boolean | number;
@@ -45,11 +53,24 @@ export default function FeaturedCombos({
   onProductPress,
 }: FeaturedCombosProps) {
   const { width } = useWindowDimensions();
-  const cardWidth = (width - 40) / 2;
+  const [contentWidth, setContentWidth] = useState(0);
+  const [viewportWidth, setViewportWidth] = useState(0);
   const [combos, setCombos] = useState<FeaturedCombo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
+  const cardWidth = ((viewportWidth || width) - 36) / 2;
+  const cardStep = cardWidth + 12;
+  const snapOffsets = combos.map((_, index) => index * cardStep);
+  const { scrollRef, handleScrollBeginDrag, handleScrollSettled } =
+    useAutoSwiper({
+      itemCount: combos.length,
+      visibleCount: 2,
+      itemStep: cardStep,
+      contentWidth,
+      viewportWidth,
+      intervalMs: 5000,
+    });
 
   useEffect(() => {
     let active = true;
@@ -116,9 +137,20 @@ export default function FeaturedCombos({
         </View>
       ) : (
         <ScrollView
+          ref={scrollRef}
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerClassName="px-4">
+          onLayout={event => setViewportWidth(event.nativeEvent.layout.width)}
+          onContentSizeChange={setContentWidth}
+          onScrollBeginDrag={handleScrollBeginDrag}
+          onScrollEndDrag={handleScrollSettled}
+          onMomentumScrollEnd={handleScrollSettled}
+          snapToInterval={cardStep}
+          snapToAlignment="start"
+          snapToOffsets={snapOffsets}
+          decelerationRate="fast"
+          disableIntervalMomentum
+          contentContainerStyle={styles.carouselContent}>
           {combos.map(combo => {
             const productId = `combo-${combo.id}`;
             const product: StoreProduct = {

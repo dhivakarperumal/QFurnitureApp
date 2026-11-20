@@ -1,6 +1,6 @@
 export type StoreTab =
   | 'Home'
-  | 'Explore'
+  | 'Shop'
   | 'Combos'
   | 'Favorites'
   | 'Cart'
