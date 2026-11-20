@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Image, Pressable, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Heart, LogOut, UserRound } from 'lucide-react-native';
 import type { StoreTab } from './types';
@@ -79,11 +79,11 @@ export default function Header({
   return (
     <View
       style={{ height: 58 + topInset, paddingTop: topInset }}
-      className="z-10 flex-row items-center justify-between px-3 shadow-md elevation-[10]">
+      className="z-10 flex-row items-center justify-between overflow-hidden px-3 shadow-md elevation-[10]">
       <Image
         source={require('../Assert/images/topheader1.png')}
         resizeMode="cover"
-        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%' }}
+        style={StyleSheet.absoluteFill}
       />
       <View
         pointerEvents="none"
