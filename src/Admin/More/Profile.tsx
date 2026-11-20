@@ -20,6 +20,7 @@ import {
   Check,
   ChevronRight,
   LockKeyhole,
+  LogOut,
   Mail,
   MapPin,
   Pencil,
@@ -98,6 +99,7 @@ type AddressForm = {
 type ProfileProps = {
   onBackPress: () => void;
   onScrollVisibilityChange?: (visible: boolean) => void;
+  onLogoutPress?: () => void;
 };
 
 const initialForm: ProfileForm = {
@@ -198,6 +200,7 @@ const getDefaultAddress = (addresses: UserAddress[]) =>
 export default function Profile({
   onBackPress,
   onScrollVisibilityChange,
+  onLogoutPress,
 }: ProfileProps) {
   const insets = useSafeAreaInsets();
   const lastScrollY = useRef(0);
@@ -821,6 +824,31 @@ export default function Profile({
               </Text>
             </Pressable>
           </>
+        ) : null}
+        {onLogoutPress ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Log out"
+            onPress={() =>
+              Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Sign Out',
+                  style: 'destructive',
+                  onPress: onLogoutPress,
+                },
+              ])
+            }
+            className="mb-4 mt-2 flex-row items-center rounded-[18px] border border-[#FECACA] bg-[#FEF2F2] p-4"
+          >
+            <View className="h-[44px] w-[44px] items-center justify-center rounded-full bg-[#FEE2E2]">
+              <LogOut size={20} color="#DC2626" />
+            </View>
+            <Text className="ml-3 flex-1 text-[13px] font-bold text-[#B91C1C]">
+              Logout
+            </Text>
+            <ChevronRight size={19} color="#DC2626" />
+          </Pressable>
         ) : null}
       </ScrollView>
 

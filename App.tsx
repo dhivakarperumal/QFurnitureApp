@@ -270,6 +270,7 @@ function AppContent() {
         <Profile
           onBackPress={() => setProfileOpen(false)}
           onScrollVisibilityChange={setBottomBarVisible}
+          onLogoutPress={handleLogout}
         />
       </KeepAliveScreen>
       <KeepAliveScreen active={!profileOpen && billingOpen && !createBillOpen}>
@@ -341,6 +342,7 @@ function AppContent() {
           onDetailsVisibilityChange={setMoreDetailsOpen}
           initialScreen={moreInitialScreen}
           screenRequestId={moreScreenRequestId}
+          onLogoutPress={handleLogout}
         />
       </KeepAliveScreen>
       <KeepAliveScreen active={drawerScreen === 'customers'}>
