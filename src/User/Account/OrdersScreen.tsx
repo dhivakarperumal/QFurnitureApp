@@ -125,16 +125,10 @@ function orderStage(status?: string) {
 
 function OrderDetailModal({
   order,
-  loading,
-  error,
   onClose,
-  onRetry,
 }: {
   order: Order | null;
-  loading: boolean;
-  error: string;
   onClose: () => void;
-  onRetry: () => void;
 }) {
   const insets = useSafeAreaInsets();
   if (!order) return null;
@@ -199,21 +193,6 @@ function OrderDetailModal({
           contentContainerClassName="p-4"
           contentContainerStyle={{ paddingBottom: Math.max(insets.bottom + 24, 40) }}
         >
-          {loading ? (
-            <View className="mb-3 flex-row items-center justify-center rounded-xl bg-white py-3">
-              <ActivityIndicator size="small" color="#F97316" />
-              <Text className="ml-2 text-[12px] text-[#8B735E]">Loading order details...</Text>
-            </View>
-          ) : null}
-          {error ? (
-            <View className="mb-3 flex-row items-center justify-between rounded-xl bg-[#FFF1F0] px-3 py-2">
-              <Text className="mr-3 flex-1 text-[12px] text-[#B42318]">{error}</Text>
-              <Pressable onPress={onRetry} accessibilityRole="button">
-                <Text className="text-[12px] font-bold text-[#B42318]">Retry</Text>
-              </Pressable>
-            </View>
-          ) : null}
-
           <View className="mb-3 flex-row items-center rounded-xl bg-[#FAF5EF] px-3 py-2.5">
             <CalendarDays size={14} color="#B94719" />
             <Text className="ml-2 text-[11px] text-[#725B49]">
@@ -391,9 +370,6 @@ export default function OrdersScreen({ onBack: _onBack }: OrdersScreenProps) {
   const [error, setError] = useState('');
   const [filter, setFilter] = useState<OrderFilter>('All Orders');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const [orderDetailsLoading, setOrderDetailsLoading] = useState(false);
-  const [orderDetailsError, setOrderDetailsError] = useState('');
-  const [orderDetailsRetry, setOrderDetailsRetry] = useState(0);
 
   const loadOrders = useCallback(async (forceRefresh = false) => {
     if (!hasCachedApiData(ORDERS_CACHE_KEY)) setLoading(true);
@@ -432,29 +408,6 @@ export default function OrdersScreen({ onBack: _onBack }: OrdersScreenProps) {
   useEffect(() => {
     loadOrders();
   }, [loadOrders]);
-
-  const selectedOrderId = selectedOrder?.id;
-  useEffect(() => {
-    if (selectedOrderId === undefined) return;
-    let active = true;
-    setOrderDetailsLoading(true);
-    setOrderDetailsError('');
-    api.get<Order>(`/orders/${selectedOrderId}`).then(({ data }) => {
-      if (active) {
-        setSelectedOrder(current =>
-          current?.id === selectedOrderId ? { ...current, ...data } : current,
-        );
-      }
-    }).catch(err => {
-      if (active) {
-        setOrderDetailsError('Could not load the latest order details.');
-        if (__DEV__) console.warn('[OrdersScreen] Order details error:', err);
-      }
-    }).finally(() => {
-      if (active) setOrderDetailsLoading(false);
-    });
-    return () => { active = false; };
-  }, [selectedOrderId, orderDetailsRetry]);
 
   const orderCounts = useMemo(() => {
     const counts: Record<OrderFilter, number> = {
@@ -659,13 +612,7 @@ export default function OrdersScreen({ onBack: _onBack }: OrdersScreenProps) {
       )}
       <OrderDetailModal
         order={selectedOrder}
-        loading={orderDetailsLoading}
-        error={orderDetailsError}
-        onClose={() => {
-          setSelectedOrder(null);
-          setOrderDetailsError('');
-        }}
-        onRetry={() => setOrderDetailsRetry(retry => retry + 1)}
+        onClose={() => setSelectedOrder(null)}
       />
     </View>
   );
