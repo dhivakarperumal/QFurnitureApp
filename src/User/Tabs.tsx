@@ -35,13 +35,13 @@ export default function Tabs({
     <View
       pointerEvents="box-none"
       style={{ paddingBottom: Math.max(bottomInset, 8) }}
-      className="absolute bottom-0 left-0 right-0 bg-transparent px-3 pt-2">
-      <View className="relative h-[64px] flex-row items-center overflow-hidden rounded-full border border-[#FFB46B] bg-[#F97316] px-1.5 shadow-lg">
+      className="absolute bottom-0 left-0 right-0 bg-white px-3 pt-2">
+      <View className="relative h-[72px] flex-row items-center overflow-hidden rounded-full border border-[#FFB46B] bg-[#F97316] px-1.5 shadow-lg">
         <View pointerEvents="none" className="absolute inset-0">
           <Svg
             width="100%"
             height="100%"
-            viewBox="0 0 400 64"
+            viewBox="0 0 400 72"
             preserveAspectRatio="none">
             <Defs>
               <LinearGradient
@@ -68,8 +68,8 @@ export default function Tabs({
                   accessibilityState={{ selected: active }}
                   accessibilityLabel={`Cart tab, ${cartCount} items`}
                   onPress={() => onTabPress('Cart')}
-                  className="h-[54px] w-[56px] items-center justify-center rounded-[17px] border border-white/40 bg-white/20 shadow-sm">
-                  <ShoppingCart size={24} color="#FFFFFF" strokeWidth={2.2} />
+                  className="h-[60px] w-[62px] items-center justify-center rounded-[18px] border border-white/80 bg-white shadow-sm">
+                  <ShoppingCart size={26} color="#F97316" strokeWidth={2.2} />
                   {cartCount > 0 ? (
                     <View className="absolute right-[-3px] top-[-4px] h-[18px] min-w-[18px] items-center justify-center rounded-full border border-white bg-[#F45112] px-1">
                       <Text className="text-[10px] font-bold text-white">
@@ -89,11 +89,11 @@ export default function Tabs({
               accessibilityState={{ selected: active }}
               accessibilityLabel={`${label} tab`}
               onPress={() => onTabPress(name)}
-              className={`relative h-[50px] flex-1 items-center justify-center rounded-[17px] ${
+              className={`relative h-[58px] flex-1 items-center justify-center rounded-[18px] ${
                 active ? 'border border-white/35 bg-white/20' : ''
               }`}>
               <Icon
-                size={21}
+                size={23}
                 color="#FFFFFF"
                 fill="transparent"
                 strokeWidth={2.2}
