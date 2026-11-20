@@ -33,58 +33,54 @@ const tabs = [
 
 const GREEN = '#123D24';
 
-/** Small orange blob rendered via SVG, clipped to the pill corners */
-function CornerBlob({ side }: { side: 'left' | 'right' }) {
-  const isLeft = side === 'left';
+// ─── Orange corner blobs ────────────────────────────────────────────────────
+// Rendered inside the pill which has overflow:hidden, so they get clipped
+// cleanly to the rounded pill shape automatically.
+function LeftBlob() {
   return (
     <Svg
-      width={110}
+      width={120}
       height={90}
-      viewBox="0 0 110 90"
+      viewBox="0 0 120 90"
       pointerEvents="none"
-      style={[styles.blobSvg, isLeft ? styles.blobLeft : styles.blobRight]}>
+      style={styles.blobLeft}>
       <Defs>
-        <LinearGradient
-          id={`blob-${side}`}
-          x1={isLeft ? '0%' : '100%'}
-          y1="0%"
-          x2={isLeft ? '100%' : '0%'}
-          y2="100%">
+        <LinearGradient id="lgL" x1="0%" y1="0%" x2="100%" y2="100%">
           <Stop offset="0%"   stopColor="#FFB820" />
           <Stop offset="100%" stopColor="#FF4A0A" />
         </LinearGradient>
       </Defs>
-      {isLeft ? (
-        <>
-          {/* Main blob */}
-          <Path
-            d="M0 0 Q55 0 55 45 Q55 70 20 85 L0 90 Z"
-            fill={`url(#blob-${side})`}
-          />
-          {/* Darker bottom accent */}
-          <Path
-            d="M0 60 Q25 52 45 65 L20 90 L0 90 Z"
-            fill="#E84E00"
-            opacity="0.85"
-          />
-        </>
-      ) : (
-        <>
-          <Path
-            d="M110 0 Q55 0 55 45 Q55 70 90 85 L110 90 Z"
-            fill={`url(#blob-${side})`}
-          />
-          <Path
-            d="M110 60 Q85 52 65 65 L90 90 L110 90 Z"
-            fill="#E84E00"
-            opacity="0.85"
-          />
-        </>
-      )}
+      {/* Main blob */}
+      <Path d="M0 0 C60 0 75 20 70 45 C65 70 50 88 0 90 Z" fill="url(#lgL)" />
+      {/* Darker bottom accent */}
+      <Path d="M0 58 C30 50 55 65 50 90 L0 90 Z" fill="#D94200" opacity="0.75" />
     </Svg>
   );
 }
 
+function RightBlob() {
+  return (
+    <Svg
+      width={120}
+      height={90}
+      viewBox="0 0 120 90"
+      pointerEvents="none"
+      style={styles.blobRight}>
+      <Defs>
+        <LinearGradient id="lgR" x1="100%" y1="0%" x2="0%" y2="100%">
+          <Stop offset="0%"   stopColor="#FFB820" />
+          <Stop offset="100%" stopColor="#FF4A0A" />
+        </LinearGradient>
+      </Defs>
+      {/* Main blob (mirrored) */}
+      <Path d="M120 0 C60 0 45 20 50 45 C55 70 70 88 120 90 Z" fill="url(#lgR)" />
+      {/* Darker bottom accent */}
+      <Path d="M120 58 C90 50 65 65 70 90 L120 90 Z" fill="#D94200" opacity="0.75" />
+    </Svg>
+  );
+}
+
+// ─── Main component ──────────────────────────────────────────────────────────
 export default function Tabs({
   activeTab,
   cartCount,
@@ -95,68 +91,87 @@ export default function Tabs({
   const barWidth = width - 32;
 
   return (
+    // Outermost: sits at bottom, full width
     <View
       pointerEvents="box-none"
       style={[styles.container, { paddingBottom: Math.max(bottomInset, 8) }]}>
 
-      {/* ── Pill bar ── */}
-      <View style={[styles.bar, { width: barWidth }]}>
+      {/*
+        Wrapper: tall enough to contain the floating cart button above the bar.
+        NO overflow:hidden here — the cart button must not be clipped.
+        Height = BAR_H (90) + CART_OVERFLOW (24) = 114
+      */}
+      <View style={[styles.wrapper, { width: barWidth }]}>
 
-        {/* Cream pill background */}
-        <View style={styles.pillBg} />
+        {/*
+          Pill bar: sits at the BOTTOM of the wrapper.
+          overflow:hidden clips the blobs to the pill shape.
+        */}
+        <View style={styles.pill}>
+          {/* Cream background */}
+          <View style={styles.pillBg} />
 
-        {/* Orange corner blobs (clipped inside pill via overflow:hidden on pillBg) */}
-        <CornerBlob side="left" />
-        <CornerBlob side="right" />
+          {/* Orange corner blobs — clipped by overflow:hidden */}
+          <LeftBlob />
+          <RightBlob />
 
-        {/* Thin dividers */}
-        <View pointerEvents="none" style={[styles.sep, styles.sepLeft]} />
-        <View pointerEvents="none" style={[styles.sep, styles.sepRight]} />
+          {/* Thin vertical dividers */}
+          <View pointerEvents="none" style={[styles.sep, styles.sepLeft]} />
+          <View pointerEvents="none" style={[styles.sep, styles.sepRight]} />
 
-        {/* Tab buttons */}
-        <View style={styles.tabsRow}>
-          {tabs.map(({ name, icon: Icon, label }) => {
-            const active = activeTab === name;
+          {/* Tab buttons row */}
+          <View style={styles.tabsRow}>
+            {tabs.map(({ name, icon: Icon, label }) => {
+              const active = activeTab === name;
 
-            if (name === 'Cart') {
-              return <View key={name} style={styles.cartSlot} />;
-            }
+              // Centre slot reserved for the floating cart
+              if (name === 'Cart') {
+                return <View key={name} style={styles.cartSlot} />;
+              }
 
-            return (
-              <Pressable
-                key={name}
-                accessibilityRole="tab"
-                accessibilityState={{ selected: active }}
-                accessibilityLabel={`${label} tab`}
-                onPress={() => onTabPress(name)}
-                style={({ pressed }) => [
-                  styles.tab,
-                  pressed && styles.pressed,
-                ]}>
-                <Icon
-                  size={24}
-                  color={GREEN}
-                  fill={active && name === 'Home' ? GREEN : 'transparent'}
-                  strokeWidth={2.2}
-                />
-                <Text style={[styles.label, active && styles.activeLabel]}>
-                  {label}
-                </Text>
-                {active && <View style={styles.activeIndicator} />}
-              </Pressable>
-            );
-          })}
+              return (
+                <Pressable
+                  key={name}
+                  accessibilityRole="tab"
+                  accessibilityState={{ selected: active }}
+                  accessibilityLabel={`${label} tab`}
+                  onPress={() => onTabPress(name)}
+                  style={({ pressed }) => [
+                    styles.tab,
+                    pressed && styles.tabPressed,
+                  ]}>
+                  <Icon
+                    size={22}
+                    color={GREEN}
+                    fill={active && name === 'Home' ? GREEN : 'transparent'}
+                    strokeWidth={2.2}
+                  />
+                  <Text style={[styles.label, active && styles.activeLabel]}>
+                    {label}
+                  </Text>
+                  {active && <View style={styles.activeBar} />}
+                </Pressable>
+              );
+            })}
+          </View>
         </View>
 
-        {/* ── Floating Cart FAB ── */}
+        {/*
+          Floating cart FAB: positioned on the WRAPPER (not inside the pill),
+          so overflow:hidden on pill does NOT clip it.
+          top: 0 of wrapper = 24px above the pill top edge.
+        */}
         <Pressable
           accessibilityRole="tab"
           accessibilityState={{ selected: activeTab === 'Cart' }}
           accessibilityLabel={`Cart tab, ${cartCount} items`}
           onPress={() => onTabPress('Cart')}
-          style={({ pressed }) => [styles.cartBtn, pressed && styles.pressed]}>
+          style={({ pressed }) => [
+            styles.cartBtn,
+            pressed && styles.tabPressed,
+          ]}>
 
-          {/* Cart circle drawn with SVG for the gradient */}
+          {/* Cart circle gradient */}
           <Svg
             width={82}
             height={82}
@@ -164,21 +179,21 @@ export default function Tabs({
             pointerEvents="none"
             style={StyleSheet.absoluteFill}>
             <Defs>
-              <LinearGradient id="cartGrad" x1="30%" y1="0%" x2="70%" y2="100%">
+              <LinearGradient id="cg" x1="30%" y1="0%" x2="70%" y2="100%">
                 <Stop offset="0%"   stopColor="#FFBE28" />
                 <Stop offset="100%" stopColor="#FF3E08" />
               </LinearGradient>
             </Defs>
-            {/* White ring */}
+            {/* White border ring */}
             <Circle cx="41" cy="41" r="40" fill="#FFFFFF" />
-            {/* Orange filled circle */}
-            <Circle cx="41" cy="41" r="35" fill="url(#cartGrad)" />
-            {/* Soft highlight */}
-            <Circle cx="41" cy="30" r="13" fill="#FFFFFF" opacity="0.15" />
+            {/* Orange fill */}
+            <Circle cx="41" cy="41" r="34" fill="url(#cg)" />
+            {/* Soft highlight shimmer */}
+            <Circle cx="41" cy="30" r="13" fill="#FFFFFF" opacity="0.18" />
           </Svg>
 
           <ShoppingCart
-            size={30}
+            size={28}
             color="#FFFFFF"
             strokeWidth={2.3}
             style={styles.cartIcon}
@@ -192,12 +207,20 @@ export default function Tabs({
             </View>
           )}
         </Pressable>
+
       </View>
     </View>
   );
 }
 
+// ─── Constants ───────────────────────────────────────────────────────────────
+const BAR_H       = 90;   // pill height
+const CART_SIZE   = 82;   // cart button diameter
+const CART_OVER   = 24;   // how many px the cart floats above the bar top
+const WRAPPER_H   = BAR_H + CART_OVER;   // 114
+
 const styles = StyleSheet.create({
+  // Anchored to screen bottom
   container: {
     position: 'absolute',
     bottom: 0,
@@ -207,12 +230,10 @@ const styles = StyleSheet.create({
     zIndex: 20,
   },
 
-  /* Outer pill shell — no background colour here, it comes from pillBg */
-  bar: {
-    height: 90,
-    borderRadius: 45,
+  // Tall wrapper: holds pill + floating cart, NO overflow hidden
+  wrapper: {
+    height: WRAPPER_H,
     position: 'relative',
-    overflow: 'hidden',       // clips blobs to pill shape ✅
     shadowColor: '#FF6010',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.3,
@@ -220,85 +241,92 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
 
-  /* Cream pill background fills the whole bar */
+  // Pill bar: at the bottom of wrapper, clips blobs
+  pill: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: BAR_H,
+    borderRadius: BAR_H / 2,
+    overflow: 'hidden',   // ← clips blobs to rounded pill ✅
+  },
+
+  // Cream pill fill
   pillBg: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: '#FFF7E8',
-    borderRadius: 45,
     borderWidth: 1.5,
     borderColor: '#FFAA44',
+    borderRadius: BAR_H / 2,
   },
 
-  /* Blob SVGs — absolutely positioned inside the bar */
-  blobSvg: {
+  // Blobs sit at corners inside the pill
+  blobLeft: {
     position: 'absolute',
     top: 0,
+    left: 0,
   },
-  blobLeft:  { left: 0  },
-  blobRight: { right: 0 },
+  blobRight: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+  },
 
-  /* Thin vertical dividers */
+  // Thin dividers
   sep: {
     position: 'absolute',
     top: 22,
     height: 46,
     width: 1,
-    backgroundColor: '#C8894A',
-    opacity: 0.55,
+    backgroundColor: '#BB7030',
+    opacity: 0.5,
   },
   sepLeft:  { left: '25%'  },
   sepRight: { right: '25%' },
 
-  /* Row of tabs */
+  // Tab buttons fill the pill height
   tabsRow: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    ...StyleSheet.absoluteFillObject,
     flexDirection: 'row',
     alignItems: 'center',
   },
-  cartSlot: {
-    flex: 1.1,
-  },
+  cartSlot: { flex: 1.1 },
   tab: {
     flex: 1,
     height: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 3,
+    gap: 2,
   },
-  pressed: {
-    opacity: 0.65,
-  },
+  tabPressed: { opacity: 0.65 },
+
   label: {
     color: GREEN,
     fontSize: 11,
-    lineHeight: 14,
     fontWeight: '500',
+    lineHeight: 14,
   },
   activeLabel: {
     fontWeight: '700',
-    fontSize: 11.5,
   },
-  activeIndicator: {
+  activeBar: {
     position: 'absolute',
     bottom: 10,
-    width: 34,
+    width: 32,
     height: 3,
     borderRadius: 2,
     backgroundColor: '#FF5000',
   },
 
-  /* Floating cart button — sits ABOVE overflow:hidden bar via absolute on container */
+  // Cart FAB: on the wrapper (outside overflow:hidden pill) so it's never clipped
   cartBtn: {
     position: 'absolute',
+    top: 0,                           // top of wrapper = CART_OVER above pill
     left: '50%',
-    top: -24,                 // floats above the bar
-    width: 82,
-    height: 82,
-    marginLeft: -41,
+    marginLeft: -(CART_SIZE / 2),     // -41
+    width: CART_SIZE,
+    height: CART_SIZE,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#FF4A00',
@@ -306,32 +334,30 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.5,
     shadowRadius: 12,
     elevation: 18,
-    zIndex: 30,
   },
   cartIcon: {
     position: 'absolute',
   },
 
-  /* Badge */
+  // Notification badge
   badge: {
     position: 'absolute',
     top: 2,
-    right: 0,
-    minWidth: 24,
-    height: 24,
+    right: 1,
+    minWidth: 22,
+    height: 22,
     paddingHorizontal: 4,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 12,
+    borderRadius: 11,
     borderWidth: 2,
     borderColor: '#FFFFFF',
     backgroundColor: '#F23D0A',
-    zIndex: 31,
   },
   badgeText: {
     color: '#FFFFFF',
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '800',
-    lineHeight: 13,
+    lineHeight: 12,
   },
 });
