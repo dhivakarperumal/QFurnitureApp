@@ -34,6 +34,18 @@ export default function Hero({
           resizeMode="cover"
         />
       ) : null}
+      {imageUri ? (
+        <View
+          pointerEvents="none"
+          className="absolute inset-y-0 left-0 w-1/2 overflow-hidden">
+          <Image
+            source={{ uri: imageUri }}
+            className="h-full w-[200%]"
+            blurRadius={50}
+            resizeMode="cover"
+          />
+        </View>
+      ) : null}
       <View pointerEvents="none" className="absolute inset-0">
         <Svg
           width="100%"
