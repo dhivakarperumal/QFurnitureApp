@@ -68,8 +68,16 @@ export default function Tabs({
                   accessibilityState={{ selected: active }}
                   accessibilityLabel={`Cart tab, ${cartCount} items`}
                   onPress={() => onTabPress('Cart')}
-                  className="h-[60px] w-[62px] items-center justify-center rounded-[18px] border border-white/80 bg-white shadow-sm">
-                  <ShoppingCart size={26} color="#F97316" strokeWidth={2.2} />
+                  className={`h-[60px] w-[62px] items-center justify-center rounded-[18px] border shadow-sm ${
+                    active
+                      ? 'border-white/80 bg-white'
+                      : 'border-white/40 bg-white/20'
+                  }`}>
+                  <ShoppingCart
+                    size={26}
+                    color={active ? '#F97316' : '#FFFFFF'}
+                    strokeWidth={2.2}
+                  />
                   {cartCount > 0 ? (
                     <View className="absolute right-[-3px] top-[-4px] h-[18px] min-w-[18px] items-center justify-center rounded-full border border-white bg-[#F45112] px-1">
                       <Text className="text-[10px] font-bold text-white">
