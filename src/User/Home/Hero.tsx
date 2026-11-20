@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { ArrowRight } from 'lucide-react-native';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import type { StoreBanner } from '../types';
@@ -21,21 +21,21 @@ export default function Hero({
 
   return (
     <View className="relative mx-4 mt-2 min-h-[210px] justify-center overflow-hidden rounded-[24px] border border-[#F6D4B2] bg-[#FFF0E1] px-4 py-3">
-      <Svg
-        pointerEvents="none"
-        width="100%"
-        height="100%"
-        viewBox="0 0 400 210"
-        preserveAspectRatio="none"
-        style={StyleSheet.absoluteFill}>
-        <Defs>
-          <LinearGradient id="heroOrangeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-            <Stop offset="0%" stopColor="#FFF7ED" />
-            <Stop offset="100%" stopColor="#FFD0A3" />
-          </LinearGradient>
-        </Defs>
-        <Rect width="400" height="210" fill="url(#heroOrangeGradient)" />
-      </Svg>
+      <View pointerEvents="none" className="absolute inset-0">
+        <Svg
+          width="100%"
+          height="100%"
+          viewBox="0 0 100 100"
+          preserveAspectRatio="none">
+          <Defs>
+            <LinearGradient id="heroOrangeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+              <Stop offset="0%" stopColor="#FFF7ED" />
+              <Stop offset="100%" stopColor="#FFD0A3" />
+            </LinearGradient>
+          </Defs>
+          <Rect width="100%" height="100%" fill="url(#heroOrangeGradient)" />
+        </Svg>
+      </View>
       <View className="w-full">
         <Text
           numberOfLines={3}
