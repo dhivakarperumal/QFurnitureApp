@@ -60,42 +60,16 @@ export default function Tabs({
         </View>
         {tabs.map(({ name, icon: Icon, label }) => {
           const active = activeTab === name;
-          if (name === 'Cart') {
-            return (
-              <View key={name} className="flex-1 items-center">
-                <Pressable
-                  accessibilityRole="tab"
-                  accessibilityState={{ selected: active }}
-                  accessibilityLabel={`Cart tab, ${cartCount} items`}
-                  onPress={() => onTabPress('Cart')}
-                  className={`h-[60px] w-[62px] items-center justify-center rounded-[18px] border shadow-sm ${
-                    active
-                      ? 'border-white/80 bg-white'
-                      : 'border-white/40 bg-white/20'
-                  }`}>
-                  <ShoppingCart
-                    size={26}
-                    color={active ? '#F97316' : '#FFFFFF'}
-                    strokeWidth={2.2}
-                  />
-                  {cartCount > 0 ? (
-                    <View className="absolute right-[-3px] top-[-4px] h-[18px] min-w-[18px] items-center justify-center rounded-full border border-white bg-[#F45112] px-1">
-                      <Text className="text-[10px] font-bold text-white">
-                        {cartCount}
-                      </Text>
-                    </View>
-                  ) : null}
-                </Pressable>
-              </View>
-            );
-          }
-
           return (
             <Pressable
               key={name}
               accessibilityRole="tab"
               accessibilityState={{ selected: active }}
-              accessibilityLabel={`${label} tab`}
+              accessibilityLabel={
+                name === 'Cart'
+                  ? `Cart tab, ${cartCount} items`
+                  : `${label} tab`
+              }
               onPress={() => onTabPress(name)}
               className={`relative h-[58px] flex-1 items-center justify-center rounded-[18px] ${
                 active ? 'border border-white bg-white' : ''
@@ -114,6 +88,13 @@ export default function Tabs({
                 }`}>
                 {label}
               </Text>
+              {name === 'Cart' && cartCount > 0 ? (
+                <View className="absolute right-1 top-1 h-[18px] min-w-[18px] items-center justify-center rounded-full border border-white bg-[#F45112] px-1">
+                  <Text className="text-[10px] font-bold text-white">
+                    {cartCount}
+                  </Text>
+                </View>
+              ) : null}
               {name === 'Combos' ? (
                 <View className="absolute bottom-[8px] right-[-1px] h-[20px] w-px bg-white/35" />
               ) : null}
