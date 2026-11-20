@@ -6,6 +6,7 @@ import {
   Pressable,
   RefreshControl,
   ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   View,
@@ -195,6 +196,23 @@ type DealerProps = {
 const pageSize = 25;
 const today = new Date().toISOString().slice(0, 10);
 const paymentMethods = ['Cash', 'UPI', 'Card', 'Bank Transfer', 'Cheque', 'Other'];
+const styles = StyleSheet.create({
+  addDealerFab: {
+    position: 'absolute',
+    right: 20,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F97316',
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+  },
+});
 const initialSummary: DealerSummary = {
   total: 0,
   active: 0,
@@ -324,6 +342,10 @@ export default function Dealer({
   onCreateInvoice,
 }: DealerProps) {
   const insets = useSafeAreaInsets();
+  const addDealerFabPosition = useMemo(
+    () => ({ bottom: Math.max(insets.bottom, 12) + 16 }),
+    [insets.bottom],
+  );
   const [dealers, setDealers] = useState<Dealer[]>([]);
   const [summary, setSummary] = useState<DealerSummary>(initialSummary);
   const [page, setPage] = useState(1);
@@ -898,7 +920,7 @@ export default function Dealer({
               </Pressable>
             </View>
           </View>
-          <View className="mt-3 flex-row gap-2">
+          <View className="mt-3">
             <Pressable
               disabled={exporting || !totalDealers}
               onPress={exportCsv}
@@ -907,12 +929,6 @@ export default function Dealer({
               <Text className="ml-2 text-xs font-bold text-[#475569]">
                 {exporting ? 'Exporting...' : 'Export CSV'}
               </Text>
-            </Pressable>
-            <Pressable
-              onPress={() => openDealerForm()}
-              className="flex-1 flex-row items-center justify-center rounded-xl bg-[#F97316] px-3 py-3">
-              <Plus size={17} color="white" />
-              <Text className="ml-2 text-xs font-bold text-white">Add dealer</Text>
             </Pressable>
           </View>
         </View>
@@ -974,6 +990,14 @@ export default function Dealer({
           </View>
         </View>
       </ScrollView>
+
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Add new dealer"
+        onPress={() => openDealerForm()}
+        style={[styles.addDealerFab, addDealerFabPosition]}>
+        <Plus size={26} color="#FFFFFF" strokeWidth={2.5} />
+      </Pressable>
 
       <DealerFormModal
         visible={modalOpen}
