@@ -43,15 +43,15 @@ export default function Hero({
           <Defs>
             <LinearGradient id="heroOrangeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
               <Stop offset="0%" stopColor="#FFF7ED" stopOpacity="0.78" />
-              <Stop offset="35%" stopColor="#FFD0A3" stopOpacity="0.22" />
-              <Stop offset="40%" stopColor="#FFD0A3" stopOpacity="0" />
+              <Stop offset="45%" stopColor="#FFD0A3" stopOpacity="0.22" />
+              <Stop offset="50%" stopColor="#FFD0A3" stopOpacity="0" />
               <Stop offset="100%" stopColor="#FFD0A3" stopOpacity="0" />
             </LinearGradient>
           </Defs>
           <Rect width="100%" height="100%" fill="url(#heroOrangeGradient)" />
         </Svg>
       </View>
-      <View className="w-[40%]">
+      <View className="w-[50%]">
         {offer ? (
           <Text className="mb-1 text-[11px] font-bold text-[#E87424]">
             {offer}
