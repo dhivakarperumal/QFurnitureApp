@@ -3,9 +3,9 @@ import { Pressable, Text, View } from 'react-native';
 import {
   Gift,
   Home,
+  Ellipsis,
   Search,
   ShoppingCart,
-  UserRound,
 } from 'lucide-react-native';
 import type { StoreTab } from './types';
 
@@ -21,7 +21,7 @@ const tabs = [
   { name: 'Explore', icon: Search, label: 'Explore' },
   { name: 'Cart', icon: ShoppingCart, label: 'Cart' },
   { name: 'Combos', icon: Gift, label: 'Combo' },
-  { name: 'Profile', icon: UserRound, label: 'Account' },
+  { name: 'Profile', icon: Ellipsis, label: 'More' },
 ] as const;
 
 export default function Tabs({

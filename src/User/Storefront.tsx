@@ -34,6 +34,7 @@ import ProfileScreen from './Account/ProfileScreen';
 import AddressesScreen from './Account/AddressesScreen';
 import OrdersScreen from './Account/OrdersScreen';
 import SetPasswordScreen from './Account/SetPasswordScreen';
+import { MoreMenu, MorePlaceholder, type MoreDestination } from './More';
 
 // ─── Inner page header (fixed, no main header / no bottom tabs) ───────────────
 function InnerPageHeader({
@@ -125,6 +126,8 @@ export default function Storefront({
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [accountSubScreen, setAccountSubScreen] =
     useState<AccountSubScreen>('menu');
+  const [moreDestination, setMoreDestination] =
+    useState<MoreDestination | 'menu'>('menu');
 
   const loadStore = useCallback(async () => {
     setLoading(true);
@@ -239,12 +242,18 @@ export default function Storefront({
     (tab: StoreTab) => {
       setDetailTarget(null);
       setCheckoutOpen(false);
-      if (tab !== 'Profile') setAccountSubScreen('menu');
+      if (tab !== 'Profile' || activeTab !== 'Profile') {
+        setAccountSubScreen('menu');
+        setMoreDestination('menu');
+      } else if (moreDestination === 'account') {
+        setAccountSubScreen('menu');
+        setMoreDestination('menu');
+      }
       setActiveTab(tab);
       if (tab === 'Cart') retryCart();
       if (tab === 'Favorites') retryFavorites();
     },
-    [retryCart, retryFavorites],
+    [activeTab, moreDestination, retryCart, retryFavorites],
   );
 
   useEffect(() => {
@@ -430,13 +439,20 @@ export default function Storefront({
   // ── Determine whether we're on an "inner page" ──────────────────────────────
   // Inner pages: product/combo detail view, or any account sub-screen
   const isDetailPage = Boolean(detailTarget);
+  const isMoreContentPage =
+    activeTab === 'Profile' &&
+    (moreDestination === 'about' || moreDestination === 'contact');
   const isAccountSubPage =
-    activeTab === 'Profile' && accountSubScreen !== 'menu';
-  const isInnerPage = isDetailPage || isAccountSubPage;
+    activeTab === 'Profile' &&
+    moreDestination === 'account' &&
+    accountSubScreen !== 'menu';
+  const isInnerPage = isDetailPage || isMoreContentPage || isAccountSubPage;
 
   // Title / subtitle shown in the inner header
   const innerPageTitle = (() => {
     if (isDetailPage) return detailTarget!.itemType === 'combo' ? 'Combo Details' : 'Product Details';
+    if (moreDestination === 'about') return 'About Us';
+    if (moreDestination === 'contact') return 'Contact Us';
     if (accountSubScreen === 'profile') return 'Profile';
     if (accountSubScreen === 'addresses') return 'Addresses';
     if (accountSubScreen === 'orders') return 'Your Orders';
@@ -455,6 +471,8 @@ export default function Storefront({
   const handleInnerBack = () => {
     if (isDetailPage) {
       setDetailTarget(null);
+    } else if (moreDestination === 'about' || moreDestination === 'contact') {
+      setMoreDestination('menu');
     } else {
       setAccountSubScreen('menu');
     }
@@ -589,7 +607,19 @@ export default function Storefront({
       );
     }
 
-    // Account tab
+    if (moreDestination === 'menu') {
+      return <MoreMenu onSelect={setMoreDestination} />;
+    }
+
+    if (moreDestination === 'about') {
+      return <MorePlaceholder message="About Us content will be added here." />;
+    }
+
+    if (moreDestination === 'contact') {
+      return <MorePlaceholder message="Contact Us details will be added here." />;
+    }
+
+    // My Account destination in the More tab
     return accountSubScreen === 'profile' ? (
       <ProfileScreen onBack={() => setAccountSubScreen('menu')} />
     ) : accountSubScreen === 'addresses' ? (
@@ -646,7 +676,13 @@ export default function Storefront({
         activeTab={activeTab}
         topInset={insets.top}
         onFavoritesPress={() => handleTabPress('Favorites')}
-        onProfilePress={() => handleTabPress('Profile')}
+        onProfilePress={() => {
+          setDetailTarget(null);
+          setCheckoutOpen(false);
+          setAccountSubScreen('menu');
+          setMoreDestination('account');
+          setActiveTab('Profile');
+        }}
         onLogoutPress={onLogoutPress}
       />
       {loading ? (
