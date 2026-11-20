@@ -132,6 +132,27 @@ function errorMessage(error: unknown) {
   return 'Could not load the shop. Please try again.';
 }
 
+function accountDeletionErrorMessage(error: unknown) {
+  if (typeof error === 'object' && error !== null) {
+    if (
+      'response' in error &&
+      typeof error.response === 'object' &&
+      error.response !== null &&
+      'data' in error.response &&
+      typeof error.response.data === 'object' &&
+      error.response.data !== null &&
+      'message' in error.response.data &&
+      typeof error.response.data.message === 'string'
+    ) {
+      return error.response.data.message;
+    }
+    if ('message' in error && typeof error.message === 'string') {
+      return error.message;
+    }
+  }
+  return 'Could not delete your account. Please try again.';
+}
+
 export default function Storefront({
   onLogoutPress,
 }: {
@@ -179,6 +200,7 @@ export default function Storefront({
     useState<MoreDestination | 'menu'>('menu');
   const [refreshing, setRefreshing] = useState(false);
   const [comboRefreshKey, setComboRefreshKey] = useState(0);
+  const [deletingAccount, setDeletingAccount] = useState(false);
 
   const loadStore = useCallback(async () => {
     setLoading(true);
@@ -323,6 +345,40 @@ export default function Storefront({
     },
     [activeTab, moreDestination, retryCart, retryFavorites],
   );
+
+  const deleteAccount = () => {
+    if (deletingAccount) return;
+    Alert.alert(
+      'Confirm account deletion',
+      'Are you sure you want to  delete your account?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete account',
+          style: 'destructive',
+          onPress: () => {
+            setDeletingAccount(true);
+            api
+              .delete('/users/me')
+              .then(() => {
+                Alert.alert(
+                  'Account deleted',
+                  'Your account has been deleted.',
+                  [{ text: 'OK', onPress: onLogoutPress }],
+                );
+              })
+              .catch(error => {
+                Alert.alert(
+                  'Delete failed',
+                  accountDeletionErrorMessage(error),
+                );
+              })
+              .finally(() => setDeletingAccount(false));
+          },
+        },
+      ],
+    );
+  };
 
   useEffect(() => {
     loadCart().catch(error => {
@@ -879,7 +935,11 @@ export default function Storefront({
 
     // My Account destination in the More tab
     return accountSubScreen === 'profile' ? (
-      <ProfileScreen onBack={() => setAccountSubScreen('menu')} />
+      <ProfileScreen
+        onBack={() => setAccountSubScreen('menu')}
+        onDeleteAccount={deleteAccount}
+        deletingAccount={deletingAccount}
+      />
     ) : accountSubScreen === 'addresses' ? (
       <AddressesScreen onBack={() => setAccountSubScreen('menu')} />
     ) : accountSubScreen === 'orders' ? (
@@ -889,6 +949,8 @@ export default function Storefront({
     ) : (
       <AccountScreen
         onLogoutPress={onLogoutPress}
+        onDeleteAccount={deleteAccount}
+        deletingAccount={deletingAccount}
         onSubScreenChange={screen => setAccountSubScreen(screen)}
       />
     );

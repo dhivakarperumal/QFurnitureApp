@@ -16,6 +16,7 @@ import {
   LogOut,
   MapPin,
   PackageCheck,
+  Trash2,
   UserRound,
 } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -40,6 +41,8 @@ type UserProfile = {
 
 type AccountScreenProps = {
   onLogoutPress: () => void;
+  onDeleteAccount: () => void;
+  deletingAccount: boolean;
   onSubScreenChange?: (screen: AccountSubScreen) => void;
 };
 
@@ -67,6 +70,8 @@ function getInitials(name: string) {
 
 export default function AccountScreen({
   onLogoutPress,
+  onDeleteAccount,
+  deletingAccount,
   onSubScreenChange,
 }: AccountScreenProps) {
   const insets = useSafeAreaInsets();
@@ -249,6 +254,26 @@ export default function AccountScreen({
         </View>
         <Text className="ml-3 flex-1 text-[15px] font-semibold text-[#B94719]">Logout</Text>
         <ChevronRight size={18} color="#B94719" />
+      </Pressable>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Delete account"
+        accessibilityState={{ disabled: deletingAccount }}
+        disabled={deletingAccount}
+        onPress={onDeleteAccount}
+        className="mx-4 mt-3 flex-row items-center rounded-[16px] border border-[#FECACA] bg-[#FEF2F2] px-5 py-4 disabled:opacity-60"
+      >
+        <View className="h-[38px] w-[38px] items-center justify-center rounded-full bg-[#FEE2E2]">
+          {deletingAccount ? (
+            <ActivityIndicator size="small" color="#DC2626" />
+          ) : (
+            <Trash2 size={18} color="#DC2626" />
+          )}
+        </View>
+        <Text className="ml-3 flex-1 text-[15px] font-semibold text-[#B91C1C]">
+          {deletingAccount ? 'Deleting account...' : 'Delete Account'}
+        </Text>
+        <ChevronRight size={18} color="#DC2626" />
       </Pressable>
     </ScrollView>
   );

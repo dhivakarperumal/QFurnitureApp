@@ -10,6 +10,7 @@ import {
 import { Armchair, Heart, ShoppingCart, Star } from 'lucide-react-native';
 import api from '../api';
 import type { StoreProduct } from './types';
+import ReviewForm from './ReviewForm';
 import {
   formatPrice,
   mediaUrl,
@@ -35,16 +36,28 @@ export type ItemDetailsProps = {
   onBuyNow?: (productId: string) => void;
 };
 
-function getErrorMessage(error: unknown) {
-  if (
-    typeof error === 'object' &&
-    error !== null &&
-    'message' in error &&
-    typeof error.message === 'string'
-  ) {
-    return error.message;
+function getErrorMessage(
+  error: unknown,
+  fallback = 'Could not load item details. Please try again.',
+) {
+  if (typeof error === 'object' && error !== null) {
+    if (
+      'response' in error &&
+      typeof error.response === 'object' &&
+      error.response !== null &&
+      'data' in error.response &&
+      typeof error.response.data === 'object' &&
+      error.response.data !== null &&
+      'message' in error.response.data &&
+      typeof error.response.data.message === 'string'
+    ) {
+      return error.response.data.message;
+    }
+    if ('message' in error && typeof error.message === 'string') {
+      return error.message;
+    }
   }
-  return 'Could not load item details. Please try again.';
+  return fallback;
 }
 
 function getGallery(item: DetailItem) {
@@ -120,7 +133,6 @@ export default function ItemDetails({
       : [];
   const description =
     item?.description?.trim() || item?.long_description?.trim() || '';
-
   return (
     <View className="px-4 pb-8 pt-3">
 
@@ -257,6 +269,15 @@ export default function ItemDetails({
               ))}
             </View>
           ) : null}
+
+          <ReviewForm
+            itemId={
+              itemType === 'combo'
+                ? item.combo_id ?? item.id ?? itemId
+                : item.product_id ?? item.id ?? itemId
+            }
+            itemType={itemType}
+          />
 
           {itemType === 'combo' ? (
             <View className="mt-5 flex-row">

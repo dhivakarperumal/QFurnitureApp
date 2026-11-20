@@ -9,7 +9,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { Camera, Check, UserRound, X } from 'lucide-react-native';
+import { Camera, Check, Trash2, UserRound, X } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '../../api';
@@ -26,6 +26,8 @@ type Profile = {
 
 type ProfileScreenProps = {
   onBack: () => void;
+  onDeleteAccount: () => void;
+  deletingAccount: boolean;
 };
 
 function getInitials(name: string) {
@@ -75,7 +77,11 @@ function InputField({
   );
 }
 
-export default function ProfileScreen({ onBack }: ProfileScreenProps) {
+export default function ProfileScreen({
+  onBack,
+  onDeleteAccount,
+  deletingAccount,
+}: ProfileScreenProps) {
   const insets = useSafeAreaInsets();
   const showUserAlert = useUserAlert();
   const [profile, setProfile] = useState<Profile>({
@@ -315,6 +321,23 @@ export default function ProfileScreen({ onBack }: ProfileScreenProps) {
             </>
           )}
         </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Delete account"
+          accessibilityState={{ disabled: deletingAccount }}
+          disabled={deletingAccount}
+          onPress={onDeleteAccount}
+          className="mx-5 mt-2 flex-row items-center justify-center rounded-[14px] border border-[#FECACA] bg-[#FEF2F2] py-4 disabled:opacity-60"
+        >
+          {deletingAccount ? (
+            <ActivityIndicator size="small" color="#DC2626" />
+          ) : (
+            <Trash2 size={17} color="#DC2626" />
+          )}
+          <Text className="ml-2 text-[14px] font-bold text-[#B91C1C]">
+            {deletingAccount ? 'Deleting account...' : 'Delete Account'}
+          </Text>
+        </Pressable>
       </ScrollView>
     </View>
   );

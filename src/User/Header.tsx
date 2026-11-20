@@ -22,7 +22,7 @@ export default function Header({
   onLogoutPress,
 }: HeaderProps) {
   const [profileMenuVisible, setProfileMenuVisible] = useState(false);
-  const [userName, setUserName] = useState('My Account');
+  const [userName, setUserName] = useState('');
   const [userEmail, setUserEmail] = useState('');
 
   useEffect(() => {
@@ -53,11 +53,12 @@ export default function Header({
 
       if (typeof user !== 'object' || user === null) return;
       const name =
-        'name' in user && typeof user.name === 'string'
+        ('name' in user && typeof user.name === 'string'
           ? user.name.trim()
-          : 'username' in user && typeof user.username === 'string'
-            ? user.username.trim()
-            : '';
+          : '') ||
+        ('username' in user && typeof user.username === 'string'
+          ? user.username.trim()
+          : '');
       const email =
         'email' in user && typeof user.email === 'string'
           ? user.email.trim()
@@ -73,6 +74,7 @@ export default function Header({
       mounted = false;
     };
   }, []);
+  const userInitial = userName.trim().charAt(0).toUpperCase();
 
   return (
     <ImageBackground
@@ -130,13 +132,19 @@ export default function Header({
             accessibilityState={{ expanded: profileMenuVisible }}
             onPress={() => setProfileMenuVisible(visible => !visible)}
             className="h-[42px] w-[42px] items-center justify-center rounded-full bg-white/15">
-            <UserRound size={22} color="#FFFFFF" />
+            {userInitial ? (
+              <Text className="text-[18px] font-black text-white">
+                {userInitial}
+              </Text>
+            ) : (
+              <UserRound size={22} color="#FFFFFF" />
+            )}
           </Pressable>
           {profileMenuVisible ? (
             <View className="absolute right-0 top-[50px] z-[30] w-[230px] rounded-[12px] border border-[#E5E7EB] bg-white p-2 shadow-lg elevation-[12]">
               <View className="border-b border-[#E5E7EB] px-2 pb-2">
                 <Text numberOfLines={1} className="text-[14px] font-bold text-[#17191C]">
-                  {userName}
+                  {userName || 'My Account'}
                 </Text>
                 <Text numberOfLines={1} className="mt-1 text-[12px] text-[#6B7280]">
                   {userEmail || 'Email unavailable'}

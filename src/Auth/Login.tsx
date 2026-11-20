@@ -233,7 +233,7 @@ export default function Login({ onLogin, onRegisterPress }: LoginProps) {
               accessibilityLabel="Continue with Google"
               onPress={handleGoogleLogin}
               disabled={submitting || googleSubmitting}
-              className="mt-5 h-[52px] flex-row items-center justify-center rounded-[12px] border border-[#D1D5DB] bg-white disabled:opacity-60">
+              className="mt-5 h-[52px] w-full flex-row items-center justify-center rounded-[12px] border border-[#D1D5DB] bg-white disabled:opacity-60">
               {googleSubmitting ? (
                 <ActivityIndicator color="#4285F4" />
               ) : (
@@ -241,8 +241,7 @@ export default function Login({ onLogin, onRegisterPress }: LoginProps) {
                   <Svg
                     width={22}
                     height={22}
-                    viewBox="0 0 24 24"
-                    className="mr-3">
+                    viewBox="0 0 24 24">
                     <Path
                       fill="#4285F4"
                       d="M23.49 12.27c0-.79-.07-1.55-.2-2.27H12v4.3h6.44a5.5 5.5 0 0 1-2.39 3.61v2.95h3.88c2.27-2.09 3.56-5.17 3.56-8.59Z"
@@ -260,7 +259,7 @@ export default function Login({ onLogin, onRegisterPress }: LoginProps) {
                       d="M12 4.72c1.77 0 3.35.61 4.6 1.8l3.45-3.45C17.95 1.13 15.24 0 12 0A12 12 0 0 0 1.26 6.64l4.01 3.04C6.22 6.83 8.87 4.72 12 4.72Z"
                     />
                   </Svg>
-                  <Text className="text-[15px] font-bold text-[#202124]">
+                  <Text className="ml-3 text-[15px] font-bold text-[#202124]">
                     Continue with Google
                   </Text>
                 </>

@@ -1,6 +1,11 @@
 import React from 'react';
 import { Pressable, Text, View } from 'react-native';
-import { ChevronRight, Info, Mail, UserRound } from 'lucide-react-native';
+import {
+  ChevronRight,
+  Info,
+  Mail,
+  UserRound,
+} from 'lucide-react-native';
 
 export type MoreDestination = 'account' | 'about' | 'contact';
 
@@ -17,10 +22,6 @@ const menuItems = [
 export function MoreMenu({ onSelect }: MoreMenuProps) {
   return (
     <View className="flex-1 bg-[#FCFAF7] px-4 pt-5">
-      <Text className="mb-1 text-[22px] font-black text-[#351D0E]">More</Text>
-      <Text className="mb-5 text-[13px] text-[#8B735E]">
-        Your account and Q Living information
-      </Text>
       <View className="overflow-hidden rounded-[16px] border border-[#F0E7DE] bg-white">
         {menuItems.map(({ destination, label, icon: Icon }, index) => (
           <Pressable
