@@ -17,12 +17,11 @@ export default function Hero({
 }: HeroProps) {
   const banner = banners[activeIndex];
   const title = banner?.title?.trim();
-  const description =
-    banner?.subtitle?.trim() ||
-    banner?.description?.trim() ||
-    banner?.offer?.trim();
+  const subtitle = banner?.subtitle?.trim();
+  const description = banner?.description?.trim();
+  const offer = banner?.offer?.trim();
 
-  if (!title && !description) return null;
+  if (!title && !subtitle && !description && !offer) return null;
 
   return (
     <View className="relative mx-4 mt-2 min-h-[210px] justify-center overflow-hidden rounded-[24px] border border-[#F6D4B2] bg-[#FFF0E1] px-4 py-3">
@@ -42,11 +41,21 @@ export default function Hero({
         </Svg>
       </View>
       <View className="w-full">
+        {offer ? (
+          <Text className="mb-1 text-[11px] font-bold text-[#E87424]">
+            {offer}
+          </Text>
+        ) : null}
         {title ? (
           <Text
             numberOfLines={3}
             className="text-[22px] font-black leading-[26px] text-[#263B2A]">
             {title}
+          </Text>
+        ) : null}
+        {subtitle ? (
+          <Text className="mt-1 text-[14px] font-semibold leading-[18px] text-[#E87424]">
+            {subtitle}
           </Text>
         ) : null}
         {description ? (
