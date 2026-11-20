@@ -3,12 +3,52 @@ import { Pressable, Text, View } from 'react-native';
 import {
   Armchair,
   Boxes,
-  Grid2X2,
-  Home,
   ShoppingCart,
 } from 'lucide-react-native';
-import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
+import Svg, { Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 import type { StoreTab } from './types';
+
+type TabIconProps = {
+  size?: number;
+  color?: string;
+};
+
+function HomeTabIcon({ size = 24, color = '#FFFFFF' }: TabIconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Path
+        d="M3 10 12 3l9 7M5 9v12h14V9M9 21v-6h6v6"
+        fill="none"
+        stroke={color}
+        strokeWidth={2.2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+function MoreTabIcon({ size = 24, color = '#FFFFFF' }: TabIconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      {[3.5, 14.5].flatMap(x =>
+        [3.5, 14.5].map(y => (
+          <Rect
+            key={`${x}-${y}`}
+            x={x}
+            y={y}
+            width={6}
+            height={6}
+            rx={0.7}
+            fill="none"
+            stroke={color}
+            strokeWidth={2.2}
+          />
+        )),
+      )}
+    </Svg>
+  );
+}
 
 type TabsProps = {
   activeTab: StoreTab;
@@ -18,11 +58,11 @@ type TabsProps = {
 };
 
 const tabs = [
-  { name: 'Home', icon: Home, label: 'Home' },
+  { name: 'Home', icon: HomeTabIcon, label: 'Home' },
   { name: 'Shop', icon: Armchair, label: 'Shop' },
   { name: 'Cart', icon: ShoppingCart, label: 'Cart' },
   { name: 'Combos', icon: Boxes, label: 'Combo' },
-  { name: 'Profile', icon: Grid2X2, label: 'More' },
+  { name: 'Profile', icon: MoreTabIcon, label: 'More' },
 ] as const;
 
 export default function Tabs({
