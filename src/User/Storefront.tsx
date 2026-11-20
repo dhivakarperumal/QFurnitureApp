@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Alert,
   BackHandler,
   Pressable,
   RefreshControl,
@@ -38,7 +37,7 @@ import ProfileScreen from './Account/ProfileScreen';
 import AddressesScreen from './Account/AddressesScreen';
 import OrdersScreen from './Account/OrdersScreen';
 import SetPasswordScreen from './Account/SetPasswordScreen';
-import { MoreMenu, MorePlaceholder, type MoreDestination } from './More';
+import { MoreMenu, type MoreDestination } from './More';
 import AboutUs from './AboutUs';
 import ContactUs from './ContactUs';
 import { setUserNavigationBarAppearance } from '../services/navigationBar';
@@ -423,23 +422,6 @@ export default function Storefront({
     await loadStore(true);
     setRefreshing(false);
   }, [loadStore]);
-
-  const handleRefresh = useCallback(async () => {
-    setRefreshing(true);
-    try {
-      if (activeTab === 'Home' || activeTab === 'Shop') {
-        await loadStore();
-      } else if (activeTab === 'Cart') {
-        await loadCart();
-      } else if (activeTab === 'Favorites') {
-        await loadFavorites();
-      } else if (activeTab === 'Combos') {
-        setComboRefreshKey(k => k + 1);
-      }
-    } finally {
-      setRefreshing(false);
-    }
-  }, [activeTab, loadStore, loadCart, loadFavorites]);
 
   const handleTabPress = useCallback(
     (tab: StoreTab) => {
