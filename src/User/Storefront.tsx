@@ -644,9 +644,9 @@ export default function Storefront({
   return (
     <View className="flex-1 bg-[#FCFAF7]">
       <StatusBar barStyle="light-content" />
-      <View style={{ height: insets.top }} className="bg-[#F45B00]" />
       <Header
         activeTab={activeTab}
+        topInset={insets.top}
         onFavoritesPress={() => handleTabPress('Favorites')}
         onProfilePress={() => handleTabPress('Profile')}
       />
