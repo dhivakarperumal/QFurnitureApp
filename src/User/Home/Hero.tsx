@@ -1,6 +1,7 @@
 import React from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { ArrowRight } from 'lucide-react-native';
+import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import type { StoreBanner } from '../types';
 import { mediaUrl } from '../utils';
 
@@ -29,7 +30,22 @@ export default function Hero({
           resizeMode="cover"
         />
       ) : null}
-      <View pointerEvents="none" className="absolute inset-0 bg-black/40" />
+      <Svg
+        pointerEvents="none"
+        width="100%"
+        height="100%"
+        viewBox="0 0 400 320"
+        preserveAspectRatio="none"
+        style={StyleSheet.absoluteFill}>
+        <Defs>
+          <LinearGradient id="heroTextFade" x1="0%" y1="0%" x2="100%" y2="0%">
+            <Stop offset="0%" stopColor="#000000" stopOpacity="0.62" />
+            <Stop offset="60%" stopColor="#000000" stopOpacity="0.42" />
+            <Stop offset="100%" stopColor="#000000" stopOpacity="0" />
+          </LinearGradient>
+        </Defs>
+        <Rect width="400" height="320" fill="url(#heroTextFade)" />
+      </Svg>
       <View className="w-[70%]">
         <View className="self-start rounded-full border border-white/60 bg-black/25 px-3 py-2">
           <Text className="text-[10px] font-bold uppercase tracking-[1.3px] text-white">
