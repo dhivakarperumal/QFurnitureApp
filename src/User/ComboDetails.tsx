@@ -50,6 +50,7 @@ type ComboDetailsProps = {
   relatedProducts?: StoreProduct[];
   favoriteIds?: string[];
   onProductPress?: (productId: string) => void;
+  onNameLoaded?: (name: string) => void;
 };
 
 function getErrorMessage(error: unknown) {
@@ -83,6 +84,7 @@ export default function ComboDetails({
   relatedProducts = [],
   favoriteIds = [],
   onProductPress,
+  onNameLoaded,
 }: ComboDetailsProps) {
   const { width } = useWindowDimensions();
   const cacheKey = `user.detail.combo.${itemId}`;

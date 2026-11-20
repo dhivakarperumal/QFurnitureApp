@@ -4,7 +4,6 @@ import {
   Image,
   Pressable,
   RefreshControl,
-  RefreshControl,
   ScrollView,
   Text,
   View,
@@ -101,7 +100,7 @@ export default function AccountScreen({
     () => !hasCachedApiData(PROFILE_CACHE_KEY),
   );
   const [refreshing, setRefreshing] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
+ 
 
   const loadProfile = useCallback(async (forceRefresh = false) => {
     try {
@@ -165,15 +164,6 @@ export default function AccountScreen({
     }
   }, []);
 
-  const handleRefresh = useCallback(async () => {
-    setRefreshing(true);
-    try {
-      await Promise.all([loadProfile(), loadOrderCount()]);
-    } finally {
-      setRefreshing(false);
-    }
-  }, [loadProfile, loadOrderCount]);
-
   useEffect(() => {
     loadProfile();
     loadOrderCount();
@@ -181,8 +171,11 @@ export default function AccountScreen({
 
   const refreshAccount = async () => {
     setRefreshing(true);
-    await Promise.all([loadProfile(true), loadOrderCount(true)]);
-    setRefreshing(false);
+    try {
+      await Promise.all([loadProfile(true), loadOrderCount(true)]);
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const displayName = profile.name || 'My Account';
@@ -198,21 +191,12 @@ export default function AccountScreen({
 
   return (
     <ScrollView
-     
       showsVerticalScrollIndicator={false}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={refreshAccount}
-          tintColor="#F97316"
-        />
-      }
-     
       contentContainerStyle={{ paddingBottom: Math.max(insets.bottom + 65, 100) }}
       refreshControl={
         <RefreshControl
           refreshing={refreshing}
-          onRefresh={handleRefresh}
+          onRefresh={refreshAccount}
           colors={['#F97316']}
           tintColor="#F97316"
         />

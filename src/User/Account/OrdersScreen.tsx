@@ -5,7 +5,6 @@ import {
   Modal,
   Pressable,
   RefreshControl,
-  RefreshControl,
   ScrollView,
   Text,
   View,
@@ -391,6 +390,10 @@ export default function OrdersScreen({ onBack: _onBack }: OrdersScreenProps) {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
   const [filter, setFilter] = useState<OrderFilter>('All Orders');
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [orderDetailsLoading, setOrderDetailsLoading] = useState(false);
+  const [orderDetailsError, setOrderDetailsError] = useState('');
+  const [orderDetailsRetry, setOrderDetailsRetry] = useState(0);
 
   const loadOrders = useCallback(async (forceRefresh = false) => {
     if (!hasCachedApiData(ORDERS_CACHE_KEY)) setLoading(true);
@@ -420,7 +423,7 @@ export default function OrdersScreen({ onBack: _onBack }: OrdersScreenProps) {
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      await loadOrders();
+      await loadOrders(true);
     } finally {
       setRefreshing(false);
     }
@@ -429,12 +432,6 @@ export default function OrdersScreen({ onBack: _onBack }: OrdersScreenProps) {
   useEffect(() => {
     loadOrders();
   }, [loadOrders]);
-
-  const refreshOrders = async () => {
-    setRefreshing(true);
-    await loadOrders(true);
-    setRefreshing(false);
-  };
 
   const selectedOrderId = selectedOrder?.id;
   useEffect(() => {
@@ -527,7 +524,7 @@ export default function OrdersScreen({ onBack: _onBack }: OrdersScreenProps) {
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
-              onRefresh={refreshOrders}
+              onRefresh={handleRefresh}
               tintColor="#F97316"
             />
           }
@@ -548,7 +545,7 @@ export default function OrdersScreen({ onBack: _onBack }: OrdersScreenProps) {
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
-              onRefresh={refreshOrders}
+              onRefresh={handleRefresh}
               tintColor="#F97316"
             />
           }
@@ -567,13 +564,6 @@ export default function OrdersScreen({ onBack: _onBack }: OrdersScreenProps) {
       ) : (
         <ScrollView
           showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={refreshOrders}
-              tintColor="#F97316"
-            />
-          }
           contentContainerClassName="px-4 py-4"
           contentContainerStyle={{ paddingBottom: Math.max(insets.bottom + 65, 100) }}
           refreshControl={

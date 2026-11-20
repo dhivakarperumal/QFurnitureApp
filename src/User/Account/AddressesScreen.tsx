@@ -356,7 +356,6 @@ export default function AddressesScreen({ onBack: _onBack }: AddressesScreenProp
   const [draft, setDraft] = useState<AddressDraft>(emptyDraft());
   const [formError, setFormError] = useState('');
   const [saving, setSaving] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
 
   // User info for pre-filling
   const [userName, setUserName] = useState('');
@@ -402,7 +401,7 @@ export default function AddressesScreen({ onBack: _onBack }: AddressesScreenProp
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      await loadAddresses();
+      await loadAddresses(true);
     } finally {
       setRefreshing(false);
     }
@@ -503,12 +502,6 @@ export default function AddressesScreen({ onBack: _onBack }: AddressesScreenProp
     }
   };
 
-  const refreshAddresses = async () => {
-    setRefreshing(true);
-    await loadAddresses(true);
-    setRefreshing(false);
-  };
-
   return (
     <View className="flex-1 bg-[#FCFAF7]">
       {loading ? (
@@ -527,7 +520,7 @@ export default function AddressesScreen({ onBack: _onBack }: AddressesScreenProp
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
-              onRefresh={() => refreshAddresses()}
+              onRefresh={handleRefresh}
               tintColor="#F97316"
             />
           }
@@ -546,13 +539,6 @@ export default function AddressesScreen({ onBack: _onBack }: AddressesScreenProp
       ) : (
         <ScrollView
           showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={() => refreshAddresses()}
-              tintColor="#F97316"
-            />
-          }
           contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 20, paddingBottom: Math.max(insets.bottom, 100) }}
           refreshControl={
             <RefreshControl

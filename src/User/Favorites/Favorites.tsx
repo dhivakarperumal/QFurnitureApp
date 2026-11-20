@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
- 
+  ActivityIndicator,
   Image,
   Pressable,
   RefreshControl,
@@ -119,41 +119,6 @@ export default function Favorites({
           </Pressable>
         </View>
       ) : favorites.length ? (
-        <>
-          {error ? (
-            <View className="mb-3 rounded-[14px] bg-[#FFF0E1] p-3">
-              <Text className="text-[12px] text-[#8B2D20]">{error}</Text>
-              <Pressable
-                accessibilityRole="button"
-                onPress={onRetry}
-                className="mt-2 self-start"
-              >
-                <Text className="text-[12px] font-bold text-[#9B4E17]">
-                  Try again
-                </Text>
-              </Pressable>
-            </View>
-          ) : null}
-          <View className="flex-row flex-wrap justify-between">
-            {favorites.map(item => {
-              const product =
-                item.item_type === 'combo'
-                  ? { ...item, id: `combo-${item.combo_id ?? item.id}` }
-                  : item;
-              return (
-                <ProductCard
-                  key={`${product.item_type ?? 'product'}-${product.id}`}
-                  product={product}
-                  favorite={favoriteIds.includes(String(product.id))}
-                  compact
-                  onFavoritePress={onFavoritePress}
-                  onAddToCart={onAddToCart}
-                  onProductPress={onProductPress}
-                />
-              );
-            })}
-          </View>
-        </>
         <>
           <ScrollView
             className="flex-1"

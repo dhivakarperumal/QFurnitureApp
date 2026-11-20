@@ -110,7 +110,6 @@ export default function ProfileScreen({
   const [refreshing, setRefreshing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  const [refreshing, setRefreshing] = useState(false);
 
   const loadProfile = useCallback(async (forceRefresh = false) => {
     if (!hasCachedApiData(PROFILE_CACHE_KEY)) {
@@ -170,7 +169,7 @@ export default function ProfileScreen({
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      await loadProfile();
+      await loadProfile(true);
     } finally {
       setRefreshing(false);
     }
@@ -179,12 +178,6 @@ export default function ProfileScreen({
   useEffect(() => {
     loadProfile();
   }, [loadProfile]);
-
-  const refreshProfile = async () => {
-    setRefreshing(true);
-    await loadProfile(true);
-    setRefreshing(false);
-  };
 
   const saveProfile = async () => {
     if (!profile.name.trim()) {
@@ -246,13 +239,6 @@ export default function ProfileScreen({
       <ScrollView
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={refreshProfile}
-            tintColor="#F97316"
-          />
-        }
         contentContainerStyle={{ paddingBottom: Math.max(insets.bottom + 65, 100) }}
         refreshControl={
           <RefreshControl

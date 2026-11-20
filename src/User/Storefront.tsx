@@ -4,7 +4,6 @@ import {
   BackHandler,
   Pressable,
   RefreshControl,
-  RefreshControl,
   ScrollView,
   StatusBar,
   Text,
@@ -236,8 +235,6 @@ export default function Storefront({
     useState<AccountSubScreen>('menu');
   const [moreDestination, setMoreDestination] =
     useState<MoreDestination | 'menu'>('menu');
-  const [refreshing, setRefreshing] = useState(false);
-  const [comboRefreshKey, setComboRefreshKey] = useState(0);
   const [deletingAccount, setDeletingAccount] = useState(false);
 
   const loadStore = useCallback(async (forceRefresh = false) => {
@@ -569,19 +566,15 @@ export default function Storefront({
             ? `/favorites/combos/${numericId}`
             : `/favorites/${numericId}`,
         );
-        setFavoriteItems(current =>
-          current.filter(item => favoriteKey(item) !== productId),
-        );
       } else if (isCombo) {
         await api.post(`/favorites/combos/${numericId}`);
-        await loadFavorites();
       } else {
         await api.post('/favorites', { product_id: numericId });
-        await loadFavorites(true);
+      }
+      await loadFavorites(true);
       showUserToast(
         `${name} ${savedFavorite ? 'removed from wishlist' : 'added to wishlist'}`,
       );
-      }
     } catch (error) {
       showUserAlert('Favorites could not be updated', errorMessage(error));
     } finally {
@@ -589,10 +582,6 @@ export default function Storefront({
     }
   };
 
-  const addToCart = async (
-    productId: string,
-    productName?: string,
-  ): Promise<boolean> => {
   const confirmRemoveFavorite = (productId: string) => {
     const favorite = favoriteItems.find(
       item => favoriteKey(item) === productId,
@@ -675,11 +664,14 @@ export default function Storefront({
 
   const addToCart = async (
     productId: string,
-    options: { refreshCart?: boolean; showError?: boolean } = {},
+    input?:
+      | string
+      | { refreshCart?: boolean; showError?: boolean },
   ): Promise<boolean> => {
+    const options = typeof input === 'object' && input !== null ? input : {};
     if (pendingCartIds.includes(productId)) return false;
     setPendingCartIds(current => [...current, productId]);
-    let name = productName?.trim();
+    let name = typeof input === 'string' ? input.trim() : undefined;
     try {
       if (productId.startsWith('combo-')) {
         const comboId = Number(productId.replace(/^combo-/, ''));
@@ -766,55 +758,7 @@ export default function Storefront({
 
       if (addedCount > 0) {
         try {
-          await loadCart();
-        } catch (error) {
-          showUserAlert('Cart could not be refreshed', errorMessage(error));
-          return;
-        }
-      }
-
-      if (failedCount > 0) {
-        showUserAlert(
-          'Some favorites could not be added',
-          `${addedCount} added, ${failedCount} could not be added. Check availability and try again.`,
-        );
-      } else {
-        showUserAlert(
-          'Added to cart',
-          `${addedCount} favorite ${addedCount === 1 ? 'item was' : 'items were'} added to your cart.`,
-        );
-      }
-    } finally {
-      setAddingFavoritesToCart(false);
-    }
-  };
-
-  const addAllFavoritesToCart = async () => {
-    if (
-      !favoriteItems.length ||
-      addingFavoritesToCart ||
-      clearingFavorites ||
-      pendingCartIds.length > 0
-    ) {
-      return;
-    }
-
-    setAddingFavoritesToCart(true);
-    let addedCount = 0;
-    let failedCount = 0;
-    try {
-      for (const favorite of favoriteItems) {
-        const added = await addToCart(favoriteKey(favorite), {
-          refreshCart: false,
-          showError: false,
-        });
-        if (added) addedCount += 1;
-        else failedCount += 1;
-      }
-
-      if (addedCount > 0) {
-        try {
-          await loadCart();
+          await loadCart(true);
         } catch (error) {
           showUserAlert('Cart could not be refreshed', errorMessage(error));
           return;
@@ -1116,7 +1060,6 @@ export default function Storefront({
           onProductPress={openItemDetails}
           refreshing={refreshing}
           onRefresh={retryStore}
-          onRefresh={() => { loadStore(); }}
         />
       );
     }
