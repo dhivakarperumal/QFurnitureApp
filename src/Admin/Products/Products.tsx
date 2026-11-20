@@ -94,6 +94,8 @@ type ProductsProps = {
   onActionPress?: (label: string) => void;
   onDetailsVisibilityChange?: (visible: boolean) => void;
   onScrollVisibilityChange?: (visible: boolean) => void;
+  /** Called by the parent's hardware back handler; return true if consumed. */
+  onHardwareBackRef?: React.MutableRefObject<(() => boolean) | null>;
 };
 
 const formatRupees = (value: number) => `₹${value.toLocaleString('en-IN')}`;
@@ -324,6 +326,7 @@ export default function Products({
   onActionPress,
   onDetailsVisibilityChange,
   onScrollVisibilityChange,
+  onHardwareBackRef,
 }: ProductsProps) {
   const insets = useSafeAreaInsets();
   const lastScrollY = useRef(0);
@@ -355,6 +358,18 @@ export default function Products({
     () => () => onDetailsVisibilityChange?.(false),
     [onDetailsVisibilityChange],
   );
+
+  // Register hardware-back handler so the parent (App.tsx) can close detail view
+  useEffect(() => {
+    if (!onHardwareBackRef) return;
+    onHardwareBackRef.current = () => {
+      if (productDetailsVisible) {
+        hideProductDetails();
+        return true;
+      }
+      return false;
+    };
+  });
 
   const fetchProducts = useCallback(async (refresh = false) => {
     if (refresh) {

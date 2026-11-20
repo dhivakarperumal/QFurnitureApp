@@ -1,6 +1,5 @@
 import React from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
-import {
+import { Pressable, ScrollView, Text, View } from 'react-native';import {
   BarChart3,
   Boxes,
   ChevronRight,
@@ -35,6 +34,8 @@ type MoreProps = {
   onDetailsVisibilityChange?: (visible: boolean) => void;
   initialScreen?: 'menu' | 'categories' | 'users' | 'stock' | 'offers';
   screenRequestId?: number;
+  /** Called by the parent's hardware back handler; return true if consumed. */
+  onHardwareBackRef?: React.MutableRefObject<(() => boolean) | null>;
 };
 
 export default function More({
@@ -42,6 +43,7 @@ export default function More({
   onDetailsVisibilityChange,
   initialScreen,
   screenRequestId = 0,
+  onHardwareBackRef,
 }: MoreProps) {
   const insets = useSafeAreaInsets();
   const lastScrollY = React.useRef(0);
@@ -263,6 +265,26 @@ export default function More({
     reportsOpen ||
     invoiceOpen ||
     dealersOpen;
+
+  // Register hardware-back handler so the parent (App.tsx) can close sub-screens
+  React.useEffect(() => {
+    if (!onHardwareBackRef) return;
+    onHardwareBackRef.current = () => {
+      if (invoiceOpen) { closeInvoice(); return true; }
+      if (dealersOpen) { closeDealers(); return true; }
+      if (categoriesOpen) { closeCategories(); return true; }
+      if (usersOpen) { closeUsers(); return true; }
+      if (stockOpen) { closeStock(); return true; }
+      if (profileOpen) { closeProfile(); return true; }
+      if (reviewsOpen) { closeReviews(); return true; }
+      if (offersOpen) { closeOffers(); return true; }
+      if (offerManagementOpen) { closeOfferManagement(); return true; }
+      if (couponsOpen) { closeCoupons(); return true; }
+      if (videosOpen) { closeVideos(); return true; }
+      if (reportsOpen) { closeReports(); return true; }
+      return false;
+    };
+  });
   return (
     <View className="flex-1">
       <KeepAliveScreen active={!detailOpen}>

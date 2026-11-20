@@ -5,10 +5,9 @@
  * @format
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   BackHandler,
   StatusBar,
   useColorScheme,
@@ -39,6 +38,10 @@ import Register from './src/Auth/Register';
 import { normalizeRole, type AppRole } from './src/Auth/roles';
 import Storefront from './src/User/Storefront';
 import { UserAlertProvider } from './src/User/UserAlert';
+import {
+  AdminAlertProvider,
+  useAdminAlert,
+} from './src/Admin/Navigation/AdminAlert';
 import { clearTokenCache, setTokenCache } from './src/api';
 import './global.css';
 
@@ -48,12 +51,16 @@ function App() {
   return (
     <SafeAreaProvider>
       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      <AppContent />
+      <AdminAlertProvider>
+        <AppContent />
+      </AdminAlertProvider>
     </SafeAreaProvider>
   );
 }
 
 function AppContent() {
+  const showAdminAlert = useAdminAlert();
+
   const [authenticated, setAuthenticated] = useState(false);
   const [userRole, setUserRole] = useState<AppRole>('user');
   const [checkingSession, setCheckingSession] = useState(true);
@@ -79,6 +86,10 @@ function AppContent() {
   const [activeDrawerItem, setActiveDrawerItem] =
     useState<DrawerDestination | null>('Dashboard');
   const [bottomBarVisible, setBottomBarVisible] = useState(true);
+
+  // Refs so parent can trigger back-navigation inside child tab components
+  const productsBackRef = useRef<(() => boolean) | null>(null);
+  const moreBackRef = useRef<(() => boolean) | null>(null);
 
   useEffect(() => {
     setBottomBarVisible(true);
@@ -224,47 +235,49 @@ function AppContent() {
     if (!authenticated) return;
 
     const onBackPress = () => {
-      // Step 1: Close order details → go back to Orders list
+      // Step 1: Close order details → back to Orders list
       if (selectedOrder !== null) {
         setSelectedOrder(null);
         return true;
       }
 
-      // Step 2: Close CreateBill → go back to Billing list
+      // Step 2: Close CreateBill → back to Billing list
       if (createBillOpen) {
         setCreateBillOpen(false);
         return true;
       }
 
-      // Step 3: Close Billing → go back to active tab
+      // Step 3: Close Billing screen → back to current tab
       if (billingOpen) {
         setBillingOpen(false);
         return true;
       }
 
-      // Step 4: Close any drawer screen → go back to current tab
+      // Step 4: Close any top-level drawer screen → back to current tab
       if (drawerScreen !== null) {
         closeDrawerScreen();
         return true;
       }
 
-      // Step 5: Close profile → go back to current tab
+      // Step 5: Close top-level profile screen → back to current tab
       if (profileOpen) {
         setProfileOpen(false);
         return true;
       }
 
-      // Step 6: Close product / more details overlay → go back to current tab
-      if (productDetailsOpen) {
-        setProductDetailsOpen(false);
-        return true;
-      }
-      if (moreDetailsOpen) {
-        setMoreDetailsOpen(false);
-        return true;
+      // Step 6: Products tab — let the Products component close its own detail
+      if (activeItem === 'Products' && productDetailsOpen) {
+        const consumed = productsBackRef.current?.();
+        if (consumed) return true;
       }
 
-      // Step 7: Non-home tabs → navigate to Home
+      // Step 7: More tab — let the More component close its own open sub-screen
+      if (activeItem === 'More' && moreDetailsOpen) {
+        const consumed = moreBackRef.current?.();
+        if (consumed) return true;
+      }
+
+      // Step 8: Non-Home tab → navigate to Home tab
       if (activeItem !== 'Home') {
         setActiveItem('Home');
         setActiveDrawerItem('Dashboard');
@@ -273,8 +286,8 @@ function AppContent() {
         return true;
       }
 
-      // Step 8: Already on Home → exit confirmation popup
-      Alert.alert(
+      // Step 9: Already on Home → show custom exit confirmation popup
+      showAdminAlert(
         'Exit App',
         'Are you sure you want to exit?',
         [
@@ -285,7 +298,6 @@ function AppContent() {
             onPress: () => BackHandler.exitApp(),
           },
         ],
-        { cancelable: true },
       );
       return true;
     };
@@ -302,9 +314,10 @@ function AppContent() {
     billingOpen,
     drawerScreen,
     profileOpen,
+    activeItem,
     productDetailsOpen,
     moreDetailsOpen,
-    activeItem,
+    showAdminAlert,
   ]);
 
   if (checkingSession) {
@@ -407,6 +420,7 @@ function AppContent() {
           onScrollVisibilityChange={setBottomBarVisible}
           onActionPress={action => console.log(action)}
           onDetailsVisibilityChange={setProductDetailsOpen}
+          onHardwareBackRef={productsBackRef}
         />
       </KeepAliveScreen>
       <KeepAliveScreen active={tabsVisible && activeItem === 'Orders'}>
@@ -432,6 +446,7 @@ function AppContent() {
           onDetailsVisibilityChange={setMoreDetailsOpen}
           initialScreen={moreInitialScreen}
           screenRequestId={moreScreenRequestId}
+          onHardwareBackRef={moreBackRef}
         />
       </KeepAliveScreen>
       <KeepAliveScreen active={drawerScreen === 'customers'}>
