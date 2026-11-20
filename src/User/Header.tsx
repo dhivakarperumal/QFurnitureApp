@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, Text, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Heart, LogOut, UserRound } from 'lucide-react-native';
+import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import type { StoreTab } from './types';
 
 type HeaderProps = {
@@ -80,15 +81,29 @@ export default function Header({
     <View
       style={{ height: 58 + topInset, paddingTop: topInset }}
       className="z-10 flex-row items-center justify-between overflow-hidden px-3 shadow-md elevation-[10]">
-      <Image
-        source={require('../Assert/images/topheader1.png')}
-        resizeMode="stretch"
-        style={StyleSheet.absoluteFill}
-      />
       <View
         pointerEvents="none"
-        className="absolute inset-0 bg-[#F45B00]/75"
-      />
+        className="absolute inset-0">
+        <Svg
+          width="100%"
+          height="100%"
+          viewBox="0 0 400 80"
+          preserveAspectRatio="none">
+          <Defs>
+            <LinearGradient
+              id="storefrontHeaderGradient"
+              x1="0%"
+              y1="0%"
+              x2="100%"
+              y2="100%">
+              <Stop offset="0%" stopColor="#E9570D" />
+              <Stop offset="55%" stopColor="#F97316" />
+              <Stop offset="100%" stopColor="#E9570D" />
+            </LinearGradient>
+          </Defs>
+          <Rect width="100%" height="100%" fill="url(#storefrontHeaderGradient)" />
+        </Svg>
+      </View>
       <View className="flex-row items-center">
         <Image
           source={require('../Assert/images/appicon.png')}
