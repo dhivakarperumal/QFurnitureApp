@@ -348,32 +348,31 @@ export default function Storefront({
 
   const deleteAccount = () => {
     if (deletingAccount) return;
-    Alert.alert(
+    showUserAlert(
       'Confirm account deletion',
-      'Are you sure you want to  delete your account?',
+      'Are you sure you want to delete your account?',
       [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Delete account',
           style: 'destructive',
-          onPress: () => {
+          onPress: async () => {
             setDeletingAccount(true);
-            api
-              .delete('/users/me')
-              .then(() => {
-                Alert.alert(
-                  'Account deleted',
-                  'Your account has been deleted.',
-                  [{ text: 'OK', onPress: onLogoutPress }],
-                );
-              })
-              .catch(error => {
-                Alert.alert(
-                  'Delete failed',
-                  accountDeletionErrorMessage(error),
-                );
-              })
-              .finally(() => setDeletingAccount(false));
+            try {
+              await api.delete('/users/me');
+              showUserAlert(
+                'Account deleted',
+                'Your account has been deleted.',
+                [{ text: 'OK', onPress: onLogoutPress }],
+              );
+            } catch (error) {
+              showUserAlert(
+                'Delete failed',
+                accountDeletionErrorMessage(error),
+              );
+            } finally {
+              setDeletingAccount(false);
+            }
           },
         },
       ],
