@@ -38,6 +38,7 @@ import AddressesScreen from './Account/AddressesScreen';
 import OrdersScreen from './Account/OrdersScreen';
 import SetPasswordScreen from './Account/SetPasswordScreen';
 import { MoreMenu, MorePlaceholder, type MoreDestination } from './More';
+import AboutUs from './AboutUs';
 import { setUserNavigationBarAppearance } from '../services/navigationBar';
 import { useUserAlert } from './UserAlert';
 
@@ -988,7 +989,14 @@ export default function Storefront({
     }
 
     if (moreDestination === 'about') {
-      return <MorePlaceholder message="About Us content will be added here." />;
+      return (
+        <AboutUs
+          onExplorePress={() => {
+            setMoreDestination('menu');
+            handleTabPress('Shop');
+          }}
+        />
+      );
     }
 
     if (moreDestination === 'contact') {

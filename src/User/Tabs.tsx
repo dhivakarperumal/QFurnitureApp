@@ -112,7 +112,7 @@ export default function Tabs({
               }
               onPress={() => onTabPress(name)}
               className={`relative h-[58px] flex-1 items-center justify-center rounded-[18px] ${
-                active ? 'border border-white bg-white' : ''
+                active ? 'mx-1 border border-white bg-white' : ''
               }`}>
               <Icon
                 size={23}
