@@ -4,7 +4,6 @@ import {
   ActivityIndicator,
   Alert,
   Image,
-  ImageBackground,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -88,11 +87,14 @@ export default function Register({ onLoginPress }: RegisterProps) {
   };
 
   return (
-    <ImageBackground
-      source={require('../Assert/images/login.png')}
-      resizeMode="cover"
+    <View
       style={{ backgroundColor: colors.background, paddingTop: insets.top }}
       className="flex-1">
+      <Image
+        source={require('../Assert/images/login.png')}
+        resizeMode="cover"
+        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%' }}
+      />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         className="flex-1 bg-transparent">
@@ -282,6 +284,6 @@ export default function Register({ onLoginPress }: RegisterProps) {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </ImageBackground>
+    </View>
   );
 }

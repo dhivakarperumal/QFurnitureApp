@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
-  ImageBackground,
   Modal,
   Pressable,
   ScrollView,
@@ -249,12 +248,15 @@ export default function TopHeader({
     : notificationCount;
 
   return (
-    <ImageBackground
-      source={require('../../Assert/images/topheader.png')}
-      resizeMode="stretch"
-      blurRadius={3}
+    <View
       style={[styles.header, { paddingTop: insets.top }]}
       className="absolute left-0 right-0 top-0 z-10">
+      <Image
+        source={require('../../Assert/images/topheader.png')}
+        resizeMode="stretch"
+        blurRadius={3}
+        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%' }}
+      />
       <View
         pointerEvents="none"
         className="absolute inset-0 bg-black/20"
@@ -617,7 +619,7 @@ export default function TopHeader({
           />
         </View>
       </Modal>
-    </ImageBackground>
+    </View>
   );
 }
 

@@ -592,10 +592,12 @@ export default function Home({
       }
       contentContainerClassName="px-3 pb-[255px]"
       style={{ paddingTop: insets.top + 84 }}>
-      <ImageBackground
-        source={require('../../Assert/images/welcome.png')}
-        resizeMode="cover"
-        className="mb-4 min-h-[148px] justify-center overflow-hidden rounded-[22px] px-5 py-5">
+      <View className="mb-4 min-h-[148px] justify-center overflow-hidden rounded-[22px] px-5 py-5">
+        <Image
+          source={require('../../Assert/images/welcome.png')}
+          resizeMode="cover"
+          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%' }}
+        />
         <Text className="text-[12px] font-bold uppercase tracking-[2px] text-[#FFD45A]">
           Admin dashboard
         </Text>
@@ -605,7 +607,7 @@ export default function Home({
         <Text className="mt-1 text-[13px] text-white/75">
           Here’s what’s happening with your store today.
         </Text>
-      </ImageBackground>
+      </View>
 
       {loadError ? (
         <View className="mb-4 rounded-[14px] border border-[#FECACA] bg-[#FEF2F2] p-4">
