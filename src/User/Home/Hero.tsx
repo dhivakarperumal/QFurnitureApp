@@ -1,8 +1,9 @@
 import React from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { ArrowRight } from 'lucide-react-native';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import type { StoreBanner } from '../types';
+import { mediaUrl } from '../utils';
 
 type HeroProps = {
   banners: StoreBanner[];
@@ -20,11 +21,19 @@ export default function Hero({
   const subtitle = banner?.subtitle?.trim();
   const description = banner?.description?.trim();
   const offer = banner?.offer?.trim();
+  const imageUri = mediaUrl(banner?.mobile_image ?? banner?.desktop_image);
 
   if (!title && !subtitle && !description && !offer) return null;
 
   return (
     <View className="relative mx-4 mt-2 min-h-[210px] justify-center overflow-hidden rounded-[24px] border border-[#F6D4B2] bg-[#FFF0E1] px-4 py-3">
+      {imageUri ? (
+        <Image
+          source={{ uri: imageUri }}
+          style={StyleSheet.absoluteFill}
+          resizeMode="cover"
+        />
+      ) : null}
       <View pointerEvents="none" className="absolute inset-0">
         <Svg
           width="100%"
@@ -33,8 +42,8 @@ export default function Hero({
           preserveAspectRatio="none">
           <Defs>
             <LinearGradient id="heroOrangeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-              <Stop offset="0%" stopColor="#FFF7ED" />
-              <Stop offset="100%" stopColor="#FFD0A3" />
+              <Stop offset="0%" stopColor="#FFF7ED" stopOpacity="0.78" />
+              <Stop offset="100%" stopColor="#FFD0A3" stopOpacity="0.58" />
             </LinearGradient>
           </Defs>
           <Rect width="100%" height="100%" fill="url(#heroOrangeGradient)" />
