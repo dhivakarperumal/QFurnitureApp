@@ -94,11 +94,15 @@ export default function Register({ onLoginPress }: RegisterProps) {
       style={{ backgroundColor: colors.background, paddingTop: insets.top }}
       className="flex-1">
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         className="flex-1 bg-transparent">
         <ScrollView
           keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 16) }}
+          automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{
+            paddingBottom: Math.max(insets.bottom, 32),
+          }}
           contentContainerClassName="flex-grow justify-center px-6 py-8">
           <View
             style={{ backgroundColor: colors.surface }}
