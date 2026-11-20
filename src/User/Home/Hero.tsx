@@ -27,6 +27,7 @@ export default function Hero({
           source={{ uri: imageUri }}
           style={StyleSheet.absoluteFill}
           resizeMode="cover"
+          resizeMethod="resize"
         />
       ) : null}
       <View pointerEvents="none" className="absolute inset-0 bg-white/25" />

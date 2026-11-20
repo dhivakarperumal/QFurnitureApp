@@ -106,7 +106,12 @@ export default function Category({
                   className="h-[104px] overflow-hidden rounded-[18px] bg-[#F1E5D7]"
                   style={{ width: categoryWidth }}>
                   {imageUri ? (
-                    <Image source={{ uri: imageUri }} className="h-full w-full" resizeMode="cover" />
+                    <Image
+                      source={{ uri: imageUri }}
+                      className="h-full w-full"
+                      resizeMode="cover"
+                      resizeMethod="resize"
+                    />
                   ) : (
                     <View className="h-full items-center justify-center">
                       <Armchair size={38} color="#A78A70" strokeWidth={1.3} />
