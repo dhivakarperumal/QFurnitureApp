@@ -4,7 +4,6 @@ import {
   Image,
   Pressable,
   RefreshControl,
-  RefreshControl,
   ScrollView,
   Text,
   View,
@@ -100,7 +99,6 @@ export default function AccountScreen({
   const [loading, setLoading] = useState(
     () => !hasCachedApiData(PROFILE_CACHE_KEY),
   );
-  const [refreshing, setRefreshing] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   const loadProfile = useCallback(async (forceRefresh = false) => {
@@ -200,14 +198,6 @@ export default function AccountScreen({
     <ScrollView
      
       showsVerticalScrollIndicator={false}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={refreshAccount}
-          tintColor="#F97316"
-        />
-      }
-     
       contentContainerStyle={{ paddingBottom: Math.max(insets.bottom + 65, 100) }}
       refreshControl={
         <RefreshControl

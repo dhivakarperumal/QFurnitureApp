@@ -110,7 +110,6 @@ export default function ProfileScreen({
   const [refreshing, setRefreshing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  const [refreshing, setRefreshing] = useState(false);
 
   const loadProfile = useCallback(async (forceRefresh = false) => {
     if (!hasCachedApiData(PROFILE_CACHE_KEY)) {

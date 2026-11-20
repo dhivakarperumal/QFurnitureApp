@@ -347,7 +347,6 @@ export default function AddressesScreen({ onBack: _onBack }: AddressesScreenProp
   const [loading, setLoading] = useState(
     () => !hasCachedApiData(ADDRESSES_CACHE_KEY),
   );
-  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
   const [actionId, setActionId] = useState<number | string | null>(null);
 

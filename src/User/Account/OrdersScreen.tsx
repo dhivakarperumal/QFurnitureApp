@@ -5,7 +5,6 @@ import {
   Modal,
   Pressable,
   RefreshControl,
-  RefreshControl,
   ScrollView,
   Text,
   View,
