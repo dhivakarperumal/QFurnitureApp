@@ -1,30 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Image,
   Pressable,
   ScrollView,
   Text,
-  TextInput,
   View,
 } from 'react-native';
-import {
-  Armchair,
-  Heart,
-  ImagePlus,
-  ShoppingCart,
-  Star,
-  X,
-} from 'lucide-react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import {
-  launchImageLibrary,
-  type Asset,
-  type ImagePickerResponse,
-} from 'react-native-image-picker';
+import { Armchair, Heart, ShoppingCart, Star } from 'lucide-react-native';
 import api from '../api';
 import type { StoreProduct } from './types';
+import ReviewForm from './ReviewForm';
 import {
   formatPrice,
   mediaUrl,
@@ -85,11 +71,6 @@ function getGallery(item: DetailItem) {
     .filter((path): path is string => Boolean(path));
 }
 
-function reviewImageFileName(asset: Asset) {
-  if (asset.fileName) return asset.fileName;
-  return `review-${Date.now()}.${asset.type?.split('/')[1] || 'jpg'}`;
-}
-
 export default function ItemDetails({
   itemId,
   itemType,
@@ -103,92 +84,7 @@ export default function ItemDetails({
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
-  const [reviewOpen, setReviewOpen] = useState(false);
-  const [reviewSubmitting, setReviewSubmitting] = useState(false);
-  const [reviewName, setReviewName] = useState('');
-  const [reviewEmail, setReviewEmail] = useState('');
-  const [reviewRating, setReviewRating] = useState(5);
-  const [reviewComment, setReviewComment] = useState('');
-  const [reviewImage, setReviewImage] = useState<string | null>(null);
-  const [uploadingReviewImage, setUploadingReviewImage] = useState(false);
   const actionId = itemType === 'combo' ? `combo-${itemId}` : itemId;
-
-  useEffect(() => {
-    setReviewOpen(false);
-    setReviewRating(5);
-    setReviewComment('');
-    setReviewImage(null);
-  }, [itemId, itemType]);
-
-  useEffect(() => {
-    let active = true;
-    const loadReviewer = async () => {
-      let savedName = '';
-      let savedEmail = '';
-      try {
-        const serializedUser = await AsyncStorage.getItem('user');
-        if (serializedUser) {
-          const user: unknown = JSON.parse(serializedUser);
-          if (typeof user === 'object' && user !== null) {
-            savedName =
-              ('name' in user && typeof user.name === 'string'
-                ? user.name.trim()
-                : '') ||
-              ('username' in user && typeof user.username === 'string'
-                ? user.username.trim()
-                : '');
-            savedEmail =
-              'email' in user && typeof user.email === 'string'
-                ? user.email.trim()
-                : '';
-          }
-        }
-      } catch (storageError) {
-        if (__DEV__) {
-          console.warn(
-            '[ProductDetails] Could not load reviewer profile:',
-            storageError,
-          );
-        }
-      }
-      if (active && savedName) setReviewName(savedName);
-      if (active && savedEmail) setReviewEmail(savedEmail);
-
-      if (!savedName || !savedEmail) {
-        try {
-          const { data } = await api.get<{
-            name?: string;
-            username?: string;
-            email?: string;
-            user?: { name?: string; username?: string; email?: string };
-          }>('/users/me');
-          const profile = data.user ?? data;
-          const profileName =
-            profile.name?.trim() || profile.username?.trim() || '';
-          const profileEmail = profile.email?.trim() || '';
-          if (active) {
-            if (profileName) {
-              setReviewName(current => current.trim() || profileName);
-            }
-            if (profileEmail) {
-              setReviewEmail(current => current || profileEmail);
-            }
-          }
-        } catch (profileError) {
-          if (__DEV__) {
-            console.warn(
-              '[ProductDetails] Could not fetch reviewer profile:',
-              profileError,
-            );
-          }
-        }
-      }
-    };
-    loadReviewer();
-    return () => {
-      active = false;
-    };
-  }, []);
 
   useEffect(() => {
     let active = true;
@@ -237,129 +133,6 @@ export default function ItemDetails({
       : [];
   const description =
     item?.description?.trim() || item?.long_description?.trim() || '';
-  const reviewImageUri = reviewImage ? mediaUrl(reviewImage) : undefined;
-
-  const uploadReviewImage = async () => {
-    let pickerResult: ImagePickerResponse;
-    try {
-      pickerResult = await launchImageLibrary({
-        mediaType: 'photo',
-        selectionLimit: 1,
-        quality: 0.9,
-      });
-    } catch (pickerError) {
-      if (__DEV__) {
-        console.warn('[ProductDetails] Photo selection failed:', pickerError);
-      }
-      Alert.alert(
-        'Photo unavailable',
-        getErrorMessage(pickerError, 'Could not open the photo library.'),
-      );
-      return;
-    }
-    if (pickerResult.didCancel) return;
-    if (pickerResult.errorCode) {
-      Alert.alert(
-        'Photo unavailable',
-        pickerResult.errorMessage || 'Could not open the photo library.',
-      );
-      return;
-    }
-    const asset = pickerResult.assets?.[0];
-    if (!asset?.uri) {
-      Alert.alert('Photo unavailable', 'No photo was selected.');
-      return;
-    }
-    if (asset.fileSize && asset.fileSize > 5 * 1024 * 1024) {
-      Alert.alert('Photo too large', 'Choose an image smaller than 5 MB.');
-      return;
-    }
-    const mimeType = asset.type || 'image/jpeg';
-    if (
-      !['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(mimeType)
-    ) {
-      Alert.alert(
-        'Unsupported photo',
-        'Choose a JPG, PNG, GIF, or WEBP image.',
-      );
-      return;
-    }
-
-    setUploadingReviewImage(true);
-    try {
-      const formData = new FormData();
-      formData.append(
-        'image',
-        {
-          uri: asset.uri,
-          name: reviewImageFileName(asset),
-          type: mimeType,
-        } as unknown as Blob,
-      );
-      const response = await api.post<{ url?: string }>(
-        '/reviews/upload',
-        formData,
-        { headers: { 'Content-Type': 'multipart/form-data' } },
-      );
-      if (!response.data.url) {
-        throw new Error('The server did not return an image URL.');
-      }
-      setReviewImage(response.data.url);
-    } catch (uploadError) {
-      if (__DEV__) {
-        console.warn('[ProductDetails] Review image upload failed:', uploadError);
-      }
-      Alert.alert(
-        'Upload failed',
-        getErrorMessage(uploadError, 'Could not upload this review image.'),
-      );
-    } finally {
-      setUploadingReviewImage(false);
-    }
-  };
-
-  const submitReview = async () => {
-    const userName = reviewName.trim();
-    const comment = reviewComment.trim();
-    const productId = Number(item?.product_id ?? item?.id ?? itemId);
-    if (!userName || !comment) {
-      Alert.alert('Review details required', 'Enter your name and review.');
-      return;
-    }
-    if (!Number.isSafeInteger(productId) || productId <= 0) {
-      Alert.alert('Product unavailable', 'Could not identify this product.');
-      return;
-    }
-    if (reviewSubmitting) return;
-
-    setReviewSubmitting(true);
-    try {
-      await api.post('/reviews', {
-        product_id: productId,
-        user_name: userName,
-        user_email: reviewEmail || null,
-        rating: reviewRating,
-        comment,
-        review_image: reviewImage,
-      });
-      setReviewComment('');
-      setReviewImage(null);
-      setReviewOpen(false);
-      Alert.alert(
-        'Review submitted',
-        'Thank you for sharing your feedback.',
-      );
-    } catch (requestError) {
-      console.error('[ProductDetails] Could not submit review:', requestError);
-      Alert.alert(
-        'Review failed',
-        getErrorMessage(requestError, 'Could not submit your review. Please try again.'),
-      );
-    } finally {
-      setReviewSubmitting(false);
-    }
-  };
-
   return (
     <View className="px-4 pb-8 pt-3">
 
@@ -497,133 +270,14 @@ export default function ItemDetails({
             </View>
           ) : null}
 
-          {itemType === 'product' ? (
-            <View className="mt-5 rounded-[16px] bg-white p-4">
-              <View className="flex-row items-center justify-between">
-                <View className="mr-3 flex-1">
-                  <Text className="text-[15px] font-black text-[#351D0E]">
-                    Reviews
-                  </Text>
-                  <Text className="mt-1 text-[12px] text-[#8B735E]">
-                    Share your experience with this product.
-                  </Text>
-                </View>
-                <Pressable
-                  accessibilityRole="button"
-                  disabled={reviewSubmitting || uploadingReviewImage}
-                  accessibilityState={{
-                    expanded: reviewOpen,
-                    disabled: reviewSubmitting || uploadingReviewImage,
-                  }}
-                  onPress={() => setReviewOpen(open => !open)}
-                  className="rounded-full bg-[#FFF0E1] px-4 py-2">
-                  <Text className="text-[12px] font-bold text-[#B94719]">
-                    {reviewOpen ? 'Close' : 'Write review'}
-                  </Text>
-                </Pressable>
-              </View>
-              {reviewOpen ? (
-                <View className="mt-4 border-t border-[#F0E7DE] pt-4">
-                  <Text className="mb-2 text-[12px] font-bold text-[#5B4839]">
-                    Your rating
-                  </Text>
-                  <View className="mb-4 flex-row">
-                    {[1, 2, 3, 4, 5].map(value => (
-                      <Pressable
-                        key={value}
-                        accessibilityRole="button"
-                        accessibilityLabel={`${value} star${value === 1 ? '' : 's'}`}
-                        accessibilityState={{ selected: reviewRating === value }}
-                        onPress={() => setReviewRating(value)}
-                        className="mr-2 p-1">
-                        <Star
-                          size={25}
-                          color={value <= reviewRating ? '#F97316' : '#CBD5E1'}
-                          fill={value <= reviewRating ? '#F97316' : 'transparent'}
-                        />
-                      </Pressable>
-                    ))}
-                  </View>
-                  <Text className="mb-1.5 text-[12px] font-bold text-[#5B4839]">
-                    Your name
-                  </Text>
-                  <TextInput
-                    value={reviewName}
-                    onChangeText={setReviewName}
-                    placeholder="Enter your name"
-                    placeholderTextColor="#A08A78"
-                    autoCapitalize="words"
-                    className="mb-3 rounded-[11px] border border-[#E7DCCF] px-3 py-3 text-[13px] text-[#351D0E]"
-                  />
-                  <TextInput
-                    value={reviewComment}
-                    onChangeText={setReviewComment}
-                    placeholder="Write your review"
-                    placeholderTextColor="#A08A78"
-                    multiline
-                    textAlignVertical="top"
-                    maxLength={5000}
-                    className="min-h-[100px] rounded-[11px] border border-[#E7DCCF] px-3 py-3 text-[13px] text-[#351D0E]"
-                  />
-                  <Text className="mb-2 mt-4 text-[12px] font-bold text-[#5B4839]">
-                    Photo (optional)
-                  </Text>
-                  {reviewImageUri ? (
-                    <View className="mb-1">
-                      <Image
-                        source={{ uri: reviewImageUri }}
-                        accessibilityLabel="Review image preview"
-                        resizeMode="cover"
-                        className="h-[150px] w-full rounded-[12px] bg-[#F8FAFC]"
-                      />
-                      <Pressable
-                        accessibilityRole="button"
-                        accessibilityLabel="Remove review photo"
-                        disabled={reviewSubmitting || uploadingReviewImage}
-                        onPress={() => setReviewImage(null)}
-                        className="mt-2 flex-row items-center self-start py-2">
-                        <X size={15} color="#B91C1C" />
-                        <Text className="ml-1 text-[12px] font-bold text-[#B91C1C]">
-                          Remove photo
-                        </Text>
-                      </Pressable>
-                    </View>
-                  ) : (
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel="Upload a review photo"
-                      disabled={reviewSubmitting || uploadingReviewImage}
-                      onPress={uploadReviewImage}
-                      className="min-h-[84px] items-center justify-center rounded-[12px] border border-dashed border-[#D6C8B8] bg-[#FCFAF7] disabled:opacity-60">
-                      {uploadingReviewImage ? (
-                        <ActivityIndicator color="#F97316" />
-                      ) : (
-                        <>
-                          <ImagePlus size={21} color="#B94719" />
-                          <Text className="mt-2 text-[12px] font-bold text-[#8B735E]">
-                            Choose a photo (up to 5 MB)
-                          </Text>
-                        </>
-                      )}
-                    </Pressable>
-                  )}
-                  <Pressable
-                    accessibilityRole="button"
-                    disabled={reviewSubmitting || uploadingReviewImage}
-                    onPress={submitReview}
-                    className="mt-4 h-[46px] flex-row items-center justify-center rounded-full bg-[#F97316] disabled:opacity-60">
-                    {reviewSubmitting || uploadingReviewImage ? (
-                      <ActivityIndicator size="small" color="#FFFFFF" />
-                    ) : (
-                      <Text className="text-[13px] font-black text-white">
-                        Submit review
-                      </Text>
-                    )}
-                  </Pressable>
-                </View>
-              ) : null}
-            </View>
-          ) : null}
+          <ReviewForm
+            itemId={
+              itemType === 'combo'
+                ? item.combo_id ?? item.id ?? itemId
+                : item.product_id ?? item.id ?? itemId
+            }
+            itemType={itemType}
+          />
 
           {itemType === 'combo' ? (
             <View className="mt-5 flex-row">

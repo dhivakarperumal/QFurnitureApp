@@ -10,6 +10,7 @@ import {
 import { Armchair, ShoppingCart, Star } from 'lucide-react-native';
 import api from '../api';
 import type { StoreProduct } from './types';
+import ReviewForm from './ReviewForm';
 import {
   formatPrice,
   mediaUrl,
@@ -285,6 +286,11 @@ export default function ComboDetails({
               ))}
             </View>
           ) : null}
+
+          <ReviewForm
+            itemId={combo.combo_id ?? combo.id ?? itemId}
+            itemType="combo"
+          />
 
           <View className="mt-5 flex-row">
             <Pressable
