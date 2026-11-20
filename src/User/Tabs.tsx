@@ -50,7 +50,7 @@ export default function Tabs({
                 y1="0%"
                 x2="100%"
                 y2="100%">
-                <Stop offset="0%" stopColor="#FF9B36" />
+                <Stop offset="0%" stopColor="#E9570D" />
                 <Stop offset="55%" stopColor="#F97316" />
                 <Stop offset="100%" stopColor="#E9570D" />
               </LinearGradient>
