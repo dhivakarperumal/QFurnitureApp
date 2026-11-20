@@ -641,9 +641,10 @@ export default function Storefront({
   }
 
   return (
-    <View style={{ paddingTop: insets.top }} className="flex-1 bg-[#FCFAF7]">
+    <View className="flex-1 bg-[#FCFAF7]">
       <Header
         activeTab={activeTab}
+        topInset={insets.top}
         onFavoritesPress={() => handleTabPress('Favorites')}
         onProfilePress={() => handleTabPress('Profile')}
       />
