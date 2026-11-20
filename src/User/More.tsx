@@ -1,11 +1,19 @@
 import React from 'react';
-import { Pressable, Text, View } from 'react-native';
-import { ChevronRight, Info, Mail, UserRound } from 'lucide-react-native';
+import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import {
+  ChevronRight,
+  Info,
+  Mail,
+  Trash2,
+  UserRound,
+} from 'lucide-react-native';
 
 export type MoreDestination = 'account' | 'about' | 'contact';
 
 type MoreMenuProps = {
   onSelect: (destination: MoreDestination) => void;
+  onDeleteAccount: () => void;
+  deletingAccount: boolean;
 };
 
 const menuItems = [
@@ -14,13 +22,13 @@ const menuItems = [
   { destination: 'contact', label: 'Contact Us', icon: Mail },
 ] as const;
 
-export function MoreMenu({ onSelect }: MoreMenuProps) {
+export function MoreMenu({
+  onSelect,
+  onDeleteAccount,
+  deletingAccount,
+}: MoreMenuProps) {
   return (
     <View className="flex-1 bg-[#FCFAF7] px-4 pt-5">
-      <Text className="mb-1 text-[22px] font-black text-[#351D0E]">More</Text>
-      <Text className="mb-5 text-[13px] text-[#8B735E]">
-        Your account and Q Living information
-      </Text>
       <View className="overflow-hidden rounded-[16px] border border-[#F0E7DE] bg-white">
         {menuItems.map(({ destination, label, icon: Icon }, index) => (
           <Pressable
@@ -42,6 +50,25 @@ export function MoreMenu({ onSelect }: MoreMenuProps) {
           </Pressable>
         ))}
       </View>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Delete account"
+        accessibilityState={{ disabled: deletingAccount }}
+        disabled={deletingAccount}
+        onPress={onDeleteAccount}
+        className="mt-4 flex-row items-center rounded-[16px] border border-[#FECACA] bg-[#FEF2F2] px-4 py-4 disabled:opacity-60">
+        <View className="h-[38px] w-[38px] items-center justify-center rounded-full bg-[#FEE2E2]">
+          <Trash2 size={19} color="#DC2626" />
+        </View>
+        <Text className="ml-3 flex-1 text-[15px] font-semibold text-[#B91C1C]">
+          {deletingAccount ? 'Deleting account...' : 'Delete Account'}
+        </Text>
+        {deletingAccount ? (
+          <ActivityIndicator size="small" color="#DC2626" />
+        ) : (
+          <ChevronRight size={18} color="#DC2626" />
+        )}
+      </Pressable>
     </View>
   );
 }
