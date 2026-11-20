@@ -18,6 +18,7 @@ import {
   Trash2,
   X,
 } from 'lucide-react-native';
+import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '../../api';
@@ -183,24 +184,49 @@ function AddressFormModal({
           style={{ maxHeight: '90%' }}
         >
           {/* ── Header ── */}
-          <View className="flex-row items-center justify-between border-b border-[#F0E7DE] bg-[#FFF8F3] px-5 py-4">
+          <View className="relative flex-row items-center justify-between overflow-hidden border-b border-[#FFB46B] px-5 py-4">
+            <View pointerEvents="none" className="absolute inset-0">
+              <Svg
+                width="100%"
+                height="100%"
+                viewBox="0 0 400 72"
+                preserveAspectRatio="none">
+                <Defs>
+                  <LinearGradient
+                    id="addressModalHeaderGradient"
+                    x1="0%"
+                    y1="0%"
+                    x2="100%"
+                    y2="100%">
+                    <Stop offset="0%" stopColor="#E9570D" />
+                    <Stop offset="55%" stopColor="#F97316" />
+                    <Stop offset="100%" stopColor="#E9570D" />
+                  </LinearGradient>
+                </Defs>
+                <Rect
+                  width="100%"
+                  height="100%"
+                  fill="url(#addressModalHeaderGradient)"
+                />
+              </Svg>
+            </View>
             <View className="flex-row items-center gap-3">
-              <View className="h-[40px] w-[40px] items-center justify-center rounded-full bg-[#FFF0E1]">
-                <MapPin size={18} color="#F97316" />
+              <View className="h-[40px] w-[40px] items-center justify-center rounded-full bg-white/20">
+                <MapPin size={18} color="white" />
               </View>
               <View>
-                <Text className="text-[16px] font-black text-[#351D0E]">
+                <Text className="text-[16px] font-black text-white">
                   {editing ? 'Edit Address' : 'Add New Address'}
                 </Text>
-                <Text className="text-[11px] text-[#8B735E]">Enter delivery details</Text>
+                <Text className="text-[11px] text-[#FFF0E1]">Enter delivery details</Text>
               </View>
             </View>
             <Pressable
               onPress={onClose}
               disabled={saving}
-              className="h-[32px] w-[32px] items-center justify-center rounded-full bg-[#F4EDE6]"
+              className="h-[32px] w-[32px] items-center justify-center rounded-full bg-white/20"
             >
-              <X size={16} color="#351D0E" />
+              <X size={16} color="white" />
             </Pressable>
           </View>
 
@@ -467,24 +493,12 @@ export default function AddressesScreen({ onBack }: AddressesScreenProps) {
           <Text className="mt-2 text-center text-[13px] text-[#8B735E]">
             Add an address to save your delivery details for future orders.
           </Text>
-          <Pressable onPress={openNewForm} className="mt-5 flex-row items-center rounded-full bg-[#F97316] px-5 py-3">
-            <Plus size={16} color="white" />
-            <Text className="ml-2 text-[13px] font-bold text-white">Add Address</Text>
-          </Pressable>
         </View>
       ) : (
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 20, paddingBottom: Math.max(insets.bottom, 100) }}
         >
-          {/* Add New button at top of list */}
-          <Pressable
-            onPress={openNewForm}
-            className="mb-4 flex-row items-center self-end rounded-full bg-[#F97316] px-4 py-2 active:opacity-80"
-          >
-            <Plus size={14} color="white" />
-            <Text className="ml-1 text-[12px] font-bold text-white">Add New</Text>
-          </Pressable>
           {addresses.map(address => {
             const isDefault = Boolean(Number(address.is_default));
             const isHome = address.label?.toLowerCase() === 'home';
@@ -568,6 +582,18 @@ export default function AddressesScreen({ onBack }: AddressesScreenProps) {
           })}
         </ScrollView>
       )}
+
+      {!loading && !error ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Add address"
+          onPress={openNewForm}
+          style={{ bottom: Math.max(insets.bottom, 16) + 16 }}
+          className="absolute right-5 h-[60px] w-[60px] items-center justify-center rounded-full bg-[#F97316] shadow-lg active:opacity-80"
+        >
+          <Plus size={26} color="white" />
+        </Pressable>
+      ) : null}
 
       <AddressFormModal
         visible={formOpen}
