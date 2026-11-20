@@ -45,7 +45,7 @@ export default function Welcome({ onComplete }: { onComplete: () => void }) {
     activeIndex === 1
       ? 'mb-[50px]'
       : activeIndex === 2
-        ? 'mb-[30px]'
+        ? 'mb-[10px]'
         : 'mb-[40px]';
   const swipeResponder = useMemo(
     () =>
