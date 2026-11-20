@@ -711,6 +711,8 @@ export default function Storefront({
     ) : (
       <AccountScreen
         onLogoutPress={onLogoutPress}
+        onDeleteAccount={deleteAccount}
+        deletingAccount={deletingAccount}
         onSubScreenChange={screen => setAccountSubScreen(screen)}
       />
     );
