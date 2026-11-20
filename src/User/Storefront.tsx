@@ -1110,7 +1110,12 @@ export default function Storefront({
         // paddingBottom accounts for the absolute-positioned tab bar (~65px) + home indicator
         <View
           className="flex-1"
-          style={{ paddingBottom: Math.max(insets.bottom + 65, 90) }}
+          style={{
+            paddingBottom: Math.max(
+              insets.bottom + 65,
+              activeTab === 'Cart' || activeTab === 'Favorites' ? 115 : 90,
+            ),
+          }}
         >
           {renderTabContent()}
         </View>
