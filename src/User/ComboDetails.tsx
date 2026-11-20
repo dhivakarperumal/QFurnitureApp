@@ -38,6 +38,7 @@ type ComboDetailsProps = {
   itemId: string;
   onAddToCart: (productId: string) => void;
   onBuyNow?: (productId: string) => void;
+  onNameLoaded?: (name: string) => void;
 };
 
 function getErrorMessage(error: unknown) {
@@ -67,6 +68,7 @@ export default function ComboDetails({
   itemId,
   onAddToCart,
   onBuyNow,
+  onNameLoaded,
 }: ComboDetailsProps) {
   const [combo, setCombo] = useState<Combo | null>(null);
   const [loading, setLoading] = useState(true);
@@ -88,6 +90,9 @@ export default function ComboDetails({
         }
         if (active) {
           setCombo(data);
+          const comboName =
+            typeof data.name === 'string' ? data.name.trim() : '';
+          if (comboName) onNameLoaded?.(comboName);
           setActiveImageIndex(0);
         }
       } catch (requestError) {
@@ -102,7 +107,7 @@ export default function ComboDetails({
     return () => {
       active = false;
     };
-  }, [itemId, retryCount]);
+  }, [itemId, onNameLoaded, retryCount]);
 
   const gallery = combo ? getGallery(combo) : [];
   const price = combo ? productPrice(combo) : 0;
