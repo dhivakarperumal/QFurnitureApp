@@ -36,6 +36,7 @@ import AddressesScreen from './Account/AddressesScreen';
 import OrdersScreen from './Account/OrdersScreen';
 import SetPasswordScreen from './Account/SetPasswordScreen';
 import { MoreMenu, MorePlaceholder, type MoreDestination } from './More';
+import { setUserNavigationBarAppearance } from '../services/navigationBar';
 
 // ─── Inner page header (fixed, no main header / no bottom tabs) ───────────────
 function InnerPageHeader({
@@ -106,6 +107,18 @@ export default function Storefront({
   onLogoutPress: () => void;
 }) {
   const insets = useSafeAreaInsets();
+  useEffect(() => {
+    setUserNavigationBarAppearance(true).catch(error => {
+      console.warn('[Storefront] Could not set user navigation bar style:', error);
+    });
+
+    return () => {
+      setUserNavigationBarAppearance(false).catch(error => {
+        console.warn('[Storefront] Could not restore navigation bar style:', error);
+      });
+    };
+  }, []);
+
   const [activeTab, setActiveTab] = useState<StoreTab>('Home');
   const [detailTarget, setDetailTarget] = useState<{
     itemId: string;
