@@ -295,8 +295,8 @@ export default function Storefront({
   const deleteAccount = () => {
     if (deletingAccount) return;
     Alert.alert(
-      'Delete account?',
-      'This permanently deletes your account and cannot be undone.',
+      'Confirm account deletion',
+      'Are you sure you want to permanently delete your account? This action cannot be undone.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -678,13 +678,7 @@ export default function Storefront({
     }
 
     if (moreDestination === 'menu') {
-      return (
-        <MoreMenu
-          onSelect={setMoreDestination}
-          onDeleteAccount={deleteAccount}
-          deletingAccount={deletingAccount}
-        />
-      );
+      return <MoreMenu onSelect={setMoreDestination} />;
     }
 
     if (moreDestination === 'about') {
