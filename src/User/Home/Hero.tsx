@@ -57,16 +57,15 @@ export default function Hero({
             {offer}
           </Text>
         ) : null}
-        {title ? (
-          <Text
-            numberOfLines={3}
-            className="text-[22px] font-black leading-[26px] text-[#263B2A]">
-            {title}
-          </Text>
-        ) : null}
-        {subtitle ? (
-          <Text className="mt-1 text-[22px] font-semibold leading-[26px] text-[#E87424]">
-            {subtitle}
+        {title || subtitle ? (
+          <Text className="text-[22px] leading-[26px]">
+            {title ? (
+              <Text className="font-black text-[#263B2A]">{title}</Text>
+            ) : null}
+            {title && subtitle ? ' ' : null}
+            {subtitle ? (
+              <Text className="font-semibold text-[#E87424]">{subtitle}</Text>
+            ) : null}
           </Text>
         ) : null}
         {/* {description ? (
