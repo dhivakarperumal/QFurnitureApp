@@ -586,10 +586,6 @@ export default function Storefront({
     }
   };
 
-  const addToCart = async (
-    productId: string,
-    productName?: string,
-  ): Promise<boolean> => {
   const confirmRemoveFavorite = (productId: string) => {
     const favorite = favoriteItems.find(
       item => favoriteKey(item) === productId,
@@ -672,11 +668,13 @@ export default function Storefront({
 
   const addToCart = async (
     productId: string,
-    options: { refreshCart?: boolean; showError?: boolean } = {},
+    options: string | { refreshCart?: boolean; showError?: boolean } = {},
   ): Promise<boolean> => {
     if (pendingCartIds.includes(productId)) return false;
     setPendingCartIds(current => [...current, productId]);
-    let name = productName?.trim();
+    let name = typeof options === 'string' ? options.trim() : '';
+    const cartOptions =
+      typeof options === 'object' && options !== null ? options : {};
     try {
       if (productId.startsWith('combo-')) {
         const comboId = Number(productId.replace(/^combo-/, ''));
@@ -723,11 +721,11 @@ export default function Storefront({
           quantity: 1,
         });
       }
-      if (options.refreshCart !== false) await loadCart(true);
+      if (cartOptions.refreshCart !== false) await loadCart(true);
       showUserToast(`${name || 'Product'} added to cart`);
       return true;
     } catch (error) {
-      if (options.showError === false) {
+      if (cartOptions.showError === false) {
         if (__DEV__) console.warn('[Storefront] Could not add favorite to cart:', error);
       } else {
         showUserAlert('Could not add to cart', errorMessage(error));
@@ -735,54 +733,6 @@ export default function Storefront({
       return false;
     } finally {
       setPendingCartIds(current => current.filter(id => id !== productId));
-    }
-  };
-
-  const addAllFavoritesToCart = async () => {
-    if (
-      !favoriteItems.length ||
-      addingFavoritesToCart ||
-      clearingFavorites ||
-      pendingCartIds.length > 0
-    ) {
-      return;
-    }
-
-    setAddingFavoritesToCart(true);
-    let addedCount = 0;
-    let failedCount = 0;
-    try {
-      for (const favorite of favoriteItems) {
-        const added = await addToCart(favoriteKey(favorite), {
-          refreshCart: false,
-          showError: false,
-        });
-        if (added) addedCount += 1;
-        else failedCount += 1;
-      }
-
-      if (addedCount > 0) {
-        try {
-          await loadCart();
-        } catch (error) {
-          showUserAlert('Cart could not be refreshed', errorMessage(error));
-          return;
-        }
-      }
-
-      if (failedCount > 0) {
-        showUserAlert(
-          'Some favorites could not be added',
-          `${addedCount} added, ${failedCount} could not be added. Check availability and try again.`,
-        );
-      } else {
-        showUserAlert(
-          'Added to cart',
-          `${addedCount} favorite ${addedCount === 1 ? 'item was' : 'items were'} added to your cart.`,
-        );
-      }
-    } finally {
-      setAddingFavoritesToCart(false);
     }
   };
 
@@ -1113,7 +1063,6 @@ export default function Storefront({
           onProductPress={openItemDetails}
           refreshing={refreshing}
           onRefresh={retryStore}
-          onRefresh={() => { loadStore(); }}
         />
       );
     }
