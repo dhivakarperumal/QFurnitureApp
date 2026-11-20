@@ -16,6 +16,13 @@ export default function Hero({
   onExplorePress,
 }: HeroProps) {
   const banner = banners[activeIndex];
+  const title = banner?.title?.trim();
+  const description =
+    banner?.subtitle?.trim() ||
+    banner?.description?.trim() ||
+    banner?.offer?.trim();
+
+  if (!title && !description) return null;
 
   return (
     <View className="relative mx-4 mt-2 min-h-[210px] justify-center overflow-hidden rounded-[24px] border border-[#F6D4B2] bg-[#FFF0E1] px-4 py-3">
@@ -35,16 +42,18 @@ export default function Hero({
         </Svg>
       </View>
       <View className="w-full">
-        <Text
-          numberOfLines={3}
-          className="text-[22px] font-black leading-[26px] text-[#263B2A]">
-          {banner?.title || 'Make your home feel like home.'}
-        </Text>
-        <Text numberOfLines={3} className="mt-1 text-[12px] leading-[17px] text-[#49392D]">
-          {banner?.subtitle ||
-            banner?.description ||
-            'Thoughtful furniture, everyday comfort, and timeless style.'}
-        </Text>
+        {title ? (
+          <Text
+            numberOfLines={3}
+            className="text-[22px] font-black leading-[26px] text-[#263B2A]">
+            {title}
+          </Text>
+        ) : null}
+        {description ? (
+          <Text numberOfLines={3} className="mt-1 text-[12px] leading-[17px] text-[#49392D]">
+            {description}
+          </Text>
+        ) : null}
         <Pressable
           accessibilityRole="button"
           onPress={onExplorePress}
