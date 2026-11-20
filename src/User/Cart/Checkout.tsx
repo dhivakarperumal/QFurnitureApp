@@ -1,13 +1,6 @@
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  AppState,
-  Linking,
   Modal,
   PermissionsAndroid,
   Platform,
@@ -30,6 +23,7 @@ import {
   Wallet,
   X,
 } from 'lucide-react-native';
+import RazorpayCheckout from 'react-native-razorpay';
 import api from '../../api';
 import type { StoreCartItem } from '../types';
 import { formatPrice } from '../utils';
@@ -57,18 +51,34 @@ type Address = {
   is_default?: boolean | number;
 };
 
-type PickupLocation = {
-  id: string | number;
-  name: string;
-  address: string;
-};
-
 type Coordinates = {
   latitude: number;
   longitude: number;
 };
 
 type AddressDraft = Omit<Address, 'id' | 'is_default'>;
+
+type CustomerDetails = {
+  customer_name: string;
+  customer_email: string;
+  customer_phone: string;
+};
+
+type PaymentOrderResponse = {
+  key_id: string;
+  order_id: string;
+  amount: number;
+  currency: string;
+};
+
+type CheckoutOrder = {
+  id?: string | number;
+  order_id?: string | number;
+};
+
+type CheckoutOrderResponse = CheckoutOrder & {
+  order?: CheckoutOrder;
+};
 
 const emptyAddress: AddressDraft = {
   label: 'Home',
@@ -86,10 +96,14 @@ function responseMessage(error: unknown) {
   if (
     typeof error === 'object' &&
     error !== null &&
-    'message' in error &&
-    typeof error.message === 'string'
+    ('message' in error || 'description' in error)
   ) {
-    return error.message;
+    if ('message' in error && typeof error.message === 'string') {
+      return error.message;
+    }
+    if ('description' in error && typeof error.description === 'string') {
+      return error.description;
+    }
   }
   return 'Please try again.';
 }
@@ -118,7 +132,7 @@ function CheckoutInput({
   label: string;
   value: string;
   onChangeText: (value: string) => void;
-  keyboardType?: 'default' | 'phone-pad' | 'numeric';
+  keyboardType?: 'default' | 'phone-pad' | 'numeric' | 'email-address';
   placeholder?: string;
 }) {
   return (
@@ -159,12 +173,11 @@ export default function Checkout({
   >(null);
   const [addressesLoading, setAddressesLoading] = useState(true);
   const [addressesError, setAddressesError] = useState('');
-  const [pickupLocations, setPickupLocations] = useState<PickupLocation[]>([]);
-  const [selectedPickupId, setSelectedPickupId] = useState<
-    string | number | null
-  >(null);
-  const [pickupLoading, setPickupLoading] = useState(false);
-  const [pickupError, setPickupError] = useState('');
+  const [customerDetails, setCustomerDetails] = useState<CustomerDetails>({
+    customer_name: '',
+    customer_email: '',
+    customer_phone: '',
+  });
   const [gstSettings, setGstSettings] = useState<GstSettings | null>(null);
   const [gstSettingsLoading, setGstSettingsLoading] = useState(true);
   const [gstSettingsError, setGstSettingsError] = useState('');
@@ -177,9 +190,6 @@ export default function Checkout({
   const [coordinates, setCoordinates] = useState<Coordinates | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
-  const [pendingPaymentOrderId, setPendingPaymentOrderId] = useState<
-    string | number | null
-  >(null);
 
   const loadAddresses = useCallback(async () => {
     setAddressesLoading(true);
@@ -190,6 +200,17 @@ export default function Checkout({
         throw new Error('The saved-address response was invalid.');
       }
       setAddresses(data);
+      const defaultAddress =
+        data.find(address => Boolean(Number(address.is_default))) ?? data[0];
+      if (defaultAddress) {
+        setCustomerDetails(current => ({
+          customer_name: current.customer_name || defaultAddress.customer_name,
+          customer_email:
+            current.customer_email || defaultAddress.customer_email || '',
+          customer_phone:
+            current.customer_phone || defaultAddress.customer_phone,
+        }));
+      }
       setSelectedAddressId(
         current =>
           current ??
@@ -231,53 +252,6 @@ export default function Checkout({
       active = false;
     };
   }, [gstSettingsLoadKey]);
-
-  useEffect(() => {
-    if (fulfillment !== 'pickup') return;
-    let active = true;
-    setPickupLoading(true);
-    setPickupError('');
-    api
-      .get<PickupLocation[] | { locations?: PickupLocation[] }>(
-        '/pickup-locations',
-      )
-      .then(({ data }) => {
-        const locations = Array.isArray(data) ? data : data?.locations;
-        if (!Array.isArray(locations)) {
-          throw new Error('The pickup-location response was invalid.');
-        }
-        if (!active) return;
-        setPickupLocations(locations);
-        setSelectedPickupId(current => current ?? locations[0]?.id ?? null);
-      })
-      .catch(error => {
-        if (active) setPickupError(responseMessage(error));
-      })
-      .finally(() => {
-        if (active) setPickupLoading(false);
-      });
-    return () => {
-      active = false;
-    };
-  }, [fulfillment]);
-
-  const quoteRequestBody = useMemo(
-    () => ({
-      fulfillment_type: fulfillment,
-      address_id: fulfillment === 'delivery' ? selectedAddressId : undefined,
-      pickup_location_id:
-        fulfillment === 'pickup' ? selectedPickupId : undefined,
-      items: items.map(item => ({
-        cart_item_id: item.id,
-        product_id:
-          item.item_type === 'combo' ? undefined : item.product_id ?? item.id,
-        combo_id:
-          item.item_type === 'combo' ? item.combo_id ?? item.id : undefined,
-        quantity: Number(item.quantity),
-      })),
-    }),
-    [fulfillment, items, selectedAddressId, selectedPickupId],
-  );
 
   const subtotal = useMemo(() => calculateCartSubtotal(items), [items]);
   const quote = useMemo<CheckoutQuote | null>(() => {
@@ -380,101 +354,39 @@ export default function Checkout({
     }
   };
 
-  const orderPayload = () => ({
-    fulfillment_type: fulfillment,
-    address_id: fulfillment === 'delivery' ? selectedAddressId : undefined,
-    shipping_address:
-      fulfillment === 'delivery'
-        ? addresses.find(address => address.id === selectedAddressId)
-        : undefined,
-    delivery_coordinates:
-      fulfillment === 'delivery' && coordinates ? coordinates : undefined,
-    pickup_location_id: fulfillment === 'pickup' ? selectedPickupId : undefined,
-    payment_method: paymentMethod === 'cod' ? 'cash_on_delivery' : 'razorpay',
-    items: quoteRequestBody.items,
-  });
-
   const checkoutPayload = () => {
     const deliveryAddress =
       fulfillment === 'delivery'
         ? addresses.find(address => address.id === selectedAddressId)
         : undefined;
-    const contactAddress =
-      deliveryAddress ??
-      addresses.find(address => Boolean(Number(address.is_default))) ??
-      addresses[0];
 
     return {
-      customer_name: contactAddress?.customer_name ?? '',
-      customer_email: contactAddress?.customer_email ?? '',
-      customer_phone: contactAddress?.customer_phone ?? '',
+      customer_name: customerDetails.customer_name.trim(),
+      customer_email: customerDetails.customer_email.trim(),
+      customer_phone: customerDetails.customer_phone.trim(),
       fulfillment_type: fulfillment === 'pickup' ? 'Pickup' : 'Delivery',
       street_address: deliveryAddress?.street_address ?? '',
       city: deliveryAddress?.city ?? '',
       district: deliveryAddress?.district ?? '',
       state: deliveryAddress?.state ?? '',
-      country: deliveryAddress?.country ?? '',
+      country: deliveryAddress?.country || 'India',
       zip_code: deliveryAddress?.zip_code ?? '',
       payment_method: paymentMethod === 'cod' ? 'Cash' : 'Razorpay',
     };
   };
 
-  const checkPaymentStatus = useCallback(
-    async (orderId: string | number) => {
-      try {
-        const { data } = await api.get(`/orders/${orderId}`);
-        const status = String(
-          data?.payment_status ?? data?.payment?.status ?? '',
-        ).toLowerCase();
-        if (['paid', 'captured', 'completed', 'success'].includes(status)) {
-          setPendingPaymentOrderId(null);
-          showUserAlert(
-            'Payment confirmed',
-            'Your order has been placed successfully.',
-          );
-          onOrderPlaced();
-        } else if (['failed', 'cancelled', 'canceled'].includes(status)) {
-          setPendingPaymentOrderId(null);
-          showUserAlert(
-            'Payment not completed',
-            'Your order is not confirmed. You can try again.',
-          );
-        } else {
-          showUserAlert(
-            'Payment confirmation pending',
-            'The server has not confirmed this payment yet. Check your orders again shortly.',
-          );
-        }
-      } catch (error) {
-        showUserAlert('Could not verify payment', responseMessage(error));
-      }
-    },
-    [onOrderPlaced, showUserAlert],
-  );
-
-  useEffect(() => {
-    if (pendingPaymentOrderId == null) return;
-    let backgrounded = false;
-    const subscription = AppState.addEventListener('change', state => {
-      if (state !== 'active') {
-        backgrounded = true;
-      } else if (backgrounded) {
-        backgrounded = false;
-        checkPaymentStatus(pendingPaymentOrderId);
-      }
-    });
-    return () => {
-      subscription.remove();
-    };
-  }, [checkPaymentStatus, pendingPaymentOrderId]);
-
   const placeOrder = async () => {
     if (!quote || submitting) return;
     setSubmitting(true);
     setSubmitError('');
+    let completedPaymentId: string | null = null;
+    const payload = checkoutPayload();
     try {
       if (paymentMethod === 'cod') {
-        const { data } = await api.post('/orders/checkout', checkoutPayload());
+        const { data } = await api.post<CheckoutOrderResponse>(
+          '/orders/checkout',
+          payload,
+        );
         const order = data?.order ?? data;
         const orderId = order?.order_id ?? order?.id;
         if (orderId == null) {
@@ -490,29 +402,60 @@ export default function Checkout({
         return;
       }
 
-      const { data } = await api.post(
-        '/payments/razorpay/checkout',
-        orderPayload(),
+      const { data: paymentOrder } = await api.post<PaymentOrderResponse>(
+        '/orders/checkout/payment-order',
+        payload,
       );
-      const checkoutUrl = data?.checkout_url;
-      const orderId = data?.order_id ?? data?.order?.id;
       if (
-        typeof checkoutUrl !== 'string' ||
-        !/^https:\/\//i.test(checkoutUrl) ||
-        orderId == null
+        !paymentOrder.key_id ||
+        !paymentOrder.order_id ||
+        !Number.isSafeInteger(paymentOrder.amount) ||
+        paymentOrder.amount < 100 ||
+        paymentOrder.currency !== 'INR'
       ) {
         throw new Error(
-          'The server did not provide a secure Razorpay checkout link and order ID.',
+          'The server returned invalid Razorpay payment details.',
         );
       }
-      await Linking.openURL(checkoutUrl);
-      setPendingPaymentOrderId(orderId);
-      showUserAlert(
-        'Complete your payment',
-        'Razorpay checkout opened. Return here after paying; the server will confirm your order.',
+
+      const paymentResponse = await RazorpayCheckout.open({
+        key: paymentOrder.key_id,
+        amount: paymentOrder.amount,
+        currency: paymentOrder.currency,
+        name: 'Q Living Furniture',
+        description: 'Furniture order payment',
+        order_id: paymentOrder.order_id,
+        prefill: {
+          name: payload.customer_name,
+          email: payload.customer_email,
+          contact: payload.customer_phone,
+        },
+        theme: { color: '#351D0E' },
+      });
+      completedPaymentId = paymentResponse.razorpay_payment_id;
+
+      const { data } = await api.post<CheckoutOrderResponse>(
+        '/orders/checkout/verify-payment',
+        { ...payload, ...paymentResponse },
       );
+      const order = data?.order ?? data;
+      const orderId = order?.order_id ?? order?.id;
+      if (orderId == null) {
+        throw new Error(
+          'The server did not confirm the paid order. Please contact support.',
+        );
+      }
+      showUserAlert(
+        'Order placed',
+        `Your order ${order.order_id ?? `#${orderId}`} is confirmed.`,
+      );
+      onOrderPlaced();
     } catch (error) {
-      setSubmitError(responseMessage(error));
+      setSubmitError(
+        completedPaymentId
+          ? `Payment ${completedPaymentId} was received, but the order could not be confirmed: ${responseMessage(error)} Please contact support if this remains unresolved.`
+          : responseMessage(error),
+      );
     } finally {
       setSubmitting(false);
     }
@@ -524,9 +467,13 @@ export default function Checkout({
   const destinationReady =
     fulfillment === 'delivery'
       ? selectedAddress != null
-      : selectedPickupId != null;
+      : true;
+  const contactReady =
+    customerDetails.customer_name.trim().length > 0 &&
+    customerDetails.customer_phone.trim().length > 0;
   const orderReady =
     destinationReady &&
+    contactReady &&
     quote != null &&
     !quoteLoading &&
     !quoteError &&
@@ -588,6 +535,47 @@ export default function Checkout({
         </View>
       </View>
 
+      <View className="mb-4 rounded-[18px] border border-[#F0E7DE] bg-white p-4">
+        <Text className="mb-3 text-[14px] font-black text-[#351D0E]">
+          Customer details
+        </Text>
+        <CheckoutInput
+          label="Full name"
+          value={customerDetails.customer_name}
+          onChangeText={value =>
+            setCustomerDetails(current => ({
+              ...current,
+              customer_name: value,
+            }))
+          }
+          placeholder="Your name"
+        />
+        <CheckoutInput
+          label="Phone number"
+          value={customerDetails.customer_phone}
+          onChangeText={value =>
+            setCustomerDetails(current => ({
+              ...current,
+              customer_phone: value,
+            }))
+          }
+          keyboardType="phone-pad"
+          placeholder="Mobile number"
+        />
+        <CheckoutInput
+          label="Email address (optional)"
+          value={customerDetails.customer_email}
+          onChangeText={value =>
+            setCustomerDetails(current => ({
+              ...current,
+              customer_email: value,
+            }))
+          }
+          keyboardType="email-address"
+          placeholder="you@example.com"
+        />
+      </View>
+
       {fulfillment === 'delivery' ? (
         <View className="mb-4 rounded-[18px] border border-[#F0E7DE] bg-white p-4">
           <View className="mb-3 flex-row items-center justify-between">
@@ -624,7 +612,17 @@ export default function Checkout({
                   key={address.id}
                   accessibilityRole="radio"
                   accessibilityState={{ selected }}
-                  onPress={() => setSelectedAddressId(address.id)}
+                  onPress={() => {
+                    setSelectedAddressId(address.id);
+                    setCustomerDetails(current => ({
+                      customer_name:
+                        address.customer_name || current.customer_name,
+                      customer_email:
+                        address.customer_email || current.customer_email,
+                      customer_phone:
+                        address.customer_phone || current.customer_phone,
+                    }));
+                  }}
                   className={`mb-2 flex-row items-start rounded-[13px] border p-3 ${
                     selected
                       ? 'border-[#F97316] bg-[#FFF9F4]'
@@ -688,59 +686,13 @@ export default function Checkout({
         </View>
       ) : (
         <View className="mb-4 rounded-[18px] border border-[#F0E7DE] bg-white p-4">
-          <Text className="mb-3 text-[14px] font-black text-[#351D0E]">
-            Choose a pickup point
+          <Text className="text-[14px] font-black text-[#351D0E]">
+            Store pickup
           </Text>
-          {pickupLoading ? (
-            <ActivityIndicator color="#F97316" />
-          ) : pickupError ? (
-            <Text className="text-[12px] leading-5 text-[#8B2D20]">
-              Pickup locations could not be loaded: {pickupError}
-            </Text>
-          ) : pickupLocations.length === 0 ? (
-            <Text className="text-[12px] leading-5 text-[#8B735E]">
-              No pickup locations are available right now.
-            </Text>
-          ) : (
-            pickupLocations.map(location => {
-              const selected = location.id === selectedPickupId;
-              return (
-                <Pressable
-                  key={location.id}
-                  accessibilityRole="radio"
-                  accessibilityState={{ selected }}
-                  onPress={() => setSelectedPickupId(location.id)}
-                  className={`mb-2 flex-row items-start rounded-[13px] border p-3 ${
-                    selected
-                      ? 'border-[#F97316] bg-[#FFF9F4]'
-                      : 'border-[#EFE6DC]'
-                  }`}
-                >
-                  <View className="mr-3 mt-0.5">
-                    <RadioMark selected={selected} />
-                  </View>
-                  <View className="flex-1">
-                    <Text className="text-[12px] font-bold text-[#351D0E]">
-                      {location.name}
-                    </Text>
-                    <Text className="mt-1 text-[11px] leading-4 text-[#725D4B]">
-                      {location.address}
-                    </Text>
-                  </View>
-                </Pressable>
-              );
-            })
-          )}
-          {pickupError ? (
-            <Pressable
-              onPress={() => setFulfillment('delivery')}
-              className="mt-2 self-start"
-            >
-              <Text className="text-[12px] font-bold text-[#B94719]">
-                Switch to delivery
-              </Text>
-            </Pressable>
-          ) : null}
+          <Text className="mt-2 text-[12px] leading-5 text-[#8B735E]">
+            Pickup was selected. The store will share collection details after
+            your order is confirmed.
+          </Text>
         </View>
       )}
 
@@ -863,16 +815,6 @@ export default function Checkout({
         <View className="mb-3 rounded-[12px] bg-red-50 px-4 py-3">
           <Text className="text-[12px] text-red-700">{submitError}</Text>
         </View>
-      ) : null}
-      {pendingPaymentOrderId != null ? (
-        <Pressable
-          onPress={() => checkPaymentStatus(pendingPaymentOrderId)}
-          className="mb-3 rounded-[12px] border border-[#F1D5C2] bg-[#FFF5ED] px-4 py-3"
-        >
-          <Text className="text-center text-[12px] font-bold text-[#B94719]">
-            I’ve returned from Razorpay · Check payment status
-          </Text>
-        </Pressable>
       ) : null}
       <Pressable
         accessibilityRole="button"
