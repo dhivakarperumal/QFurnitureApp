@@ -1124,7 +1124,9 @@ export default function Storefront({
           key={activeTab}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
-          contentContainerClassName="pb-[115px]"
+          contentContainerClassName={
+            activeTab === 'Home' ? 'pb-[160px]' : 'pb-[115px]'
+          }
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
