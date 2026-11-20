@@ -36,6 +36,7 @@ import AddressesScreen from './Account/AddressesScreen';
 import OrdersScreen from './Account/OrdersScreen';
 import SetPasswordScreen from './Account/SetPasswordScreen';
 import { MoreMenu, MorePlaceholder, type MoreDestination } from './More';
+import { setUserNavigationBarAppearance } from '../services/navigationBar';
 
 // ─── Inner page header (fixed, no main header / no bottom tabs) ───────────────
 function InnerPageHeader({
@@ -106,6 +107,18 @@ export default function Storefront({
   onLogoutPress: () => void;
 }) {
   const insets = useSafeAreaInsets();
+  useEffect(() => {
+    setUserNavigationBarAppearance(true).catch(error => {
+      console.warn('[Storefront] Could not set user navigation bar style:', error);
+    });
+
+    return () => {
+      setUserNavigationBarAppearance(false).catch(error => {
+        console.warn('[Storefront] Could not restore navigation bar style:', error);
+      });
+    };
+  }, []);
+
   const [activeTab, setActiveTab] = useState<StoreTab>('Home');
   const [detailTarget, setDetailTarget] = useState<{
     itemId: string;
@@ -509,13 +522,13 @@ export default function Storefront({
           favorites={favoriteIds}
           onCategoryPress={category => {
             setSelectedCategory(category);
-            setActiveTab('Explore');
+            setActiveTab('Shop');
           }}
-          onExplorePress={() => setActiveTab('Explore')}
+          onExplorePress={() => setActiveTab('Shop')}
           onRoomPress={roomSlug => {
             setSelectedCategory('');
             setSearch(roomSlug.replace(/-/g, ' '));
-            setActiveTab('Explore');
+            setActiveTab('Shop');
           }}
           onCustomFurniturePress={() =>
             Alert.alert(
@@ -530,7 +543,7 @@ export default function Storefront({
       );
     }
 
-    if (activeTab === 'Explore') {
+    if (activeTab === 'Shop') {
       return (
         <Shop
           categories={storeData.categories}
@@ -602,7 +615,7 @@ export default function Storefront({
           onRetry={retryCart}
           onQuantityChange={updateCartQuantity}
           onRemove={removeFromCart}
-          onExplorePress={() => setActiveTab('Explore')}
+          onExplorePress={() => setActiveTab('Shop')}
           onCheckoutPress={() => setCheckoutOpen(true)}
         />
       );
@@ -704,7 +717,7 @@ export default function Storefront({
             <Text className="text-[13px] font-bold text-white">Try again</Text>
           </Pressable>
         </View>
-      ) : activeTab === 'Profile' || activeTab === 'Explore' ? (
+      ) : activeTab === 'Profile' || activeTab === 'Shop' ? (
         // Profile (menu) and Shop manage their own scroll/layout.
         // paddingBottom accounts for the absolute-positioned tab bar (~65px) + home indicator
         <View
