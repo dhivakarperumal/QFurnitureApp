@@ -23,6 +23,7 @@ import {
   ImagePlus,
   MessageSquare,
   Package,
+  Plus,
   Reply,
   Search,
   Send,
@@ -116,6 +117,21 @@ const initialForm: ReviewForm = {
 };
 
 const modalStyles = StyleSheet.create({
+  addReviewFab: {
+    position: 'absolute',
+    right: 20,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#C2410C',
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+  },
   keyboardAvoiding: {
     flex: 1,
     justifyContent: 'flex-end',
@@ -224,6 +240,10 @@ export default function Review({
   onScrollVisibilityChange,
 }: ReviewsProps) {
   const insets = useSafeAreaInsets();
+  const addReviewFabPosition = useMemo(
+    () => ({ bottom: Math.max(insets.bottom, 12) + 16 }),
+    [insets.bottom],
+  );
   const lastScrollY = useRef(0);
   const requestId = useRef(0);
   const lastRefreshKey = useRef(0);
@@ -734,17 +754,6 @@ export default function Review({
           </ScrollView>
         </View>
 
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => setAddVisible(true)}
-          className="mb-3 h-[44px] flex-row items-center justify-center rounded-[11px] bg-[#C2410C]"
-        >
-          <MessageSquare size={16} color="#FFFFFF" />
-          <Text className="ml-2 text-[11px] font-bold text-white">
-            Add manual review
-          </Text>
-        </Pressable>
-
         {loadError && hasLoadedReviews.current ? (
           <View className="mb-3 flex-row items-center justify-between rounded-[12px] border border-[#FECACA] bg-[#FEF2F2] px-3 py-2.5">
             <Text className="mr-3 flex-1 text-[9px] text-[#B91C1C]">
@@ -984,6 +993,15 @@ export default function Review({
           })
         )}
       </ScrollView>
+
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Add manual review"
+        onPress={() => setAddVisible(true)}
+        style={[modalStyles.addReviewFab, addReviewFabPosition]}
+      >
+        <Plus size={26} color="#FFFFFF" strokeWidth={2.5} />
+      </Pressable>
 
       <Modal
         visible={addVisible}
