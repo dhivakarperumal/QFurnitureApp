@@ -34,6 +34,7 @@ export type ItemDetailsProps = {
   onFavoritePress: (productId: string) => void;
   onAddToCart: (productId: string) => void;
   onBuyNow?: (productId: string) => void;
+  onNameLoaded?: (name: string) => void;
 };
 
 function getErrorMessage(
@@ -78,6 +79,7 @@ export default function ItemDetails({
   onFavoritePress,
   onAddToCart,
   onBuyNow,
+  onNameLoaded,
 }: ItemDetailsProps) {
   const [item, setItem] = useState<DetailItem | null>(null);
   const [loading, setLoading] = useState(true);
@@ -100,6 +102,9 @@ export default function ItemDetails({
         }
         if (active) {
           setItem(data);
+          const itemName =
+            typeof data.name === 'string' ? data.name.trim() : '';
+          if (itemName) onNameLoaded?.(itemName);
           setActiveImageIndex(0);
         }
       } catch (requestError) {
@@ -114,7 +119,7 @@ export default function ItemDetails({
     return () => {
       active = false;
     };
-  }, [itemId, itemType, retryCount]);
+  }, [itemId, itemType, onNameLoaded, retryCount]);
 
   const gallery = item ? getGallery(item) : [];
   const price = item ? productPrice(item) : 0;

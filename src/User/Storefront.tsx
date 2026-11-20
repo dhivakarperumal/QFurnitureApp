@@ -39,6 +39,7 @@ import OrdersScreen from './Account/OrdersScreen';
 import SetPasswordScreen from './Account/SetPasswordScreen';
 import { MoreMenu, MorePlaceholder, type MoreDestination } from './More';
 import AboutUs from './AboutUs';
+import ContactUs from './ContactUs';
 import { setUserNavigationBarAppearance } from '../services/navigationBar';
 import { useUserAlert } from './UserAlert';
 
@@ -179,6 +180,7 @@ export default function Storefront({
     itemId: string;
     itemType: 'product' | 'combo';
   } | null>(null);
+  const [detailItemName, setDetailItemName] = useState('');
   const [storeData, setStoreData] = useState(emptyStoreData);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -740,6 +742,7 @@ export default function Storefront({
       return;
     }
 
+    setDetailItemName('');
     setDetailTarget({ itemId: String(numericId), itemType });
   };
 
@@ -757,7 +760,10 @@ export default function Storefront({
 
   // Title / subtitle shown in the inner header
   const innerPageTitle = (() => {
-    if (isDetailPage) return detailTarget!.itemType === 'combo' ? 'Combo Details' : 'Product Details';
+    if (isDetailPage) {
+      return detailItemName ||
+        (detailTarget!.itemType === 'combo' ? 'Combo Details' : 'Product Details');
+    }
     if (moreDestination === 'about') return 'About Us';
     if (moreDestination === 'contact') return 'Contact Us';
     if (accountSubScreen === 'profile') return 'Profile';
@@ -778,6 +784,7 @@ export default function Storefront({
   const handleInnerBack = () => {
     if (isDetailPage) {
       setDetailTarget(null);
+      setDetailItemName('');
     } else if (moreDestination === 'about' || moreDestination === 'contact') {
       setMoreDestination('menu');
     } else {
@@ -857,6 +864,7 @@ export default function Storefront({
         onFavoritePress: toggleFavorite,
         onAddToCart: addToCart,
         onBuyNow: buyNow,
+        onNameLoaded: setDetailItemName,
       };
       return detailTarget.itemType === 'combo' ? (
         <ComboDetails {...detailProps} />
@@ -1000,7 +1008,7 @@ export default function Storefront({
     }
 
     if (moreDestination === 'contact') {
-      return <MorePlaceholder message="Contact Us details will be added here." />;
+      return <ContactUs />;
     }
 
     // My Account destination in the More tab
