@@ -11,8 +11,6 @@ import Svg, {
   Defs,
   LinearGradient,
   Path,
-  RadialGradient,
-  Rect,
   Stop,
 } from 'react-native-svg';
 import { Gift, Home, Search, ShoppingCart, UserRound } from 'lucide-react-native';
@@ -26,14 +24,66 @@ type TabsProps = {
 };
 
 const tabs = [
-  { name: 'Home', icon: Home, label: 'Home' },
-  { name: 'Explore', icon: Search, label: 'Explore' },
-  { name: 'Cart', icon: ShoppingCart, label: 'Cart' },
-  { name: 'Combos', icon: Gift, label: 'Combo' },
-  { name: 'Profile', icon: UserRound, label: 'Account' },
+  { name: 'Home',    icon: Home,         label: 'Home'    },
+  { name: 'Explore', icon: Search,       label: 'Explore' },
+  { name: 'Cart',    icon: ShoppingCart, label: 'Cart'    },
+  { name: 'Combos',  icon: Gift,         label: 'Combo'   },
+  { name: 'Profile', icon: UserRound,    label: 'Account' },
 ] as const;
 
 const GREEN = '#123D24';
+
+/** Small orange blob rendered via SVG, clipped to the pill corners */
+function CornerBlob({ side }: { side: 'left' | 'right' }) {
+  const isLeft = side === 'left';
+  return (
+    <Svg
+      width={110}
+      height={90}
+      viewBox="0 0 110 90"
+      pointerEvents="none"
+      style={[styles.blobSvg, isLeft ? styles.blobLeft : styles.blobRight]}>
+      <Defs>
+        <LinearGradient
+          id={`blob-${side}`}
+          x1={isLeft ? '0%' : '100%'}
+          y1="0%"
+          x2={isLeft ? '100%' : '0%'}
+          y2="100%">
+          <Stop offset="0%"   stopColor="#FFB820" />
+          <Stop offset="100%" stopColor="#FF4A0A" />
+        </LinearGradient>
+      </Defs>
+      {isLeft ? (
+        <>
+          {/* Main blob */}
+          <Path
+            d="M0 0 Q55 0 55 45 Q55 70 20 85 L0 90 Z"
+            fill={`url(#blob-${side})`}
+          />
+          {/* Darker bottom accent */}
+          <Path
+            d="M0 60 Q25 52 45 65 L20 90 L0 90 Z"
+            fill="#E84E00"
+            opacity="0.85"
+          />
+        </>
+      ) : (
+        <>
+          <Path
+            d="M110 0 Q55 0 55 45 Q55 70 90 85 L110 90 Z"
+            fill={`url(#blob-${side})`}
+          />
+          <Path
+            d="M110 60 Q85 52 65 65 L90 90 L110 90 Z"
+            fill="#E84E00"
+            opacity="0.85"
+          />
+        </>
+      )}
+    </Svg>
+  );
+}
 
 export default function Tabs({
   activeTab,
@@ -47,81 +97,27 @@ export default function Tabs({
   return (
     <View
       pointerEvents="box-none"
-      style={[
-        styles.container,
-        { paddingBottom: Math.max(bottomInset, 8) },
-      ]}>
+      style={[styles.container, { paddingBottom: Math.max(bottomInset, 8) }]}>
+
+      {/* ── Pill bar ── */}
       <View style={[styles.bar, { width: barWidth }]}>
 
-        {/* ── SVG background: pill + orange corner blobs ── */}
-        <Svg
-          pointerEvents="none"
-          width={barWidth}
-          height={90}
-          viewBox="0 0 400 90"
-          preserveAspectRatio="none"
-          style={StyleSheet.absoluteFill}>
-          <Defs>
-            {/* Bar gradient – warm cream */}
-            <LinearGradient id="barBg" x1="0%" y1="0%" x2="0%" y2="100%">
-              <Stop offset="0%" stopColor="#FFF8EC" />
-              <Stop offset="100%" stopColor="#FFF3DC" />
-            </LinearGradient>
-            {/* Orange corner blob gradient */}
-            <LinearGradient id="blobGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <Stop offset="0%" stopColor="#FFB820" />
-              <Stop offset="100%" stopColor="#FF4A0A" />
-            </LinearGradient>
-            {/* Glow behind cart */}
-            <RadialGradient id="glow" cx="50%" cy="50%" r="50%">
-              <Stop offset="0%" stopColor="#FF8C00" stopOpacity="0.35" />
-              <Stop offset="100%" stopColor="#FF8C00" stopOpacity="0" />
-            </RadialGradient>
-          </Defs>
+        {/* Cream pill background */}
+        <View style={styles.pillBg} />
 
-          {/* Pill background */}
-          <Rect
-            x="1" y="1" width="398" height="88"
-            rx="44"
-            fill="url(#barBg)"
-            stroke="#FFAA44"
-            strokeWidth="1.5"
-          />
+        {/* Orange corner blobs (clipped inside pill via overflow:hidden on pillBg) */}
+        <CornerBlob side="left" />
+        <CornerBlob side="right" />
 
-          {/* Left orange blob */}
-          <Path
-            d="M0 48C0 20 18 2 46 2h68C82 12 46 36 10 82 4 72 0 61 0 48Z"
-            fill="url(#blobGrad)"
-          />
-          {/* Left bottom accent wave */}
-          <Path
-            d="M0 72 C12 60 32 56 60 62 L46 88 Q22 88 6 82Z"
-            fill="#FF6010"
-            opacity="0.9"
-          />
+        {/* Thin dividers */}
+        <View pointerEvents="none" style={[styles.sep, styles.sepLeft]} />
+        <View pointerEvents="none" style={[styles.sep, styles.sepRight]} />
 
-          {/* Right orange blob */}
-          <Path
-            d="M400 48C400 20 382 2 354 2h-68c32 10 68 34 104 80 6-10 10-21 10-34Z"
-            fill="url(#blobGrad)"
-          />
-          {/* Right bottom accent wave */}
-          <Path
-            d="M400 72 C388 60 368 56 340 62 L354 88 Q378 88 394 82Z"
-            fill="#FF6010"
-            opacity="0.9"
-          />
-
-          {/* Subtle glow behind center cart button */}
-          <Circle cx="200" cy="10" r="55" fill="url(#glow)" />
-        </Svg>
-
-        {/* ── Tabs row ── */}
+        {/* Tab buttons */}
         <View style={styles.tabsRow}>
           {tabs.map(({ name, icon: Icon, label }) => {
             const active = activeTab === name;
 
-            // Centre slot – reserved for the floating cart
             if (name === 'Cart') {
               return <View key={name} style={styles.cartSlot} />;
             }
@@ -152,11 +148,7 @@ export default function Tabs({
           })}
         </View>
 
-        {/* ── Separators: left of Explore, right of Combo ── */}
-        <View pointerEvents="none" style={[styles.sep, styles.sepLeft]} />
-        <View pointerEvents="none" style={[styles.sep, styles.sepRight]} />
-
-        {/* ── Floating cart button ── */}
+        {/* ── Floating Cart FAB ── */}
         <Pressable
           accessibilityRole="tab"
           accessibilityState={{ selected: activeTab === 'Cart' }}
@@ -164,26 +156,25 @@ export default function Tabs({
           onPress={() => onTabPress('Cart')}
           style={({ pressed }) => [styles.cartBtn, pressed && styles.pressed]}>
 
-          {/* Outer glow ring */}
-          <Svg width={94} height={94} viewBox="0 0 94 94" pointerEvents="none" style={StyleSheet.absoluteFill}>
+          {/* Cart circle drawn with SVG for the gradient */}
+          <Svg
+            width={82}
+            height={82}
+            viewBox="0 0 82 82"
+            pointerEvents="none"
+            style={StyleSheet.absoluteFill}>
             <Defs>
-              <RadialGradient id="cartGlow" cx="50%" cy="50%" r="50%">
-                <Stop offset="0%" stopColor="#FFAA00" stopOpacity="0.5" />
-                <Stop offset="100%" stopColor="#FF4A00" stopOpacity="0" />
-              </RadialGradient>
-              <LinearGradient id="cartGrad" x1="20%" y1="0%" x2="80%" y2="100%">
-                <Stop offset="0%" stopColor="#FFAE1A" />
+              <LinearGradient id="cartGrad" x1="30%" y1="0%" x2="70%" y2="100%">
+                <Stop offset="0%"   stopColor="#FFBE28" />
                 <Stop offset="100%" stopColor="#FF3E08" />
               </LinearGradient>
             </Defs>
-            {/* Glow halo */}
-            <Circle cx="47" cy="47" r="47" fill="url(#cartGlow)" />
-            {/* White border ring */}
-            <Circle cx="47" cy="47" r="38" fill="white" />
+            {/* White ring */}
+            <Circle cx="41" cy="41" r="40" fill="#FFFFFF" />
             {/* Orange filled circle */}
-            <Circle cx="47" cy="47" r="34" fill="url(#cartGrad)" />
-            {/* Subtle inner highlight */}
-            <Circle cx="47" cy="37" r="14" fill="white" opacity="0.12" />
+            <Circle cx="41" cy="41" r="35" fill="url(#cartGrad)" />
+            {/* Soft highlight */}
+            <Circle cx="41" cy="30" r="13" fill="#FFFFFF" opacity="0.15" />
           </Svg>
 
           <ShoppingCart
@@ -193,7 +184,6 @@ export default function Tabs({
             style={styles.cartIcon}
           />
 
-          {/* Badge */}
           {cartCount > 0 && (
             <View style={styles.badge}>
               <Text style={styles.badgeText}>
@@ -216,18 +206,56 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     zIndex: 20,
   },
+
+  /* Outer pill shell — no background colour here, it comes from pillBg */
   bar: {
     height: 90,
     borderRadius: 45,
     position: 'relative',
+    overflow: 'hidden',       // clips blobs to pill shape ✅
     shadowColor: '#FF6010',
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.28,
-    shadowRadius: 18,
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
     elevation: 10,
   },
+
+  /* Cream pill background fills the whole bar */
+  pillBg: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#FFF7E8',
+    borderRadius: 45,
+    borderWidth: 1.5,
+    borderColor: '#FFAA44',
+  },
+
+  /* Blob SVGs — absolutely positioned inside the bar */
+  blobSvg: {
+    position: 'absolute',
+    top: 0,
+  },
+  blobLeft:  { left: 0  },
+  blobRight: { right: 0 },
+
+  /* Thin vertical dividers */
+  sep: {
+    position: 'absolute',
+    top: 22,
+    height: 46,
+    width: 1,
+    backgroundColor: '#C8894A',
+    opacity: 0.55,
+  },
+  sepLeft:  { left: '25%'  },
+  sepRight: { right: '25%' },
+
+  /* Row of tabs */
   tabsRow: {
-    height: '100%',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     flexDirection: 'row',
     alignItems: 'center',
   },
@@ -239,63 +267,46 @@ const styles = StyleSheet.create({
     height: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingTop: 2,
-    gap: 4,
+    gap: 3,
   },
   pressed: {
-    opacity: 0.68,
+    opacity: 0.65,
   },
   label: {
     color: GREEN,
-    fontSize: 11.5,
+    fontSize: 11,
     lineHeight: 14,
     fontWeight: '500',
-    letterSpacing: 0.1,
   },
   activeLabel: {
     fontWeight: '700',
-    fontSize: 12,
+    fontSize: 11.5,
   },
   activeIndicator: {
     position: 'absolute',
-    bottom: 9,
-    width: 36,
-    height: 3.5,
+    bottom: 10,
+    width: 34,
+    height: 3,
     borderRadius: 2,
     backgroundColor: '#FF5000',
   },
 
-  /* Thin dividers */
-  sep: {
-    position: 'absolute',
-    top: 22,
-    height: 46,
-    width: 1,
-    backgroundColor: '#D4914A',
-    opacity: 0.6,
-  },
-  sepLeft: {
-    left: '25%',
-  },
-  sepRight: {
-    right: '25%',
-  },
-
-  /* Cart FAB */
+  /* Floating cart button — sits ABOVE overflow:hidden bar via absolute on container */
   cartBtn: {
     position: 'absolute',
     left: '50%',
-    top: -28,
-    width: 94,
-    height: 94,
-    marginLeft: -47,
+    top: -24,                 // floats above the bar
+    width: 82,
+    height: 82,
+    marginLeft: -41,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#FF5000',
-    shadowOffset: { width: 0, height: 8 },
+    shadowColor: '#FF4A00',
+    shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.5,
-    shadowRadius: 14,
-    elevation: 16,
+    shadowRadius: 12,
+    elevation: 18,
+    zIndex: 30,
   },
   cartIcon: {
     position: 'absolute',
@@ -304,22 +315,23 @@ const styles = StyleSheet.create({
   /* Badge */
   badge: {
     position: 'absolute',
-    top: 4,
-    right: 2,
-    minWidth: 26,
-    height: 26,
-    paddingHorizontal: 5,
+    top: 2,
+    right: 0,
+    minWidth: 24,
+    height: 24,
+    paddingHorizontal: 4,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 13,
-    borderWidth: 2.5,
+    borderRadius: 12,
+    borderWidth: 2,
     borderColor: '#FFFFFF',
     backgroundColor: '#F23D0A',
+    zIndex: 31,
   },
   badgeText: {
     color: '#FFFFFF',
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '800',
-    lineHeight: 14,
+    lineHeight: 13,
   },
 });
