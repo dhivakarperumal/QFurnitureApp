@@ -697,7 +697,11 @@ export default function Storefront({
 
     // My Account destination in the More tab
     return accountSubScreen === 'profile' ? (
-      <ProfileScreen onBack={() => setAccountSubScreen('menu')} />
+      <ProfileScreen
+        onBack={() => setAccountSubScreen('menu')}
+        onDeleteAccount={deleteAccount}
+        deletingAccount={deletingAccount}
+      />
     ) : accountSubScreen === 'addresses' ? (
       <AddressesScreen onBack={() => setAccountSubScreen('menu')} />
     ) : accountSubScreen === 'orders' ? (
