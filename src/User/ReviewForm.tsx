@@ -60,7 +60,6 @@ export default function ReviewForm({ itemId, itemType }: ReviewFormProps) {
   const [submitting, setSubmitting] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [userName, setUserName] = useState('');
-  const [userEmail, setUserEmail] = useState('');
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState('');
   const [reviewImage, setReviewImage] = useState<string | null>(null);
@@ -76,7 +75,6 @@ export default function ReviewForm({ itemId, itemType }: ReviewFormProps) {
     let active = true;
     const loadReviewer = async () => {
       let savedName = '';
-      let savedEmail = '';
       try {
         const serializedUser = await AsyncStorage.getItem('user');
         if (serializedUser) {
@@ -89,10 +87,6 @@ export default function ReviewForm({ itemId, itemType }: ReviewFormProps) {
               ('username' in user && typeof user.username === 'string'
                 ? user.username.trim()
                 : '');
-            savedEmail =
-              'email' in user && typeof user.email === 'string'
-                ? user.email.trim()
-                : '';
           }
         }
       } catch (error) {
@@ -102,26 +96,20 @@ export default function ReviewForm({ itemId, itemType }: ReviewFormProps) {
       }
 
       if (active && savedName) setUserName(savedName);
-      if (active && savedEmail) setUserEmail(savedEmail);
 
-      if (!savedName || !savedEmail) {
+      if (!savedName) {
         try {
           const { data } = await api.get<{
             name?: string;
             username?: string;
-            email?: string;
-            user?: { name?: string; username?: string; email?: string };
+            user?: { name?: string; username?: string };
           }>('/users/me');
           const profile = data.user ?? data;
           const profileName =
             profile.name?.trim() || profile.username?.trim() || '';
-          const profileEmail = profile.email?.trim() || '';
           if (active) {
             if (profileName) {
               setUserName(current => current.trim() || profileName);
-            }
-            if (profileEmail) {
-              setUserEmail(current => current || profileEmail);
             }
           }
         } catch (error) {
@@ -230,16 +218,20 @@ export default function ReviewForm({ itemId, itemType }: ReviewFormProps) {
 
     setSubmitting(true);
     try {
-      await api.post('/reviews', {
-        ...(itemType === 'combo'
-          ? { combo_id: numericId }
-          : { product_id: numericId }),
-        user_name: name,
-        user_email: userEmail || null,
-        rating,
-        comment: review,
-        review_image: reviewImage,
-      });
+      await api.post(
+        itemType === 'combo'
+          ? '/reviews/combo/customer'
+          : '/reviews/customer',
+        {
+          ...(itemType === 'combo'
+            ? { combo_id: numericId }
+            : { product_id: numericId }),
+          user_name: name,
+          rating,
+          comment: review,
+          review_image: reviewImage,
+        },
+      );
       setComment('');
       setReviewImage(null);
       setOpen(false);
