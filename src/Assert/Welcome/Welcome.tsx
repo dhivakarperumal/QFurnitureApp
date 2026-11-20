@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   ImageBackground,
   ImageSourcePropType,
+  PanResponder,
   Pressable,
   StatusBar,
   Text,
@@ -19,13 +20,13 @@ const slides: {
     image: require('./1.png'),
     title: 'Make room for comfort',
     description:
-      'Discover furniture designed to make every corner feel like home.',
+      'Discover thoughtfully designed furniture, cosy accents, and timeless pieces that make every corner feel like home.',
   },
   {
     image: require('./2.png'),
     title: 'Find your own style',
     description:
-      'Explore thoughtfully chosen pieces for the spaces you love most.',
+      'Explore thoughtfully chosen furniture, colours, and finishing touches for the spaces you love most, and create rooms that feel uniquely yours.',
   },
   {
     image: require('./3.png'),
@@ -40,6 +41,28 @@ export default function Welcome({ onComplete }: { onComplete: () => void }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const isLastSlide = activeIndex === slides.length - 1;
   const slide = slides[activeIndex];
+  const contentBottomMargin =
+    activeIndex === 1
+      ? 'mb-[50px]'
+      : activeIndex === 2
+        ? 'mb-[30px]'
+        : 'mb-[40px]';
+  const swipeResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onMoveShouldSetPanResponder: (_, gesture) =>
+          Math.abs(gesture.dx) > 16 &&
+          Math.abs(gesture.dx) > Math.abs(gesture.dy),
+        onPanResponderRelease: (_, gesture) => {
+          if (gesture.dx < -50) {
+            setActiveIndex(index => Math.min(index + 1, slides.length - 1));
+          } else if (gesture.dx > 50) {
+            setActiveIndex(index => Math.max(index - 1, 0));
+          }
+        },
+      }),
+    [],
+  );
 
   return (
     <ImageBackground
@@ -58,7 +81,8 @@ export default function Welcome({ onComplete }: { onComplete: () => void }) {
         <Text className="text-[13px] font-bold text-white">Skip</Text>
       </Pressable>
       <View
-        className="flex-1 justify-end px-6 mb-[40px]"
+        {...swipeResponder.panHandlers}
+        className={`flex-1 justify-end px-6 ${contentBottomMargin}`}
         style={{
           paddingTop: insets.top + 14,
           paddingBottom: Math.max(insets.bottom, 20) + 18,
