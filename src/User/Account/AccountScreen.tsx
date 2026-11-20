@@ -3,9 +3,9 @@ import {
   ActivityIndicator,
   Image,
   Pressable,
+  RefreshControl,
   ScrollView,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import {
@@ -21,8 +21,16 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '../../api';
+import {
+  fetchCachedApiData,
+  getCachedApiData,
+  hasCachedApiData,
+} from '../../apiCache';
 import { mediaUrl } from '../utils';
 import { useUserAlert } from '../UserAlert';
+
+const PROFILE_CACHE_KEY = 'user.profile';
+const ORDERS_CACHE_KEY = 'user.orders';
 
 export type AccountSubScreen =
   | 'menu'
@@ -75,16 +83,25 @@ export default function AccountScreen({
 }: AccountScreenProps) {
   const insets = useSafeAreaInsets();
   const showUserAlert = useUserAlert();
-  const [profile, setProfile] = useState<UserProfile>({
-    name: '',
-    email: '',
-    phone: '',
-    profile_image: '',
-  });
-  const [orderCount, setOrderCount] = useState<number | null>(null);
-  const [loading, setLoading] = useState(true);
+  const cachedProfile = getCachedApiData<Record<string, unknown>>(
+    PROFILE_CACHE_KEY,
+  );
+  const [profile, setProfile] = useState<UserProfile>(() => ({
+    name: String(cachedProfile?.name ?? cachedProfile?.username ?? ''),
+    email: String(cachedProfile?.email ?? ''),
+    phone: String(cachedProfile?.phone ?? ''),
+    profile_image: String(cachedProfile?.profile_image ?? ''),
+  }));
+  const cachedOrders = getCachedApiData<unknown[]>(ORDERS_CACHE_KEY);
+  const [orderCount, setOrderCount] = useState<number | null>(
+    () => cachedOrders?.length ?? null,
+  );
+  const [loading, setLoading] = useState(
+    () => !hasCachedApiData(PROFILE_CACHE_KEY),
+  );
+  const [refreshing, setRefreshing] = useState(false);
 
-  const loadProfile = useCallback(async () => {
+  const loadProfile = useCallback(async (forceRefresh = false) => {
     try {
       // Try loading from AsyncStorage first for instant display
       const serializedUser = await AsyncStorage.getItem('user');
@@ -101,12 +118,24 @@ export default function AccountScreen({
         }
       }
       // Then load from API for fresh data
-      const { data } = await api.get('/users/me');
+      const data = await fetchCachedApiData(
+        PROFILE_CACHE_KEY,
+        async force => {
+          const { data: responseData } = await api.get<Record<string, unknown>>(
+            '/users/me',
+            {
+            headers: force ? { 'Cache-Control': 'no-store' } : undefined,
+            },
+          );
+          return responseData;
+        },
+        forceRefresh,
+      );
       setProfile({
-        name: data.name || data.username || '',
-        email: data.email || '',
-        phone: data.phone || '',
-        profile_image: data.profile_image || '',
+        name: String(data.name || data.username || ''),
+        email: String(data.email || ''),
+        phone: String(data.phone || ''),
+        profile_image: String(data.profile_image || ''),
       });
     } catch (error) {
       if (__DEV__) console.warn('[AccountScreen] Could not load profile:', error);
@@ -115,10 +144,20 @@ export default function AccountScreen({
     }
   }, []);
 
-  const loadOrderCount = useCallback(async () => {
+  const loadOrderCount = useCallback(async (forceRefresh = false) => {
     try {
-      const { data } = await api.get('/orders/mine');
-      if (Array.isArray(data)) setOrderCount(data.length);
+      const orders = await fetchCachedApiData(
+        ORDERS_CACHE_KEY,
+        async force => {
+          const { data } = await api.get<unknown[]>('/orders/mine', {
+            headers: force ? { 'Cache-Control': 'no-store' } : undefined,
+          });
+          if (!Array.isArray(data)) throw new Error('Invalid orders response');
+          return data;
+        },
+        forceRefresh,
+      );
+      setOrderCount(orders.length);
     } catch {
       // silently ignore
     }
@@ -128,6 +167,12 @@ export default function AccountScreen({
     loadProfile();
     loadOrderCount();
   }, [loadProfile, loadOrderCount]);
+
+  const refreshAccount = async () => {
+    setRefreshing(true);
+    await Promise.all([loadProfile(true), loadOrderCount(true)]);
+    setRefreshing(false);
+  };
 
   const displayName = profile.name || 'My Account';
   const initials = getInitials(displayName);
@@ -141,7 +186,16 @@ export default function AccountScreen({
   };
 
   return (
-    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: Math.max(insets.bottom + 65, 100) }}>
+    <ScrollView
+      showsVerticalScrollIndicator={false}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={refreshAccount}
+          tintColor="#F97316"
+        />
+      }
+      contentContainerStyle={{ paddingBottom: Math.max(insets.bottom + 65, 100) }}>
       {/* Hero Banner */}
       <View className="relative overflow-hidden bg-[#FDECD9] pb-8 pt-5 px-5">
         {/* Decorative blobs */}

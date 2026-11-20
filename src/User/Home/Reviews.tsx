@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -7,6 +7,13 @@ import {
 } from 'react-native';
 import { Star } from 'lucide-react-native';
 import api from '../../api';
+import {
+  fetchCachedApiData,
+  getCachedApiData,
+  hasCachedApiData,
+} from '../../apiCache';
+
+const REVIEWS_CACHE_KEY = 'user.published-reviews';
 
 type CustomerReview = {
   id: string;
@@ -100,12 +107,18 @@ function errorMessage(error: unknown) {
   return 'Could not load customer reviews. Please try again.';
 }
 
-export default function Reviews() {
-  const [reviews, setReviews] = useState<CustomerReview[]>([]);
+export default function Reviews({ refreshKey = 0 }: { refreshKey?: number }) {
+  const [reviews, setReviews] = useState<CustomerReview[]>(
+    () => getCachedApiData<CustomerReview[]>(REVIEWS_CACHE_KEY) ?? [],
+  );
   const [activeIndex, setActiveIndex] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(
+    () => !hasCachedApiData(REVIEWS_CACHE_KEY),
+  );
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
+  const lastRefreshKey = useRef(refreshKey);
+  const lastRetryCount = useRef(retryCount);
 
   useEffect(() => {
     if (reviews.length < 2) return;
@@ -119,13 +132,26 @@ export default function Reviews() {
 
   useEffect(() => {
     let active = true;
+    const forceRefresh =
+      lastRefreshKey.current !== refreshKey ||
+      lastRetryCount.current !== retryCount;
+    lastRefreshKey.current = refreshKey;
+    lastRetryCount.current = retryCount;
 
     const loadReviews = async () => {
-      setLoading(true);
-      setError(null);
+      if (!hasCachedApiData(REVIEWS_CACHE_KEY)) setLoading(true);
+      if (hasCachedApiData(REVIEWS_CACHE_KEY)) setError(null);
       try {
-        const { data } = await api.get<unknown>('/reviews/published');
-        const nextReviews = parseReviews(data);
+        const nextReviews = await fetchCachedApiData(
+          REVIEWS_CACHE_KEY,
+          async force => {
+            const { data } = await api.get<unknown>('/reviews/published', {
+              headers: force ? { 'Cache-Control': 'no-store' } : undefined,
+            });
+            return parseReviews(data);
+          },
+          forceRefresh,
+        );
         if (active) {
           setReviews(nextReviews);
           setActiveIndex(0);
@@ -142,7 +168,7 @@ export default function Reviews() {
     return () => {
       active = false;
     };
-  }, [retryCount]);
+  }, [refreshKey, retryCount]);
 
   return (
     <View className="mt-8">
@@ -155,7 +181,7 @@ export default function Reviews() {
         <View className="h-[150px] items-center justify-center">
           <ActivityIndicator color="#F97316" />
         </View>
-      ) : error ? (
+      ) : error && !hasCachedApiData(REVIEWS_CACHE_KEY) ? (
         <View className="mx-4 rounded-[16px] border border-[#F0E7DE] bg-white p-4">
           <Text accessibilityRole="alert" className="text-[13px] text-[#8B2D20]">
             {error}

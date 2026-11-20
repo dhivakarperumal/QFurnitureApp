@@ -1,7 +1,8 @@
 import React from 'react';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { Heart } from 'lucide-react-native';
 import ProductCard from '../ProductCard';
+import { SkeletonList } from '../Skeletons';
 import type { StoreFavorite } from '../types';
 
 type FavoritesProps = {
@@ -29,7 +30,7 @@ export default function Favorites({
     <View className="px-4 pt-5">
       <Text className="mb-4 text-[25px] font-black text-[#351D0E]">Your favorites</Text>
       {loading ? (
-        <ActivityIndicator color="#F97316" />
+        <SkeletonList count={4} compact />
       ) : error ? (
         <View className="items-center rounded-[20px] bg-white px-6 py-8">
           <Text className="text-center text-[13px] text-[#8B2D20]">{error}</Text>

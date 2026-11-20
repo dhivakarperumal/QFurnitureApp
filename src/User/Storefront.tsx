@@ -1,7 +1,8 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   Pressable,
+  RefreshControl,
   ScrollView,
   StatusBar,
   Text,
@@ -40,6 +41,11 @@ import { MoreMenu, MorePlaceholder, type MoreDestination } from './More';
 import { setUserNavigationBarAppearance } from '../services/navigationBar';
 import { useUserAlert, useUserToast } from './UserAlert';
 import { SkeletonList } from './Skeletons';
+import {
+  fetchCachedApiData,
+  getCachedApiData,
+  hasCachedApiData,
+} from '../apiCache';
 
 // ─── Inner page header (fixed, no main header / no bottom tabs) ───────────────
 function InnerPageHeader({
@@ -114,6 +120,10 @@ const emptyStoreData: StoreData = {
   heroBanners: [],
   offerBanners: [],
 };
+const STORE_CACHE_KEY = 'user.storefront';
+const CART_CACHE_KEY = 'user.cart';
+const FAVORITES_CACHE_KEY = 'user.favorites';
+const COMBOS_CACHE_KEY = 'user.combos';
 
 function errorMessage(error: unknown) {
   if (
@@ -174,17 +184,36 @@ export default function Storefront({
     itemId: string;
     itemType: 'product' | 'combo';
   } | null>(null);
-  const [storeData, setStoreData] = useState(emptyStoreData);
-  const [loading, setLoading] = useState(true);
+  const [storeData, setStoreData] = useState(
+    () => getCachedApiData<StoreData>(STORE_CACHE_KEY) ?? emptyStoreData,
+  );
+  const [storeAvailable, setStoreAvailable] = useState(() =>
+    hasCachedApiData(STORE_CACHE_KEY),
+  );
+  const [loading, setLoading] = useState(
+    () => !hasCachedApiData(STORE_CACHE_KEY),
+  );
+  const hasAttemptedStoreLoad = useRef(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [homeRefreshKey, setHomeRefreshKey] = useState(0);
+  const [comboRefreshKey, setComboRefreshKey] = useState(0);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
-  const [favoriteItems, setFavoriteItems] = useState<StoreFavorite[]>([]);
-  const [favoritesLoading, setFavoritesLoading] = useState(true);
+  const [favoriteItems, setFavoriteItems] = useState(
+    () => getCachedApiData<StoreFavorite[]>(FAVORITES_CACHE_KEY) ?? [],
+  );
+  const [favoritesLoading, setFavoritesLoading] = useState(
+    () => !hasCachedApiData(FAVORITES_CACHE_KEY),
+  );
   const [favoritesError, setFavoritesError] = useState<string | null>(null);
   const [pendingFavoriteIds, setPendingFavoriteIds] = useState<string[]>([]);
-  const [cartItems, setCartItems] = useState<StoreCartItem[]>([]);
-  const [cartLoading, setCartLoading] = useState(true);
+  const [cartItems, setCartItems] = useState(
+    () => getCachedApiData<StoreCartItem[]>(CART_CACHE_KEY) ?? [],
+  );
+  const [cartLoading, setCartLoading] = useState(
+    () => !hasCachedApiData(CART_CACHE_KEY),
+  );
   const [cartError, setCartError] = useState<string | null>(null);
   const [pendingCartIds, setPendingCartIds] = useState<string[]>([]);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
@@ -194,59 +223,74 @@ export default function Storefront({
     useState<MoreDestination | 'menu'>('menu');
   const [deletingAccount, setDeletingAccount] = useState(false);
 
-  const loadStore = useCallback(async () => {
-    setLoading(true);
-    setLoadError(null);
+  const loadStore = useCallback(async (forceRefresh = false) => {
+    const hasCachedStore = hasCachedApiData(STORE_CACHE_KEY);
+    if (!hasCachedStore && !hasAttemptedStoreLoad.current) setLoading(true);
+    if (hasCachedStore) setLoadError(null);
     try {
-      const [
-        categoriesResponse,
-        productsResponse,
-        heroResponse,
-        offerResponse,
-      ] = await Promise.all([
-        api.get<StoreCategory[]>('/categories'),
-        api.get<{ products?: StoreProduct[] }>('/products', {
-          params: { page: 1, limit: 100, search: '', status: 'All' },
-        }),
-        api.get<{ banners?: StoreBanner[] }>('/banners/hero'),
-        api.get<{ banners?: StoreBanner[] }>('/banners/offers'),
-      ]);
+      const nextStoreData = await fetchCachedApiData(
+        STORE_CACHE_KEY,
+        async force => {
+          const requestConfig = force
+            ? { headers: { 'Cache-Control': 'no-store' } }
+            : undefined;
+          const [
+            categoriesResponse,
+            productsResponse,
+            heroResponse,
+            offerResponse,
+          ] = await Promise.all([
+            api.get<StoreCategory[]>('/categories', requestConfig),
+            api.get<{ products?: StoreProduct[] }>('/products', {
+              params: { page: 1, limit: 100, search: '', status: 'All' },
+              ...requestConfig,
+            }),
+            api.get<{ banners?: StoreBanner[] }>('/banners/hero', requestConfig),
+            api.get<{ banners?: StoreBanner[] }>('/banners/offers', requestConfig),
+          ]);
 
-      if (!Array.isArray(categoriesResponse.data)) {
-        throw new Error(
-          'The categories response did not contain a category list.',
-        );
-      }
-      if (!Array.isArray(productsResponse.data?.products)) {
-        throw new Error(
-          'The products response did not contain a product list.',
-        );
-      }
-      if (!Array.isArray(heroResponse.data?.banners)) {
-        throw new Error(
-          'The hero banner response did not contain a banner list.',
-        );
-      }
-      if (!Array.isArray(offerResponse.data?.banners)) {
-        throw new Error(
-          'The offer banner response did not contain a banner list.',
-        );
-      }
+          if (!Array.isArray(categoriesResponse.data)) {
+            throw new Error(
+              'The categories response did not contain a category list.',
+            );
+          }
+          if (!Array.isArray(productsResponse.data?.products)) {
+            throw new Error(
+              'The products response did not contain a product list.',
+            );
+          }
+          if (!Array.isArray(heroResponse.data?.banners)) {
+            throw new Error(
+              'The hero banner response did not contain a banner list.',
+            );
+          }
+          if (!Array.isArray(offerResponse.data?.banners)) {
+            throw new Error(
+              'The offer banner response did not contain a banner list.',
+            );
+          }
 
-      setStoreData({
-        categories: categoriesResponse.data,
-        products: productsResponse.data.products.filter(
-          product =>
-            product.status === 'Active' &&
-            product.product_type !== 'Combo Product',
-        ),
-        heroBanners: heroResponse.data.banners,
-        offerBanners: offerResponse.data.banners,
-      });
+          return {
+            categories: categoriesResponse.data,
+            products: productsResponse.data.products.filter(
+              product =>
+                product.status === 'Active' &&
+                product.product_type !== 'Combo Product',
+            ),
+            heroBanners: heroResponse.data.banners,
+            offerBanners: offerResponse.data.banners,
+          };
+        },
+        forceRefresh,
+      );
+      setStoreData(nextStoreData);
+      setStoreAvailable(true);
+      setLoadError(null);
     } catch (error) {
       setLoadError(errorMessage(error));
     } finally {
       setLoading(false);
+      hasAttemptedStoreLoad.current = true;
     }
   }, []);
 
@@ -254,15 +298,24 @@ export default function Storefront({
     loadStore();
   }, [loadStore]);
 
-  const loadCart = useCallback(async () => {
-    setCartLoading(true);
+  const loadCart = useCallback(async (forceRefresh = false) => {
+    if (!hasCachedApiData(CART_CACHE_KEY)) setCartLoading(true);
     setCartError(null);
     try {
-      const { data } = await api.get<StoreCartItem[]>('/cart');
-      if (!Array.isArray(data)) {
-        throw new Error('The cart response did not contain a cart list.');
-      }
-      setCartItems(data);
+      const items = await fetchCachedApiData(
+        CART_CACHE_KEY,
+        async force => {
+          const { data } = await api.get<StoreCartItem[]>('/cart', {
+            headers: force ? { 'Cache-Control': 'no-store' } : undefined,
+          });
+          if (!Array.isArray(data)) {
+            throw new Error('The cart response did not contain a cart list.');
+          }
+          return data;
+        },
+        forceRefresh,
+      );
+      setCartItems(items);
     } catch (error) {
       setCartError(errorMessage(error));
       throw error;
@@ -271,17 +324,26 @@ export default function Storefront({
     }
   }, []);
 
-  const loadFavorites = useCallback(async () => {
-    setFavoritesLoading(true);
+  const loadFavorites = useCallback(async (forceRefresh = false) => {
+    if (!hasCachedApiData(FAVORITES_CACHE_KEY)) setFavoritesLoading(true);
     setFavoritesError(null);
     try {
-      const { data } = await api.get<StoreFavorite[]>('/favorites');
-      if (!Array.isArray(data)) {
-        throw new Error(
-          'The favorites response did not contain a favorites list.',
-        );
-      }
-      setFavoriteItems(data);
+      const items = await fetchCachedApiData(
+        FAVORITES_CACHE_KEY,
+        async force => {
+          const { data } = await api.get<StoreFavorite[]>('/favorites', {
+            headers: force ? { 'Cache-Control': 'no-store' } : undefined,
+          });
+          if (!Array.isArray(data)) {
+            throw new Error(
+              'The favorites response did not contain a favorites list.',
+            );
+          }
+          return data;
+        },
+        forceRefresh,
+      );
+      setFavoriteItems(items);
     } catch (error) {
       setFavoritesError(errorMessage(error));
       throw error;
@@ -291,17 +353,62 @@ export default function Storefront({
   }, []);
 
   const retryCart = useCallback(() => {
-    loadCart().catch(error => {
+    loadCart(true).catch(error => {
       if (__DEV__) console.warn('[Storefront] Could not reload cart:', error);
     });
   }, [loadCart]);
 
   const retryFavorites = useCallback(() => {
-    loadFavorites().catch(error => {
+    loadFavorites(true).catch(error => {
       if (__DEV__)
         console.warn('[Storefront] Could not reload favorites:', error);
     });
   }, [loadFavorites]);
+
+  const refreshActiveTab = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      if (activeTab === 'Cart') {
+        await loadCart(true);
+      } else if (activeTab === 'Favorites') {
+        await loadFavorites(true);
+      } else if (activeTab === 'Combos') {
+        await fetchCachedApiData(
+          COMBOS_CACHE_KEY,
+          async force => {
+            const { data } = await api.get<{ combos?: StoreProduct[] }>(
+              '/combos',
+              {
+                params: { page: 1, limit: 100, status: 'Active' },
+                headers: force ? { 'Cache-Control': 'no-store' } : undefined,
+              },
+            );
+            if (!Array.isArray(data?.combos)) {
+              throw new Error(
+                'The combos response did not contain a combo list.',
+              );
+            }
+            return data.combos;
+          },
+          true,
+        );
+        setComboRefreshKey(key => key + 1);
+      } else {
+        await loadStore(true);
+        setHomeRefreshKey(key => key + 1);
+      }
+    } catch (error) {
+      if (__DEV__) console.warn('[Storefront] Could not refresh data:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [activeTab, loadCart, loadFavorites, loadStore]);
+
+  const retryStore = useCallback(async () => {
+    setRefreshing(true);
+    await loadStore(true);
+    setRefreshing(false);
+  }, [loadStore]);
 
   const handleTabPress = useCallback(
     (tab: StoreTab) => {
@@ -315,10 +422,8 @@ export default function Storefront({
         setMoreDestination('menu');
       }
       setActiveTab(tab);
-      if (tab === 'Cart') retryCart();
-      if (tab === 'Favorites') retryFavorites();
     },
-    [activeTab, moreDestination, retryCart, retryFavorites],
+    [activeTab, moreDestination],
   );
 
   const deleteAccount = () => {
@@ -356,7 +461,7 @@ export default function Storefront({
   };
 
   useEffect(() => {
-    loadCart().catch(error => {
+    loadCart(true).catch(error => {
       if (__DEV__) console.warn('[Storefront] Could not load the cart:', error);
     });
     loadFavorites().catch(error => {
@@ -438,7 +543,7 @@ export default function Storefront({
       } else {
         await api.post('/favorites', { product_id: numericId });
       }
-      await loadFavorites();
+      await loadFavorites(true);
       showUserToast(
         `${name} ${savedFavorite ? 'removed from wishlist' : 'added to wishlist'}`,
       );
@@ -501,7 +606,7 @@ export default function Storefront({
           quantity: 1,
         });
       }
-      await loadCart();
+      await loadCart(true);
       showUserToast(`${name || 'Product'} added to cart`);
       return true;
     } catch (error) {
@@ -525,7 +630,7 @@ export default function Storefront({
     setPendingCartIds(current => [...current, itemId]);
     try {
       await api.put(`/cart/${item.id}`, { quantity });
-      await loadCart();
+      await loadCart(true);
     } catch (error) {
       showUserAlert('Cart could not be updated', errorMessage(error));
     } finally {
@@ -539,7 +644,7 @@ export default function Storefront({
     setPendingCartIds(current => [...current, itemId]);
     try {
       await api.delete(`/cart/${item.id}`);
-      await loadCart();
+      await loadCart(true);
     } catch (error) {
       showUserAlert('Cart item could not be removed', errorMessage(error));
     } finally {
@@ -635,6 +740,7 @@ export default function Storefront({
     if (activeTab === 'Home') {
       return (
         <Home
+          refreshKey={homeRefreshKey}
           categories={storeData.categories}
           products={storeData.products}
           heroBanners={storeData.heroBanners}
@@ -676,6 +782,8 @@ export default function Storefront({
           onFavoritePress={toggleFavorite}
           onAddToCart={addToCart}
           onProductPress={openItemDetails}
+          refreshing={refreshing}
+          onRefresh={retryStore}
         />
       );
     }
@@ -683,6 +791,7 @@ export default function Storefront({
     if (activeTab === 'Combos') {
       return (
         <ComboOffers
+          refreshKey={comboRefreshKey}
           favorites={favoriteIds}
           onFavoritePress={toggleFavorite}
           onAddToCart={addToCart}
@@ -697,7 +806,7 @@ export default function Storefront({
           favorites={favoriteProducts}
           favoriteIds={favoriteIds}
           loading={favoritesLoading}
-          error={favoritesError}
+          error={hasCachedApiData(FAVORITES_CACHE_KEY) ? null : favoritesError}
           onRetry={retryFavorites}
           onFavoritePress={toggleFavorite}
           onAddToCart={addToCart}
@@ -730,7 +839,7 @@ export default function Storefront({
           items={cartItems}
           total={cartTotal}
           loading={cartLoading}
-          error={cartError}
+          error={hasCachedApiData(CART_CACHE_KEY) ? null : cartError}
           pendingItemIds={pendingCartIds}
           onRetry={retryCart}
           onQuantityChange={updateCartQuantity}
@@ -829,6 +938,13 @@ export default function Storefront({
       {loading ? (
         <ScrollView
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={retryStore}
+              tintColor="#F97316"
+            />
+          }
           contentContainerClassName="pb-[115px]">
           <SkeletonList
             count={5}
@@ -836,17 +952,19 @@ export default function Storefront({
             cardWidth={(screenWidth - 36) / 2}
           />
         </ScrollView>
-      ) : loadError ? (
+      ) : !storeAvailable && loadError ? (
         <View className="flex-1 items-center justify-center px-6">
           <Text className="text-center text-[14px] text-[#8B2D20]">
             {loadError}
           </Text>
           <Pressable
             accessibilityRole="button"
-            onPress={loadStore}
+            onPress={retryStore}
             className="mt-4 rounded-full bg-[#F97316] px-5 py-3"
           >
-            <Text className="text-[13px] font-bold text-white">Try again</Text>
+            <Text className="text-[13px] font-bold text-white">
+              {refreshing ? 'Retrying...' : 'Try again'}
+            </Text>
           </Pressable>
         </View>
       ) : activeTab === 'Profile' || activeTab === 'Shop' ? (
@@ -856,6 +974,20 @@ export default function Storefront({
           className="flex-1"
           style={{ paddingBottom: Math.max(insets.bottom + 65, 90) }}
         >
+          {storeAvailable && loadError ? (
+            <View className="mx-4 mt-3 rounded-[14px] bg-[#FFF0E1] p-3">
+              <Text className="text-[12px] text-[#8B2D20]">{loadError}</Text>
+              <Pressable
+                accessibilityRole="button"
+                onPress={retryStore}
+                className="mt-2 self-start"
+              >
+                <Text className="text-[12px] font-bold text-[#9B4E17]">
+                  {refreshing ? 'Retrying...' : 'Try again'}
+                </Text>
+              </Pressable>
+            </View>
+          ) : null}
           {renderTabContent()}
         </View>
       ) : (
@@ -863,8 +995,29 @@ export default function Storefront({
           key={activeTab}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={refreshActiveTab}
+              tintColor="#F97316"
+            />
+          }
           contentContainerClassName="pb-[115px]"
         >
+          {storeAvailable && loadError ? (
+            <View className="mx-4 mt-3 rounded-[14px] bg-[#FFF0E1] p-3">
+              <Text className="text-[12px] text-[#8B2D20]">{loadError}</Text>
+              <Pressable
+                accessibilityRole="button"
+                onPress={retryStore}
+                className="mt-2 self-start"
+              >
+                <Text className="text-[12px] font-bold text-[#9B4E17]">
+                  {refreshing ? 'Retrying...' : 'Try again'}
+                </Text>
+              </Pressable>
+            </View>
+          ) : null}
           {renderTabContent()}
         </ScrollView>
       )}

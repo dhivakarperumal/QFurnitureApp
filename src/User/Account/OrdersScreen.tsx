@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Image,
   Pressable,
+  RefreshControl,
   ScrollView,
   Text,
   View,
@@ -18,8 +19,15 @@ import {
 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '../../api';
+import {
+  fetchCachedApiData,
+  getCachedApiData,
+  hasCachedApiData,
+} from '../../apiCache';
 import { mediaUrl } from '../utils';
 import { formatPrice } from '../utils';
+
+const ORDERS_CACHE_KEY = 'user.orders';
 
 type OrderItem = {
   product_name?: string;
@@ -72,20 +80,35 @@ type OrdersScreenProps = {
   onBack: () => void;
 };
 
-export default function OrdersScreen({ onBack }: OrdersScreenProps) {
+export default function OrdersScreen({ onBack: _onBack }: OrdersScreenProps) {
   const insets = useSafeAreaInsets();
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [orders, setOrders] = useState<Order[]>(
+    () => getCachedApiData<Order[]>(ORDERS_CACHE_KEY) ?? [],
+  );
+  const [loading, setLoading] = useState(
+    () => !hasCachedApiData(ORDERS_CACHE_KEY),
+  );
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
   const [filter, setFilter] = useState<OrderFilter>('All Orders');
 
-  const loadOrders = useCallback(async () => {
-    setLoading(true);
-    setError('');
+  const loadOrders = useCallback(async (forceRefresh = false) => {
+    if (!hasCachedApiData(ORDERS_CACHE_KEY)) setLoading(true);
+    if (hasCachedApiData(ORDERS_CACHE_KEY)) setError('');
     try {
-      const { data } = await api.get('/orders/mine');
-      if (!Array.isArray(data)) throw new Error('Invalid response');
-      setOrders(data);
+      const nextOrders = await fetchCachedApiData(
+        ORDERS_CACHE_KEY,
+        async force => {
+          const { data } = await api.get<Order[]>('/orders/mine', {
+            headers: force ? { 'Cache-Control': 'no-store' } : undefined,
+          });
+          if (!Array.isArray(data)) throw new Error('Invalid response');
+          return data;
+        },
+        forceRefresh,
+      );
+      setOrders(nextOrders);
+      setError('');
     } catch (err) {
       setError('Could not load your orders. Please try again.');
       if (__DEV__) console.warn('[OrdersScreen] Load error:', err);
@@ -97,6 +120,12 @@ export default function OrdersScreen({ onBack }: OrdersScreenProps) {
   useEffect(() => {
     loadOrders();
   }, [loadOrders]);
+
+  const refreshOrders = async () => {
+    setRefreshing(true);
+    await loadOrders(true);
+    setRefreshing(false);
+  };
 
   const orderCounts = useMemo(() => {
     const counts: Record<OrderFilter, number> = {
@@ -154,10 +183,10 @@ export default function OrdersScreen({ onBack }: OrdersScreenProps) {
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color="#F97316" />
         </View>
-      ) : error ? (
+      ) : error && !hasCachedApiData(ORDERS_CACHE_KEY) ? (
         <View className="flex-1 items-center justify-center px-6">
           <Text className="text-center text-[14px] text-red-700">{error}</Text>
-          <Pressable onPress={loadOrders} className="mt-4 rounded-full bg-[#F97316] px-5 py-3">
+          <Pressable onPress={() => loadOrders(true)} className="mt-4 rounded-full bg-[#F97316] px-5 py-3">
             <Text className="text-[13px] font-bold text-white">Try Again</Text>
           </Pressable>
         </View>
@@ -182,7 +211,17 @@ export default function OrdersScreen({ onBack }: OrdersScreenProps) {
           </Text>
         </View>
       ) : (
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerClassName="px-4 py-4" contentContainerStyle={{ paddingBottom: Math.max(insets.bottom + 65, 100) }}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={refreshOrders}
+              tintColor="#F97316"
+            />
+          }
+          contentContainerClassName="px-4 py-4"
+          contentContainerStyle={{ paddingBottom: Math.max(insets.bottom + 65, 100) }}>
           {visibleOrders.map(order => {
             const firstItem = Array.isArray(order.items) ? order.items[0] : null;
             const status = order.status || 'Order Placed';

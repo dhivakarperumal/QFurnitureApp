@@ -1,19 +1,28 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
   Pressable,
+  RefreshControl,
   ScrollView,
   Text,
   TextInput,
   View,
 } from 'react-native';
-import { Camera, Check, Trash2, UserRound, X } from 'lucide-react-native';
+import { Camera, Check, Trash2 } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '../../api';
+import {
+  fetchCachedApiData,
+  getCachedApiData,
+  hasCachedApiData,
+  setCachedApiData,
+} from '../../apiCache';
 import { mediaUrl } from '../utils';
 import { useUserAlert } from '../UserAlert';
+
+const PROFILE_CACHE_KEY = 'user.profile';
 
 type Profile = {
   name: string;
@@ -77,35 +86,38 @@ function InputField({
 }
 
 export default function ProfileScreen({
-  onBack,
+  onBack: _onBack,
   onDeleteAccount,
   deletingAccount,
 }: ProfileScreenProps) {
   const insets = useSafeAreaInsets();
   const showUserAlert = useUserAlert();
-  const [profile, setProfile] = useState<Profile>({
-    name: '',
-    email: '',
-    phone: '',
-    date_of_birth: '',
-    profile_image: '',
-  });
-  const [savedProfile, setSavedProfile] = useState<Profile>({
-    name: '',
-    email: '',
-    phone: '',
-    date_of_birth: '',
-    profile_image: '',
-  });
-  const [loading, setLoading] = useState(true);
+  const cachedUser = getCachedApiData<Record<string, unknown>>(
+    PROFILE_CACHE_KEY,
+  );
+  const initialProfile: Profile = {
+    name: String(cachedUser?.name ?? cachedUser?.username ?? ''),
+    email: String(cachedUser?.email ?? ''),
+    phone: String(cachedUser?.phone ?? ''),
+    date_of_birth: String(cachedUser?.date_of_birth ?? '').slice(0, 10),
+    profile_image: String(cachedUser?.profile_image ?? ''),
+  };
+  const [profile, setProfile] = useState<Profile>(initialProfile);
+  const [savedProfile, setSavedProfile] = useState<Profile>(initialProfile);
+  const [loading, setLoading] = useState(
+    () => !hasCachedApiData(PROFILE_CACHE_KEY),
+  );
+  const [refreshing, setRefreshing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
-  const loadProfile = useCallback(async () => {
-    setLoading(true);
-    setError('');
+  const loadProfile = useCallback(async (forceRefresh = false) => {
+    if (!hasCachedApiData(PROFILE_CACHE_KEY)) {
+      setLoading(true);
+    } else {
+      setError('');
+    }
     try {
-      // Instant display from cache
       const serializedUser = await AsyncStorage.getItem('user');
       if (serializedUser) {
         const user: unknown = JSON.parse(serializedUser);
@@ -122,14 +134,25 @@ export default function ProfileScreen({
           setSavedProfile(cached);
         }
       }
-      // Refresh from API
-      const { data } = await api.get('/users/me');
+      const data = await fetchCachedApiData(
+        PROFILE_CACHE_KEY,
+        async force => {
+          const { data: responseData } = await api.get<Record<string, unknown>>(
+            '/users/me',
+            {
+              headers: force ? { 'Cache-Control': 'no-store' } : undefined,
+            },
+          );
+          return responseData;
+        },
+        forceRefresh,
+      );
       const fresh: Profile = {
-        name: data.name || data.username || '',
-        email: data.email || '',
-        phone: data.phone || '',
-        date_of_birth: (data.date_of_birth || '').slice(0, 10),
-        profile_image: data.profile_image || '',
+        name: String(data.name || data.username || ''),
+        email: String(data.email || ''),
+        phone: String(data.phone || ''),
+        date_of_birth: String(data.date_of_birth || '').slice(0, 10),
+        profile_image: String(data.profile_image || ''),
       };
       setProfile(fresh);
       setSavedProfile(fresh);
@@ -144,6 +167,12 @@ export default function ProfileScreen({
   useEffect(() => {
     loadProfile();
   }, [loadProfile]);
+
+  const refreshProfile = async () => {
+    setRefreshing(true);
+    await loadProfile(true);
+    setRefreshing(false);
+  };
 
   const saveProfile = async () => {
     if (!profile.name.trim()) {
@@ -172,6 +201,7 @@ export default function ProfileScreen({
       };
       setProfile(updated);
       setSavedProfile(updated);
+      setCachedApiData(PROFILE_CACHE_KEY, data.user ?? updated);
       // Update AsyncStorage cache
       const serializedUser = await AsyncStorage.getItem('user');
       if (serializedUser) {
@@ -204,6 +234,13 @@ export default function ProfileScreen({
       <ScrollView
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={refreshProfile}
+            tintColor="#F97316"
+          />
+        }
         contentContainerStyle={{ paddingBottom: Math.max(insets.bottom + 65, 100) }}
       >
         {/* Avatar section */}

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Pressable,
   ScrollView,
@@ -12,6 +12,13 @@ import ProductCard from '../ProductCard';
 import { SkeletonList } from '../Skeletons';
 import type { StoreProduct } from '../types';
 import { useAutoSwiper } from './useAutoSwiper';
+import {
+  fetchCachedApiData,
+  getCachedApiData,
+  hasCachedApiData,
+} from '../../apiCache';
+
+const COMBOS_CACHE_KEY = 'user.combos';
 
 const styles = StyleSheet.create({
   carouselContent: {
@@ -40,6 +47,7 @@ function errorMessage(error: unknown) {
 }
 
 type FeaturedCombosProps = {
+  refreshKey?: number;
   favorites: string[];
   onFavoritePress: (productId: string) => void;
   onAddToCart: (productId: string) => void;
@@ -47,6 +55,7 @@ type FeaturedCombosProps = {
 };
 
 export default function FeaturedCombos({
+  refreshKey = 0,
   favorites,
   onFavoritePress,
   onAddToCart,
@@ -55,10 +64,16 @@ export default function FeaturedCombos({
   const { width } = useWindowDimensions();
   const [contentWidth, setContentWidth] = useState(0);
   const [viewportWidth, setViewportWidth] = useState(0);
-  const [combos, setCombos] = useState<FeaturedCombo[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [combos, setCombos] = useState<FeaturedCombo[]>(
+    () => getCachedApiData<FeaturedCombo[]>(COMBOS_CACHE_KEY) ?? [],
+  );
+  const [loading, setLoading] = useState(
+    () => !hasCachedApiData(COMBOS_CACHE_KEY),
+  );
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
+  const lastRefreshKey = useRef(refreshKey);
+  const lastRetryCount = useRef(retryCount);
   const cardWidth = ((viewportWidth || width) - 36) / 2;
   const cardStep = cardWidth + 12;
   const snapOffsets = combos.map((_, index) => index * cardStep);
@@ -74,19 +89,34 @@ export default function FeaturedCombos({
 
   useEffect(() => {
     let active = true;
+    const forceRefresh =
+      lastRefreshKey.current !== refreshKey ||
+      lastRetryCount.current !== retryCount;
+    lastRefreshKey.current = refreshKey;
+    lastRetryCount.current = retryCount;
 
     const loadCombos = async () => {
-      setLoading(true);
-      setError(null);
+      if (!hasCachedApiData(COMBOS_CACHE_KEY)) setLoading(true);
+      if (hasCachedApiData(COMBOS_CACHE_KEY)) setError(null);
       try {
-        const { data } = await api.get<CombosResponse>('/combos', {
-          params: { page: 1, limit: 100, status: 'Active' },
-        });
-        if (!Array.isArray(data?.combos)) {
-          throw new Error('The combos response did not contain a combo list.');
-        }
+        const allCombos = await fetchCachedApiData(
+          COMBOS_CACHE_KEY,
+          async force => {
+            const { data } = await api.get<CombosResponse>('/combos', {
+              params: { page: 1, limit: 100, status: 'Active' },
+              headers: force ? { 'Cache-Control': 'no-store' } : undefined,
+            });
+            if (!Array.isArray(data?.combos)) {
+              throw new Error(
+                'The combos response did not contain a combo list.',
+              );
+            }
+            return data.combos;
+          },
+          forceRefresh,
+        );
 
-        const featuredCombos = data.combos.filter(
+        const featuredCombos = allCombos.filter(
           combo => combo.featured === true || combo.featured === 1,
         );
         if (active) setCombos(featuredCombos.slice(0, 5));
@@ -102,7 +132,7 @@ export default function FeaturedCombos({
     return () => {
       active = false;
     };
-  }, [retryCount]);
+  }, [refreshKey, retryCount]);
 
   if (!loading && !error && !combos.length) return null;
 
@@ -121,7 +151,7 @@ export default function FeaturedCombos({
       </View>
       {loading ? (
         <SkeletonList count={5} horizontal cardWidth={cardWidth} />
-      ) : error ? (
+      ) : error && !hasCachedApiData(COMBOS_CACHE_KEY) ? (
         <View className="mx-4 rounded-[16px] border border-[#F0E7DE] bg-white p-4">
           <Text accessibilityRole="alert" className="text-[13px] text-[#8B2D20]">
             {error}
