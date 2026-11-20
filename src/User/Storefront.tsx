@@ -37,7 +37,7 @@ import OrdersScreen from './Account/OrdersScreen';
 import SetPasswordScreen from './Account/SetPasswordScreen';
 import { MoreMenu, MorePlaceholder, type MoreDestination } from './More';
 import { setUserNavigationBarAppearance } from '../services/navigationBar';
-import { useUserAlert } from './UserAlert';
+import { useUserAlert, useUserToast } from './UserAlert';
 
 // ─── Inner page header (fixed, no main header / no bottom tabs) ───────────────
 function InnerPageHeader({
@@ -153,6 +153,7 @@ export default function Storefront({
 }) {
   const insets = useSafeAreaInsets();
   const showUserAlert = useUserAlert();
+  const showUserToast = useUserToast();
   useEffect(() => {
     setUserNavigationBarAppearance(true).catch(error => {
       console.warn('[Storefront] Could not set user navigation bar style:', error);
@@ -428,6 +429,9 @@ export default function Storefront({
         await api.post('/favorites', { product_id: numericId });
       }
       await loadFavorites();
+      showUserToast(
+        savedFavorite ? 'Removed from wishlist' : 'Added to wishlist',
+      );
     } catch (error) {
       showUserAlert('Favorites could not be updated', errorMessage(error));
     } finally {
@@ -474,6 +478,7 @@ export default function Storefront({
         });
       }
       await loadCart();
+      showUserToast('Added to cart');
       return true;
     } catch (error) {
       showUserAlert('Could not add to cart', errorMessage(error));
