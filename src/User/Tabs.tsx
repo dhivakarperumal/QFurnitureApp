@@ -111,9 +111,13 @@ export default function Tabs({
                   : `${label} tab`
               }
               onPress={() => onTabPress(name)}
-              className={`relative h-[58px] flex-1 items-center justify-center rounded-[18px] ${
-                active ? 'mx-1 border border-white bg-white' : ''
-              }`}>
+              className="relative h-[58px] flex-1 items-center justify-center rounded-[18px]">
+              {active ? (
+                <View
+                  pointerEvents="none"
+                  className="absolute bottom-0 left-1 right-1 top-0 rounded-[18px] border border-white bg-white"
+                />
+              ) : null}
               <Icon
                 size={23}
                 color={active ? '#F97316' : '#FFFFFF'}
@@ -134,9 +138,6 @@ export default function Tabs({
                       {cartCount}
                     </Text>
                 </View>
-              ) : null}
-              {name === 'Combos' ? (
-                <View className="absolute bottom-[8px] right-[-1px] h-[20px] w-px bg-white/35" />
               ) : null}
             </Pressable>
           );
