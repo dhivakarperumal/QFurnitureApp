@@ -4,6 +4,7 @@ import {
   Alert,
   Pressable,
   ScrollView,
+  StatusBar,
   Text,
   View,
 } from 'react-native';
@@ -672,6 +673,7 @@ export default function Storefront({
 
   return (
     <View className="flex-1 bg-[#FCFAF7]">
+      <StatusBar barStyle="light-content" />
       <Header
         activeTab={activeTab}
         topInset={insets.top}
