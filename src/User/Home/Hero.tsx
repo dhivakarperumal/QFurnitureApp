@@ -29,17 +29,17 @@ export default function Hero({
           resizeMode="cover"
         />
       ) : null}
-      <View pointerEvents="none" className="absolute inset-0 bg-white/25" />
-      <View className="w-[85%] rounded-[20px] border border-white/80 bg-[#FFF9F2]/95 p-4 shadow-lg">
-        <View className="self-start rounded-full border border-[#D9C4AA] bg-white/80 px-3 py-2">
-          <Text className="text-[10px] font-bold uppercase tracking-[1.3px] text-[#351D0E]">
+      <View pointerEvents="none" className="absolute inset-0 bg-black/40" />
+      <View className="w-[70%]">
+        <View className="self-start rounded-full border border-white/60 bg-black/25 px-3 py-2">
+          <Text className="text-[10px] font-bold uppercase tracking-[1.3px] text-white">
             Q Living Furniture
           </Text>
         </View>
-        <Text numberOfLines={3} className="mt-4 text-[28px] font-black leading-[34px] text-[#263B2A]">
+        <Text numberOfLines={3} className="mt-4 text-[28px] font-black leading-[34px] text-white">
           {banner?.title || 'Make your home feel like home.'}
         </Text>
-        <Text numberOfLines={3} className="mt-2 text-[14px] leading-5 text-[#49392D]">
+        <Text numberOfLines={3} className="mt-2 text-[14px] leading-5 text-white/90">
           {banner?.subtitle ||
             banner?.description ||
             'Thoughtful furniture, everyday comfort, and timeless style.'}
