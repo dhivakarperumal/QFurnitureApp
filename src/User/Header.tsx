@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Image, ImageBackground, Pressable, Text, View } from 'react-native';
-import { Heart, UserRound } from 'lucide-react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Heart, LogOut, UserRound } from 'lucide-react-native';
 import type { StoreTab } from './types';
 
 type HeaderProps = {
@@ -8,6 +9,7 @@ type HeaderProps = {
   topInset: number;
   onFavoritesPress: () => void;
   onProfilePress: () => void;
+  onLogoutPress: () => void;
 };
 
 export default function Header({
@@ -15,13 +17,67 @@ export default function Header({
   topInset,
   onFavoritesPress,
   onProfilePress,
+  onLogoutPress,
 }: HeaderProps) {
+  const [profileMenuVisible, setProfileMenuVisible] = useState(false);
+  const [userName, setUserName] = useState('My Account');
+  const [userEmail, setUserEmail] = useState('');
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadUser = async () => {
+      let serializedUser: string | null;
+      try {
+        serializedUser = await AsyncStorage.getItem('user');
+      } catch (error) {
+        if (__DEV__) {
+          console.warn('[StorefrontHeader] Could not read the saved user:', error);
+        }
+        return;
+      }
+
+      if (!serializedUser) return;
+
+      let user: unknown;
+      try {
+        user = JSON.parse(serializedUser);
+      } catch (error) {
+        if (__DEV__) {
+          console.warn('[StorefrontHeader] The saved user data is invalid:', error);
+        }
+        return;
+      }
+
+      if (typeof user !== 'object' || user === null) return;
+      const name =
+        'name' in user && typeof user.name === 'string'
+          ? user.name.trim()
+          : 'username' in user && typeof user.username === 'string'
+            ? user.username.trim()
+            : '';
+      const email =
+        'email' in user && typeof user.email === 'string'
+          ? user.email.trim()
+          : '';
+      if (mounted) {
+        if (name) setUserName(name);
+        setUserEmail(email);
+      }
+    };
+
+    loadUser();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   return (
     <ImageBackground
       source={require('../Assert/images/topheader1.png')}
       resizeMode="cover"
-      style={{ height: 58 + topInset, paddingTop: topInset }}
-      className="flex-row items-center justify-between overflow-hidden px-3 shadow-md">
+      style={{ height: 58 + topInset, paddingTop: topInset, zIndex: 10, elevation: 10 }}
+      className="flex-row items-center justify-between px-3 shadow-md">
       <View
         pointerEvents="none"
         className="absolute inset-0 bg-[#F45B00]/75"
@@ -54,14 +110,54 @@ export default function Header({
             fill={activeTab === 'Favorites' ? '#FFFFFF' : 'transparent'}
           />
         </Pressable>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Open profile"
-          accessibilityState={{ selected: activeTab === 'Profile' }}
-          onPress={onProfilePress}
-          className="h-[42px] w-[42px] items-center justify-center rounded-full bg-white/15">
-          <UserRound size={22} color="#FFFFFF" />
-        </Pressable>
+        <View className="relative">
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Open profile menu"
+            accessibilityState={{ expanded: profileMenuVisible }}
+            onPress={() => setProfileMenuVisible(visible => !visible)}
+            className="h-[42px] w-[42px] items-center justify-center rounded-full bg-white/15">
+            <UserRound size={22} color="#FFFFFF" />
+          </Pressable>
+          {profileMenuVisible ? (
+            <View className="absolute right-0 top-[50px] z-[30] w-[230px] rounded-[12px] border border-[#E5E7EB] bg-white p-2 shadow-lg elevation-[12]">
+              <View className="border-b border-[#E5E7EB] px-2 pb-2">
+                <Text numberOfLines={1} className="text-[14px] font-bold text-[#17191C]">
+                  {userName}
+                </Text>
+                <Text numberOfLines={1} className="mt-1 text-[12px] text-[#6B7280]">
+                  {userEmail || 'Email unavailable'}
+                </Text>
+              </View>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Open account"
+                onPress={() => {
+                  setProfileMenuVisible(false);
+                  onProfilePress();
+                }}
+                className="h-[42px] flex-row items-center rounded-[8px] px-2">
+                <UserRound size={18} color="#17191C" />
+                <Text className="ml-2 text-[14px] font-bold text-[#17191C]">
+                  Account
+                </Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Log out"
+                onPress={() => {
+                  setProfileMenuVisible(false);
+                  onLogoutPress();
+                }}
+                className="h-[42px] flex-row items-center rounded-[8px] px-2">
+                <LogOut size={18} color="#DC2626" />
+                <Text className="ml-2 text-[14px] font-bold text-[#DC2626]">
+                  Logout
+                </Text>
+              </Pressable>
+            </View>
+          ) : null}
+        </View>
       </View>
     </ImageBackground>
   );

@@ -647,6 +647,7 @@ export default function Storefront({
         topInset={insets.top}
         onFavoritesPress={() => handleTabPress('Favorites')}
         onProfilePress={() => handleTabPress('Profile')}
+        onLogoutPress={onLogoutPress}
       />
       {loading ? (
         <View className="flex-1 items-center justify-center">
