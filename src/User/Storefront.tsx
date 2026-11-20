@@ -4,7 +4,6 @@ import {
   BackHandler,
   Pressable,
   RefreshControl,
-  RefreshControl,
   ScrollView,
   StatusBar,
   Text,
