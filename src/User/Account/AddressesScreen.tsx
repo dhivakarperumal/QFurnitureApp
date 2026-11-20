@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Modal,
   Pressable,
   ScrollView,
@@ -22,6 +21,7 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '../../api';
+import { useUserAlert } from '../UserAlert';
 import { INDIAN_STATES, INDIAN_UNION_TERRITORIES } from './indianStates';
 
 type Address = {
@@ -306,6 +306,7 @@ type AddressesScreenProps = {
 };
 
 export default function AddressesScreen({ onBack }: AddressesScreenProps) {
+  const showUserAlert = useUserAlert();
   const insets = useSafeAreaInsets();
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [loading, setLoading] = useState(true);
@@ -408,7 +409,7 @@ export default function AddressesScreen({ onBack }: AddressesScreenProps) {
   };
 
   const deleteAddress = (address: Address) => {
-    Alert.alert(
+    showUserAlert(
       'Delete Address',
       `Delete the ${address.label || 'saved'} address?`,
       [
@@ -422,7 +423,7 @@ export default function AddressesScreen({ onBack }: AddressesScreenProps) {
               await api.delete(`/users/me/addresses/${address.id}`);
               await loadAddresses();
             } catch {
-              Alert.alert('Error', 'Could not delete the address.');
+              showUserAlert('Error', 'Could not delete the address.');
             } finally {
               setActionId(null);
             }
@@ -438,7 +439,7 @@ export default function AddressesScreen({ onBack }: AddressesScreenProps) {
       await api.put(`/users/me/addresses/${id}/default`);
       await loadAddresses();
     } catch {
-      Alert.alert('Error', 'Could not update the default address.');
+      showUserAlert('Error', 'Could not update the default address.');
     } finally {
       setActionId(null);
     }

@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Pressable,
   ScrollView,
   StatusBar,
@@ -37,6 +36,7 @@ import OrdersScreen from './Account/OrdersScreen';
 import SetPasswordScreen from './Account/SetPasswordScreen';
 import { MoreMenu, MorePlaceholder, type MoreDestination } from './More';
 import { setUserNavigationBarAppearance } from '../services/navigationBar';
+import { useUserAlert } from './UserAlert';
 
 // ─── Inner page header (fixed, no main header / no bottom tabs) ───────────────
 function InnerPageHeader({
@@ -107,6 +107,7 @@ export default function Storefront({
   onLogoutPress: () => void;
 }) {
   const insets = useSafeAreaInsets();
+  const showUserAlert = useUserAlert();
   useEffect(() => {
     setUserNavigationBarAppearance(true).catch(error => {
       console.warn('[Storefront] Could not set user navigation bar style:', error);
@@ -329,7 +330,7 @@ export default function Storefront({
       isCombo ? productId.replace(/^combo-/, '') : productId,
     );
     if (!Number.isSafeInteger(numericId) || numericId < 1) {
-      Alert.alert('Favorites unavailable', 'This item has an invalid ID.');
+      showUserAlert('Favorites unavailable', 'This item has an invalid ID.');
       return;
     }
 
@@ -348,7 +349,7 @@ export default function Storefront({
       }
       await loadFavorites();
     } catch (error) {
-      Alert.alert('Favorites could not be updated', errorMessage(error));
+      showUserAlert('Favorites could not be updated', errorMessage(error));
     } finally {
       setPendingFavoriteIds(current => current.filter(id => id !== productId));
     }
@@ -395,7 +396,7 @@ export default function Storefront({
       await loadCart();
       return true;
     } catch (error) {
-      Alert.alert('Could not add to cart', errorMessage(error));
+      showUserAlert('Could not add to cart', errorMessage(error));
       return false;
     } finally {
       setPendingCartIds(current => current.filter(id => id !== productId));
@@ -417,7 +418,7 @@ export default function Storefront({
       await api.put(`/cart/${item.id}`, { quantity });
       await loadCart();
     } catch (error) {
-      Alert.alert('Cart could not be updated', errorMessage(error));
+      showUserAlert('Cart could not be updated', errorMessage(error));
     } finally {
       setPendingCartIds(current => current.filter(id => id !== itemId));
     }
@@ -431,7 +432,7 @@ export default function Storefront({
       await api.delete(`/cart/${item.id}`);
       await loadCart();
     } catch (error) {
-      Alert.alert('Cart item could not be removed', errorMessage(error));
+      showUserAlert('Cart item could not be removed', errorMessage(error));
     } finally {
       setPendingCartIds(current => current.filter(id => id !== itemId));
     }
@@ -443,7 +444,7 @@ export default function Storefront({
       itemType === 'combo' ? productId.slice('combo-'.length) : productId;
     const numericId = Number(rawId);
     if (!Number.isSafeInteger(numericId) || numericId < 1) {
-      Alert.alert('Details unavailable', 'This item has an invalid ID.');
+      showUserAlert('Details unavailable', 'This item has an invalid ID.');
       return;
     }
 
@@ -531,7 +532,7 @@ export default function Storefront({
             setActiveTab('Shop');
           }}
           onCustomFurniturePress={() =>
-            Alert.alert(
+            showUserAlert(
               'Custom furniture',
               'Contact Q Living to discuss your design and request a quote.',
             )

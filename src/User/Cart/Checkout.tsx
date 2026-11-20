@@ -7,7 +7,6 @@ import React, {
 import {
   ActivityIndicator,
   AppState,
-  Alert,
   Linking,
   Modal,
   PermissionsAndroid,
@@ -34,6 +33,7 @@ import {
 import api from '../../api';
 import type { StoreCartItem } from '../types';
 import { formatPrice } from '../utils';
+import { useUserAlert } from '../UserAlert';
 import {
   calculateCartSubtotal,
   calculateCheckoutQuote,
@@ -148,6 +148,7 @@ export default function Checkout({
   onOrderPlaced,
 }: CheckoutProps) {
   const insets = useSafeAreaInsets();
+  const showUserAlert = useUserAlert();
   const [fulfillment, setFulfillment] = useState<'delivery' | 'pickup'>(
     'delivery',
   );
@@ -298,7 +299,7 @@ export default function Checkout({
         result => result === PermissionsAndroid.RESULTS.GRANTED,
       );
       if (!granted) {
-        Alert.alert(
+        showUserAlert(
           'Location permission needed',
           'Allow location access to attach your current GPS coordinates to the delivery.',
         );
@@ -312,7 +313,7 @@ export default function Checkout({
         );
       });
       if (!authorized) {
-        Alert.alert(
+        showUserAlert(
           'Location permission needed',
           'Allow location access to attach your current GPS coordinates to the delivery.',
         );
@@ -331,7 +332,7 @@ export default function Checkout({
       },
       error => {
         setLocationLoading(false);
-        Alert.alert(
+        showUserAlert(
           'Could not fetch location',
           error.message || 'Check location settings and try again.',
         );
@@ -427,28 +428,28 @@ export default function Checkout({
         ).toLowerCase();
         if (['paid', 'captured', 'completed', 'success'].includes(status)) {
           setPendingPaymentOrderId(null);
-          Alert.alert(
+          showUserAlert(
             'Payment confirmed',
             'Your order has been placed successfully.',
           );
           onOrderPlaced();
         } else if (['failed', 'cancelled', 'canceled'].includes(status)) {
           setPendingPaymentOrderId(null);
-          Alert.alert(
+          showUserAlert(
             'Payment not completed',
             'Your order is not confirmed. You can try again.',
           );
         } else {
-          Alert.alert(
+          showUserAlert(
             'Payment confirmation pending',
             'The server has not confirmed this payment yet. Check your orders again shortly.',
           );
         }
       } catch (error) {
-        Alert.alert('Could not verify payment', responseMessage(error));
+        showUserAlert('Could not verify payment', responseMessage(error));
       }
     },
-    [onOrderPlaced],
+    [onOrderPlaced, showUserAlert],
   );
 
   useEffect(() => {
@@ -481,7 +482,7 @@ export default function Checkout({
             'The server did not confirm the order. Please try again.',
           );
         }
-        Alert.alert(
+        showUserAlert(
           'Order placed',
           `Your order ${order.order_id ?? `#${orderId}`} is confirmed.`,
         );
@@ -506,7 +507,7 @@ export default function Checkout({
       }
       await Linking.openURL(checkoutUrl);
       setPendingPaymentOrderId(orderId);
-      Alert.alert(
+      showUserAlert(
         'Complete your payment',
         'Razorpay checkout opened. Return here after paying; the server will confirm your order.',
       );

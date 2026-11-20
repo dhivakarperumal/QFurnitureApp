@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Pressable,
   ScrollView,
   Text,
@@ -11,6 +10,7 @@ import {
 import { Check, CheckCircle2, Eye, EyeOff, KeyRound } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '../../api';
+import { useUserAlert } from '../UserAlert';
 
 type Passwords = {
   current: string;
@@ -88,6 +88,7 @@ type SetPasswordScreenProps = {
 
 export default function SetPasswordScreen({ onBack }: SetPasswordScreenProps) {
   const insets = useSafeAreaInsets();
+  const showUserAlert = useUserAlert();
   const [passwords, setPasswords] = useState<Passwords>({
     current: '',
     next: '',
@@ -131,7 +132,7 @@ export default function SetPasswordScreen({ onBack }: SetPasswordScreenProps) {
         newPassword: passwords.next,
       });
       setPasswords({ current: '', next: '', confirm: '' });
-      Alert.alert('Success', 'Your password has been updated.');
+      showUserAlert('Success', 'Your password has been updated.');
     } catch (err: unknown) {
       const msg =
         typeof err === 'object' && err !== null && 'message' in err
