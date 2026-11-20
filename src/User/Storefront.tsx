@@ -875,6 +875,7 @@ export default function Storefront({
           clearing={clearingFavorites}
           addingAllToCart={addingFavoritesToCart}
           onRetry={retryFavorites}
+          onRefresh={loadFavorites}
           onRemoveFavorite={confirmRemoveFavorite}
           onProductPress={openItemDetails}
           onClearAll={clearFavorites}
@@ -912,6 +913,7 @@ export default function Storefront({
           pendingItemIds={pendingCartIds}
           clearing={clearingCart}
           onRetry={retryCart}
+          onRefresh={loadCart}
           onQuantityChange={updateCartQuantity}
           onRemove={removeFromCart}
           onClear={clearCart}

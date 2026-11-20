@@ -123,6 +123,14 @@ export default function Favorites({
             className="flex-1"
             showsVerticalScrollIndicator={false}
             contentContainerClassName="pb-3"
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={handleRefresh}
+                colors={['#F97316']}
+                tintColor="#F97316"
+              />
+            }
           >
             {favorites.map(item => {
               const productId =
