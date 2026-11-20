@@ -234,7 +234,6 @@ export default function TopHeader({
     setDrawerVisible(false);
     setNotificationsVisible(false);
     setProfileVisible(value => !value);
-    onProfilePress?.();
   };
 
   const toggleNotifications = () => {
@@ -402,6 +401,7 @@ export default function TopHeader({
             <Pressable
               accessibilityLabel="Open profile menu"
               accessibilityRole="button"
+              accessibilityState={{ expanded: profileVisible }}
               onPress={toggleProfile}
               className="h-[42px] w-[42px] items-center justify-center rounded-full bg-white/20">
               {userInitial ? (
