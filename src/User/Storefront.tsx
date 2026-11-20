@@ -589,7 +589,12 @@ export default function Storefront({
       return detailTarget.itemType === 'combo' ? (
         <ComboDetails {...detailProps} />
       ) : (
-        <ProductDetails {...detailProps} />
+        <ProductDetails
+          {...detailProps}
+          relatedProducts={storeData.products}
+          favoriteIds={favoriteIds}
+          onProductPress={openItemDetails}
+        />
       );
     }
 

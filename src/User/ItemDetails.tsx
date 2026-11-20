@@ -5,11 +5,13 @@ import {
   Pressable,
   ScrollView,
   Text,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { Armchair, Heart, ShoppingCart, Star } from 'lucide-react-native';
 import api from '../api';
 import type { StoreProduct } from './types';
+import ProductCard from './ProductCard';
 import ReviewForm from './ReviewForm';
 import {
   formatPrice,
@@ -34,6 +36,9 @@ export type ItemDetailsProps = {
   onFavoritePress: (productId: string) => void;
   onAddToCart: (productId: string) => void;
   onBuyNow?: (productId: string) => void;
+  relatedProducts?: StoreProduct[];
+  favoriteIds?: string[];
+  onProductPress?: (productId: string) => void;
 };
 
 function getErrorMessage(
@@ -78,7 +83,11 @@ export default function ItemDetails({
   onFavoritePress,
   onAddToCart,
   onBuyNow,
+  relatedProducts = [],
+  favoriteIds = [],
+  onProductPress,
 }: ItemDetailsProps) {
+  const { width } = useWindowDimensions();
   const [item, setItem] = useState<DetailItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -133,6 +142,28 @@ export default function ItemDetails({
       : [];
   const description =
     item?.description?.trim() || item?.long_description?.trim() || '';
+  const relatedProductIds = new Set(
+    [item?.id, item?.product_id, itemId]
+      .filter((id): id is string | number => id !== undefined && id !== null)
+      .map(String),
+  );
+  const currentCategory = item ? productCategory(item).trim().toLowerCase() : '';
+  const relatedCardWidth = Math.min(258, Math.floor((width - 72) / 2));
+  const relatedItems =
+    itemType === 'product'
+      ? relatedProducts
+          .filter(
+            product =>
+              !relatedProductIds.has(String(product.id)) &&
+              !relatedProductIds.has(String(product.product_id)),
+          )
+          .filter(product =>
+            currentCategory
+              ? productCategory(product).trim().toLowerCase() === currentCategory
+              : true,
+          )
+          .slice(0, 6)
+      : [];
   return (
     <View className="px-4 pb-8 pt-3">
 
@@ -339,6 +370,37 @@ export default function ItemDetails({
               </Pressable>
             </View>
           )}
+
+          {relatedItems.length > 0 && onProductPress ? (
+            <View className="mt-6">
+              <View className="mb-3 px-1">
+                <Text className="text-[10px] font-bold uppercase tracking-[1.6px] text-[#A06E46]">
+                  More to explore
+                </Text>
+                <Text className="mt-1 text-[20px] font-black text-[#351D0E]">
+                  Related products
+                </Text>
+              </View>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerClassName="px-2">
+                {relatedItems.map(product => (
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    favorite={favoriteIds.includes(
+                      String(product.product_id ?? product.id),
+                    )}
+                    cardWidth={relatedCardWidth}
+                    onFavoritePress={onFavoritePress}
+                    onAddToCart={onAddToCart}
+                    onProductPress={onProductPress}
+                  />
+                ))}
+              </ScrollView>
+            </View>
+          ) : null}
         </>
       ) : null}
     </View>
