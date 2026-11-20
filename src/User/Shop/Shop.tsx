@@ -231,7 +231,6 @@ type ShopProps = {
   onFavoritePress: (productId: string) => void;
   onAddToCart: (productId: string) => void;
   onProductPress: (productId: string) => void;
-  onRefresh?: () => void;
 };
 
 export default function Shop({
@@ -247,7 +246,6 @@ export default function Shop({
   onFavoritePress,
   onAddToCart,
   onProductPress,
-  onRefresh,
 }: ShopProps) {
   const [filtersVisible, setFiltersVisible] = useState(false);
   const { width: screenWidth } = useWindowDimensions();
