@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   ActivityIndicator,
   Image,
   Pressable,
+  RefreshControl,
   ScrollView,
   Text,
   View,
@@ -31,6 +32,7 @@ type FavoritesProps = {
   clearing: boolean;
   addingAllToCart: boolean;
   onRetry: () => void;
+  onRefresh: () => Promise<void>;
   onRemoveFavorite: (productId: string) => void;
   onProductPress: (productId: string) => void;
   onClearAll: () => void;
@@ -46,12 +48,23 @@ export default function Favorites({
   clearing,
   addingAllToCart,
   onRetry,
+  onRefresh,
   onRemoveFavorite,
   onProductPress,
   onClearAll,
   onAddAllToCart,
   onExplorePress,
 }: FavoritesProps) {
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await onRefresh();
+    } finally {
+      setRefreshing(false);
+    }
+  };
   const subtotal = favorites.reduce(
     (amount, item) => amount + productPrice(item),
     0,

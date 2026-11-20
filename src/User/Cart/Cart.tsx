@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   ActivityIndicator,
   Image,
   Pressable,
+  RefreshControl,
   ScrollView,
   Text,
   View,
@@ -28,6 +29,7 @@ type CartProps = {
   pendingItemIds: string[];
   clearing: boolean;
   onRetry: () => void;
+  onRefresh: () => Promise<void>;
   onQuantityChange: (item: StoreCartItem, quantity: number) => void;
   onRemove: (item: StoreCartItem) => void;
   onClear: () => void;
@@ -43,12 +45,23 @@ export default function Cart({
   pendingItemIds,
   clearing,
   onRetry,
+  onRefresh,
   onQuantityChange,
   onRemove,
   onClear,
   onExplorePress,
   onCheckoutPress,
 }: CartProps) {
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await onRefresh();
+    } finally {
+      setRefreshing(false);
+    }
+  };
   const itemCount = items.reduce(
     (count, item) => count + Number(item.quantity || 0),
     0,
@@ -113,6 +126,14 @@ export default function Cart({
             className="flex-1"
             showsVerticalScrollIndicator={false}
             contentContainerClassName="pb-3"
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={handleRefresh}
+                colors={['#F97316']}
+                tintColor="#F97316"
+              />
+            }
           >
             {items.map(item => {
               const imageUri = mediaUrl(item.image) ?? productImage(item);
