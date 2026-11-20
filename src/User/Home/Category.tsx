@@ -3,6 +3,7 @@ import {
   Image,
   Pressable,
   ScrollView,
+  StyleSheet,
   Text,
   View,
 } from 'react-native';
@@ -14,6 +15,12 @@ import type {
 import { Armchair, ArrowRight } from 'lucide-react-native';
 import type { StoreCategory } from '../types';
 import { categoryImage } from '../utils';
+
+const styles = StyleSheet.create({
+  scrollContent: {
+    paddingLeft: 8,
+  },
+});
 
 type CategoryProps = {
   categories: StoreCategory[];
@@ -31,7 +38,7 @@ export default function Category({
   const [contentWidth, setContentWidth] = useState(0);
   const [viewportWidth, setViewportWidth] = useState(0);
   const [isUserScrolling, setIsUserScrolling] = useState(false);
-  const categoryWidth = viewportWidth > 0 ? (viewportWidth - 40) / 3 : 104;
+  const categoryWidth = viewportWidth > 0 ? (viewportWidth - 32) / 3 : 110;
   const categoryStep = categoryWidth + 12;
   const snapOffsets = categories.map((_, index) => index * categoryStep);
   const maxSnapIndex = Math.max(
@@ -102,7 +109,7 @@ export default function Category({
           snapToOffsets={snapOffsets}
           decelerationRate="fast"
           disableIntervalMomentum
-          contentContainerClassName="px-2">
+          contentContainerStyle={styles.scrollContent}>
           {categories.map((category, index) => {
             const imageUri = categoryImage(category);
             return (
