@@ -632,7 +632,7 @@ export default function Report({ onBackPress }: Props) {
         String(date.getDate()).padStart(2, '0'),
       ].join('');
       const fileName = `${reportType}-report-${dateStamp}.xlsx`;
-      tempPath = `${CachesDirectoryPath}/${Date.now()}-${fileName}`;
+      tempPath = `${CachesDirectoryPath}/${fileName}`;
       await writeFile(
         tempPath,
         fromByteArray(new Uint8Array(buffer)),
@@ -643,6 +643,7 @@ export default function Report({ onBackPress }: Props) {
         mimeType:
           'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         fileName,
+        copy: true,
       });
       const savedFile = savedFiles[0];
       if (savedFile.error) {
