@@ -147,7 +147,18 @@ export default function AccountScreen({
   };
 
   return (
-    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: Math.max(insets.bottom + 65, 100) }}>
+    <ScrollView
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={{ paddingBottom: Math.max(insets.bottom + 65, 100) }}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          colors={['#F97316']}
+          tintColor="#F97316"
+        />
+      }
+    >
       {/* Hero Banner */}
       <View className="relative overflow-hidden bg-[#FDECD9] pb-8 pt-5 px-5">
         {/* Decorative blobs */}

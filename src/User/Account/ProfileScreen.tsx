@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Image,
   Pressable,
+  RefreshControl,
   ScrollView,
   Text,
   TextInput,
@@ -94,6 +95,7 @@ export default function ProfileScreen({ onBack }: ProfileScreenProps) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
 
   const loadProfile = useCallback(async () => {
     setLoading(true);
@@ -134,6 +136,15 @@ export default function ProfileScreen({ onBack }: ProfileScreenProps) {
       setLoading(false);
     }
   }, []);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await loadProfile();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [loadProfile]);
 
   useEffect(() => {
     loadProfile();
@@ -199,6 +210,14 @@ export default function ProfileScreen({ onBack }: ProfileScreenProps) {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={{ paddingBottom: Math.max(insets.bottom + 65, 100) }}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            colors={['#F97316']}
+            tintColor="#F97316"
+          />
+        }
       >
         {/* Avatar section */}
         <View className="items-center bg-white py-6 border-b border-[#F0E7DE]">

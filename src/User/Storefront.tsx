@@ -163,6 +163,7 @@ export default function Storefront({
   const [cartLoading, setCartLoading] = useState(true);
   const [cartError, setCartError] = useState<string | null>(null);
   const [pendingCartIds, setPendingCartIds] = useState<string[]>([]);
+  const [clearingCart, setClearingCart] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [accountSubScreen, setAccountSubScreen] =
     useState<AccountSubScreen>('menu');
@@ -482,6 +483,29 @@ export default function Storefront({
     }
   };
 
+  const clearCart = () => {
+    if (!cartItems.length || clearingCart || pendingCartIds.length > 0) return;
+    showUserAlert('Clear cart?', 'Remove all items from your cart?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Clear All',
+        style: 'destructive',
+        onPress: async () => {
+          setClearingCart(true);
+          try {
+            await api.delete('/cart/clear');
+            setCartItems([]);
+            setCartError(null);
+          } catch (error) {
+            showUserAlert('Could not clear cart', errorMessage(error));
+          } finally {
+            setClearingCart(false);
+          }
+        },
+      },
+    ]);
+  };
+
   const openItemDetails = (productId: string) => {
     const itemType = productId.startsWith('combo-') ? 'combo' : 'product';
     const rawId =
@@ -659,9 +683,11 @@ export default function Storefront({
           loading={cartLoading}
           error={cartError}
           pendingItemIds={pendingCartIds}
+          clearing={clearingCart}
           onRetry={retryCart}
           onQuantityChange={updateCartQuantity}
           onRemove={removeFromCart}
+          onClear={clearCart}
           onExplorePress={() => setActiveTab('Shop')}
           onCheckoutPress={() => setCheckoutOpen(true)}
         />
@@ -764,8 +790,10 @@ export default function Storefront({
             <Text className="text-[13px] font-bold text-white">Try again</Text>
           </Pressable>
         </View>
-      ) : activeTab === 'Profile' || activeTab === 'Shop' ? (
-        // Profile (menu) and Shop manage their own scroll/layout.
+      ) : activeTab === 'Profile' ||
+        activeTab === 'Shop' ||
+        (activeTab === 'Cart' && !checkoutOpen) ? (
+        // Profile, Shop, and Cart manage their own scroll/layout.
         // paddingBottom accounts for the absolute-positioned tab bar (~65px) + home indicator
         <View
           className="flex-1"

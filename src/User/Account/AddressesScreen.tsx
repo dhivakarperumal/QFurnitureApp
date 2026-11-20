@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Modal,
   Pressable,
+  RefreshControl,
   ScrollView,
   Text,
   TextInput,
@@ -344,6 +345,7 @@ export default function AddressesScreen({ onBack }: AddressesScreenProps) {
   const [draft, setDraft] = useState<AddressDraft>(emptyDraft());
   const [formError, setFormError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   // User info for pre-filling
   const [userName, setUserName] = useState('');
@@ -375,6 +377,15 @@ export default function AddressesScreen({ onBack }: AddressesScreenProps) {
       setLoading(false);
     }
   }, []);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await loadAddresses();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [loadAddresses]);
 
   useEffect(() => {
     loadAddresses();
@@ -498,6 +509,14 @@ export default function AddressesScreen({ onBack }: AddressesScreenProps) {
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 20, paddingBottom: Math.max(insets.bottom, 100) }}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              colors={['#F97316']}
+              tintColor="#F97316"
+            />
+          }
         >
           {addresses.map(address => {
             const isDefault = Boolean(Number(address.is_default));
