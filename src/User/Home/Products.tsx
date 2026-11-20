@@ -23,7 +23,7 @@ export default function Products({
   const [contentWidth, setContentWidth] = useState(0);
   const [viewportWidth, setViewportWidth] = useState(0);
   const featuredProducts = products.slice(0, 10);
-  const cardWidth = (width - 56) / 2;
+  const cardWidth = ((viewportWidth || width) - 40) / 2;
   const cardStep = cardWidth + 12;
   const snapOffsets = featuredProducts.map((_, index) => index * cardStep);
   const { scrollRef, handleScrollBeginDrag, handleScrollSettled } =

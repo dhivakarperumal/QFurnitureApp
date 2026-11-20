@@ -52,7 +52,7 @@ export default function FeaturedCombos({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
-  const cardWidth = (width - 56) / 2;
+  const cardWidth = ((viewportWidth || width) - 40) / 2;
   const cardStep = cardWidth + 12;
   const snapOffsets = combos.map((_, index) => index * cardStep);
   const { scrollRef, handleScrollBeginDrag, handleScrollSettled } =
