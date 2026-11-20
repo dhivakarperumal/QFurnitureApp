@@ -19,19 +19,14 @@ export default function Hero({
   const banner = banners[activeIndex];
 
   return (
-    <View className="relative mx-4 mt-2 min-h-[250px] justify-center overflow-hidden rounded-[26px] bg-[#F2E0CC] px-5 py-4">
+    <View className="relative mx-4 mt-2 min-h-[210px] justify-center overflow-hidden rounded-[24px] border border-[#F6D4B2] bg-[#FFF0E1] px-4 py-3">
       <View className="w-full">
-        <View className="self-start rounded-full border border-[#D9C4AA] bg-white/80 px-3 py-1.5">
-          <Text className="text-[10px] font-bold uppercase tracking-[1.3px] text-[#351D0E]">
-            Q Living Furniture
-          </Text>
-        </View>
         <Text
           numberOfLines={3}
-          className="mt-3 text-[24px] font-black leading-[29px] text-[#263B2A]">
+          className="text-[22px] font-black leading-[26px] text-[#263B2A]">
           {banner?.title || 'Make your home feel like home.'}
         </Text>
-        <Text numberOfLines={3} className="mt-1 text-[13px] leading-[18px] text-[#49392D]">
+        <Text numberOfLines={3} className="mt-1 text-[12px] leading-[17px] text-[#49392D]">
           {banner?.subtitle ||
             banner?.description ||
             'Thoughtful furniture, everyday comfort, and timeless style.'}
@@ -39,13 +34,13 @@ export default function Hero({
         <Pressable
           accessibilityRole="button"
           onPress={onExplorePress}
-          className="mt-3 flex-row items-center self-start rounded-full bg-[#F97316] px-4 py-2.5">
+          className="mt-2 flex-row items-center self-start rounded-full bg-[#F97316] px-4 py-2">
           <Text className="mr-2 text-[13px] font-bold text-white">Explore collection</Text>
           <ArrowRight size={16} color="#FFFFFF" />
         </Pressable>
       </View>
       {banners.length > 1 ? (
-        <View className="mt-3 flex-row items-center">
+        <View className="mt-2 flex-row items-center">
           {banners.map((item, index) => (
             <Pressable
               key={item.id ?? index}
