@@ -5,11 +5,18 @@ import {
   Pressable,
   ScrollView,
   Text,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { Armchair, Heart, ShoppingCart, Star } from 'lucide-react-native';
 import api from '../api';
+import {
+  fetchCachedApiData,
+  getCachedApiData,
+  hasCachedApiData,
+} from '../apiCache';
 import type { StoreProduct } from './types';
+import ProductCard from './ProductCard';
 import ReviewForm from './ReviewForm';
 import {
   formatPrice,
@@ -31,9 +38,12 @@ export type ItemDetailsProps = {
   itemId: string;
   itemType: 'product' | 'combo';
   favorite: boolean;
-  onFavoritePress: (productId: string) => void;
-  onAddToCart: (productId: string) => void;
-  onBuyNow?: (productId: string) => void;
+  onFavoritePress: (productId: string, productName?: string) => void;
+  onAddToCart: (productId: string, productName?: string) => void;
+  onBuyNow?: (productId: string, productName?: string) => void;
+  relatedProducts?: StoreProduct[];
+  favoriteIds?: string[];
+  onProductPress?: (productId: string) => void;
   onNameLoaded?: (name: string) => void;
 };
 
@@ -79,10 +89,19 @@ export default function ItemDetails({
   onFavoritePress,
   onAddToCart,
   onBuyNow,
+  relatedProducts = [],
+  favoriteIds = [],
+  onProductPress,
   onNameLoaded,
 }: ItemDetailsProps) {
-  const [item, setItem] = useState<DetailItem | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { width } = useWindowDimensions();
+  const cacheKey = `user.detail.${itemType}.${itemId}`;
+  const [item, setItem] = useState<DetailItem | null>(
+    () => getCachedApiData<DetailItem>(cacheKey) ?? null,
+  );
+  const [loading, setLoading] = useState(
+    () => !hasCachedApiData(cacheKey),
+  );
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
@@ -92,14 +111,26 @@ export default function ItemDetails({
     let active = true;
 
     const loadItem = async () => {
-      setLoading(true);
-      setError(null);
+      if (!hasCachedApiData(cacheKey)) setLoading(true);
+      if (hasCachedApiData(cacheKey)) setError(null);
       try {
         const resource = itemType === 'combo' ? 'combos' : 'products';
-        const { data } = await api.get<DetailItem>(`/${resource}/${itemId}`);
-        if (!data || typeof data !== 'object') {
-          throw new Error('The item details response was invalid.');
-        }
+        const data = await fetchCachedApiData(
+          cacheKey,
+          async force => {
+            const { data: responseData } = await api.get<DetailItem>(
+              `/${resource}/${itemId}`,
+              {
+                headers: force ? { 'Cache-Control': 'no-store' } : undefined,
+              },
+            );
+            if (!responseData || typeof responseData !== 'object') {
+              throw new Error('The item details response was invalid.');
+            }
+            return responseData;
+          },
+          retryCount > 0,
+        );
         if (active) {
           setItem(data);
           const itemName =
@@ -119,7 +150,7 @@ export default function ItemDetails({
     return () => {
       active = false;
     };
-  }, [itemId, itemType, onNameLoaded, retryCount]);
+  }, [cacheKey, itemId, itemType, onNameLoaded, retryCount]);
 
   const gallery = item ? getGallery(item) : [];
   const price = item ? productPrice(item) : 0;
@@ -138,6 +169,28 @@ export default function ItemDetails({
       : [];
   const description =
     item?.description?.trim() || item?.long_description?.trim() || '';
+  const relatedProductIds = new Set(
+    [item?.id, item?.product_id, itemId]
+      .filter((id): id is string | number => id !== undefined && id !== null)
+      .map(String),
+  );
+  const currentCategory = item ? productCategory(item).trim().toLowerCase() : '';
+  const relatedCardWidth = Math.min(258, Math.floor((width - 64) / 2));
+  const relatedItems =
+    itemType === 'product'
+      ? relatedProducts
+          .filter(
+            product =>
+              !relatedProductIds.has(String(product.id)) &&
+              !relatedProductIds.has(String(product.product_id)),
+          )
+          .filter(product =>
+            currentCategory
+              ? productCategory(product).trim().toLowerCase() === currentCategory
+              : true,
+          )
+          .slice(0, 6)
+      : [];
   return (
     <View className="px-4 pb-8 pt-3">
 
@@ -145,7 +198,7 @@ export default function ItemDetails({
         <View className="h-[300px] items-center justify-center rounded-[20px] bg-white">
           <ActivityIndicator size="large" color="#F97316" />
         </View>
-      ) : error ? (
+      ) : error && !hasCachedApiData(cacheKey) ? (
         <View className="items-center rounded-[20px] border border-[#F0E7DE] bg-white px-5 py-8">
           <Text accessibilityRole="alert" className="text-center text-[14px] text-[#8B2D20]">
             {error}
@@ -321,7 +374,7 @@ export default function ItemDetails({
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={favorite ? 'Remove from favorites' : 'Add to favorites'}
-                onPress={() => onFavoritePress(actionId)}
+                onPress={() => onFavoritePress(actionId, item.name)}
                 className="mr-3 h-[50px] w-[54px] items-center justify-center rounded-full border border-[#F0E7DE] bg-white">
                 <Heart
                   size={21}
@@ -332,7 +385,7 @@ export default function ItemDetails({
               <Pressable
                 accessibilityRole="button"
                 disabled={Number.isFinite(stock) && stock <= 0}
-                onPress={() => onAddToCart(actionId)}
+                onPress={() => onAddToCart(actionId, item.name)}
                 className={`h-[50px] flex-1 items-center justify-center rounded-full ${
                   Number.isFinite(stock) && stock <= 0
                     ? 'bg-[#CDBBA8]'
@@ -344,6 +397,37 @@ export default function ItemDetails({
               </Pressable>
             </View>
           )}
+
+          {relatedItems.length > 0 && onProductPress ? (
+            <View className="mt-6">
+              <View className="mb-3 px-1">
+                <Text className="text-[10px] font-bold uppercase tracking-[1.6px] text-[#A06E46]">
+                  More to explore
+                </Text>
+                <Text className="mt-1 text-[20px] font-black text-[#351D0E]">
+                  Related products
+                </Text>
+              </View>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerClassName="px-1">
+                {relatedItems.map(product => (
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    favorite={favoriteIds.includes(
+                      String(product.product_id ?? product.id),
+                    )}
+                    cardWidth={relatedCardWidth}
+                    onFavoritePress={onFavoritePress}
+                    onAddToCart={onAddToCart}
+                    onProductPress={onProductPress}
+                  />
+                ))}
+              </ScrollView>
+            </View>
+          ) : null}
         </>
       ) : null}
     </View>

@@ -23,6 +23,11 @@ import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '../../api';
+import {
+  fetchCachedApiData,
+  getCachedApiData,
+  hasCachedApiData,
+} from '../../apiCache';
 import { useUserAlert } from '../UserAlert';
 import { INDIAN_STATES, INDIAN_UNION_TERRITORIES } from './indianStates';
 
@@ -39,6 +44,7 @@ type Address = {
   zip_code: string;
   is_default: boolean | number;
 };
+const ADDRESSES_CACHE_KEY = 'user.addresses';
 
 type AddressDraft = {
   label: string;
@@ -332,11 +338,16 @@ type AddressesScreenProps = {
   onBack: () => void;
 };
 
-export default function AddressesScreen({ onBack }: AddressesScreenProps) {
+export default function AddressesScreen({ onBack: _onBack }: AddressesScreenProps) {
   const showUserAlert = useUserAlert();
   const insets = useSafeAreaInsets();
-  const [addresses, setAddresses] = useState<Address[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [addresses, setAddresses] = useState<Address[]>(
+    () => getCachedApiData<Address[]>(ADDRESSES_CACHE_KEY) ?? [],
+  );
+  const [loading, setLoading] = useState(
+    () => !hasCachedApiData(ADDRESSES_CACHE_KEY),
+  );
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
   const [actionId, setActionId] = useState<number | string | null>(null);
 
@@ -363,13 +374,23 @@ export default function AddressesScreen({ onBack }: AddressesScreenProps) {
     }).catch(() => {});
   }, []);
 
-  const loadAddresses = useCallback(async () => {
-    setLoading(true);
-    setError('');
+  const loadAddresses = useCallback(async (forceRefresh = false) => {
+    if (!hasCachedApiData(ADDRESSES_CACHE_KEY)) setLoading(true);
+    if (hasCachedApiData(ADDRESSES_CACHE_KEY)) setError('');
     try {
-      const { data } = await api.get('/users/me/addresses');
-      if (!Array.isArray(data)) throw new Error('Invalid response');
-      setAddresses(data);
+      const nextAddresses = await fetchCachedApiData(
+        ADDRESSES_CACHE_KEY,
+        async force => {
+          const { data } = await api.get<Address[]>('/users/me/addresses', {
+            headers: force ? { 'Cache-Control': 'no-store' } : undefined,
+          });
+          if (!Array.isArray(data)) throw new Error('Invalid response');
+          return data;
+        },
+        forceRefresh,
+      );
+      setAddresses(nextAddresses);
+      setError('');
     } catch (err) {
       setError('Could not load your addresses. Please try again.');
       if (__DEV__) console.warn('[AddressesScreen] Load error:', err);
@@ -433,7 +454,7 @@ export default function AddressesScreen({ onBack }: AddressesScreenProps) {
       }
       setFormOpen(false);
       setEditingId(null);
-      await loadAddresses();
+      await loadAddresses(true);
     } catch (err: unknown) {
       const msg =
         typeof err === 'object' && err !== null && 'message' in err
@@ -458,7 +479,7 @@ export default function AddressesScreen({ onBack }: AddressesScreenProps) {
             setActionId(address.id);
             try {
               await api.delete(`/users/me/addresses/${address.id}`);
-              await loadAddresses();
+              await loadAddresses(true);
             } catch {
               showUserAlert('Error', 'Could not delete the address.');
             } finally {
@@ -474,12 +495,18 @@ export default function AddressesScreen({ onBack }: AddressesScreenProps) {
     setActionId(id);
     try {
       await api.put(`/users/me/addresses/${id}/default`);
-      await loadAddresses();
+      await loadAddresses(true);
     } catch {
       showUserAlert('Error', 'Could not update the default address.');
     } finally {
       setActionId(null);
     }
+  };
+
+  const refreshAddresses = async () => {
+    setRefreshing(true);
+    await loadAddresses(true);
+    setRefreshing(false);
   };
 
   return (
@@ -488,26 +515,44 @@ export default function AddressesScreen({ onBack }: AddressesScreenProps) {
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color="#F97316" />
         </View>
-      ) : error ? (
+      ) : error && addresses.length === 0 ? (
         <View className="flex-1 items-center justify-center px-6">
           <Text className="text-center text-[14px] text-red-700">{error}</Text>
-          <Pressable onPress={loadAddresses} className="mt-4 rounded-full bg-[#F97316] px-5 py-3">
+          <Pressable onPress={() => loadAddresses(true)} className="mt-4 rounded-full bg-[#F97316] px-5 py-3">
             <Text className="text-[13px] font-bold text-white">Try Again</Text>
           </Pressable>
         </View>
       ) : addresses.length === 0 ? (
-        <View className="flex-1 items-center justify-center px-8">
-          <View className="h-[72px] w-[72px] items-center justify-center rounded-full bg-[#FFF0E1]">
-            <MapPin size={32} color="#F97316" />
+        <ScrollView
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => refreshAddresses()}
+              tintColor="#F97316"
+            />
+          }
+          contentContainerClassName="flex-grow items-center justify-center px-8"
+        >
+          <View className="items-center">
+            <View className="h-[72px] w-[72px] items-center justify-center rounded-full bg-[#FFF0E1]">
+              <MapPin size={32} color="#F97316" />
+            </View>
+            <Text className="mt-4 text-[16px] font-bold text-[#351D0E]">No saved addresses yet</Text>
+            <Text className="mt-2 text-center text-[13px] text-[#8B735E]">
+              Add an address to save your delivery details for future orders.
+            </Text>
           </View>
-          <Text className="mt-4 text-[16px] font-bold text-[#351D0E]">No saved addresses yet</Text>
-          <Text className="mt-2 text-center text-[13px] text-[#8B735E]">
-            Add an address to save your delivery details for future orders.
-          </Text>
-        </View>
+        </ScrollView>
       ) : (
         <ScrollView
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => refreshAddresses()}
+              tintColor="#F97316"
+            />
+          }
           contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 20, paddingBottom: Math.max(insets.bottom, 100) }}
           refreshControl={
             <RefreshControl
@@ -518,6 +563,20 @@ export default function AddressesScreen({ onBack }: AddressesScreenProps) {
             />
           }
         >
+          {error ? (
+            <View className="mb-3 rounded-[14px] bg-[#FFF0E1] p-3">
+              <Text className="text-[12px] text-[#8B2D20]">{error}</Text>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => loadAddresses(true)}
+                className="mt-2 self-start"
+              >
+                <Text className="text-[12px] font-bold text-[#9B4E17]">
+                  Try again
+                </Text>
+              </Pressable>
+            </View>
+          ) : null}
           {addresses.map(address => {
             const isDefault = Boolean(Number(address.is_default));
             const isHome = address.label?.toLowerCase() === 'home';

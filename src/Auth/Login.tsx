@@ -3,6 +3,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   ActivityIndicator,
   Alert,
+  Keyboard,
   Image,
   KeyboardAvoidingView,
   Platform,
@@ -10,6 +11,7 @@ import {
   ScrollView,
   Text,
   TextInput,
+  TouchableWithoutFeedback,
   View,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -124,14 +126,24 @@ export default function Login({ onLogin, onRegisterPress }: LoginProps) {
       />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
         className="flex-1 bg-transparent">
-        <ScrollView
-          keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 16) }}
-          contentContainerClassName="flex-grow justify-center px-6 py-8">
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
           <View
-            style={{ backgroundColor: colors.surface }}
-            className="mx-auto mt-10 w-full max-w-[430px] rounded-[24px] p-6 shadow-lg elevation-[8]">
+            className="flex-1">
+            <ScrollView
+              className="flex-1"
+              keyboardShouldPersistTaps="handled"
+              automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{
+                flexGrow: 1,
+                paddingBottom: Math.max(insets.bottom, 32),
+              }}
+              contentContainerClassName="flex-grow justify-center px-6 py-8">
+              <View
+                style={{ backgroundColor: colors.surface }}
+                className="mx-auto mt-10 w-full max-w-[430px] rounded-[24px] p-6 shadow-lg elevation-[8]">
             <Image
               source={require('../Assert/images/appicon.png')}
               accessibilityLabel="Q Furniture logo"
@@ -280,8 +292,10 @@ export default function Login({ onLogin, onRegisterPress }: LoginProps) {
                 </Text>
               </Pressable>
             </View>
+              </View>
+            </ScrollView>
           </View>
-        </ScrollView>
+        </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
     </View>
   );

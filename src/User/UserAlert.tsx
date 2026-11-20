@@ -2,10 +2,13 @@ import React, {
   createContext,
   useCallback,
   useContext,
+  useEffect,
+  useRef,
   useState,
 } from 'react';
 import { Modal, Pressable, Text, View } from 'react-native';
 import { CircleAlert } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type UserAlertButton = {
   text: string;
@@ -26,13 +29,17 @@ type ShowUserAlert = (
 ) => void;
 
 const UserAlertContext = createContext<ShowUserAlert | null>(null);
+const UserToastContext = createContext<((message: string) => void) | null>(null);
 
 export function UserAlertProvider({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const insets = useSafeAreaInsets();
   const [alert, setAlert] = useState<UserAlertData | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const showAlert = useCallback<ShowUserAlert>(
     (title, message, buttons) => {
@@ -46,10 +53,48 @@ export function UserAlertProvider({
   );
 
   const dismissAlert = useCallback(() => setAlert(null), []);
+  const showToast = useCallback((message: string) => {
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    setToast(message);
+    toastTimer.current = setTimeout(() => {
+      setToast(null);
+      toastTimer.current = null;
+    }, 2400);
+  }, []);
+
+  useEffect(
+    () => () => {
+      if (toastTimer.current) clearTimeout(toastTimer.current);
+    },
+    [],
+  );
 
   return (
     <UserAlertContext.Provider value={showAlert}>
-      {children}
+      <UserToastContext.Provider value={showToast}>
+        {children}
+        {toast ? (
+          <View
+            pointerEvents="none"
+            style={{
+              position: 'absolute',
+              top: insets.top + 12,
+              left: 16,
+              right: 16,
+              zIndex: 1000,
+              elevation: 1000,
+            }}>
+            <View className="self-center max-w-full rounded-full bg-[#187A45] px-5 py-3 shadow-lg">
+              <Text
+                accessibilityLiveRegion="polite"
+                numberOfLines={2}
+                className="text-center text-[14px] font-bold text-white">
+                {toast}
+              </Text>
+            </View>
+          </View>
+        ) : null}
+      </UserToastContext.Provider>
       <Modal
         visible={alert !== null}
         transparent
@@ -117,4 +162,12 @@ export function useUserAlert() {
     throw new Error('useUserAlert must be used within UserAlertProvider.');
   }
   return showAlert;
+}
+
+export function useUserToast() {
+  const showToast = useContext(UserToastContext);
+  if (!showToast) {
+    throw new Error('useUserToast must be used within UserAlertProvider.');
+  }
+  return showToast;
 }

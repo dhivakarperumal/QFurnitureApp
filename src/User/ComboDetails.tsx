@@ -5,16 +5,24 @@ import {
   Pressable,
   ScrollView,
   Text,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { Armchair, ShoppingCart, Star } from 'lucide-react-native';
 import api from '../api';
+import {
+  fetchCachedApiData,
+  getCachedApiData,
+  hasCachedApiData,
+} from '../apiCache';
 import type { StoreProduct } from './types';
+import ProductCard from './ProductCard';
 import ReviewForm from './ReviewForm';
 import {
   formatPrice,
   mediaUrl,
   parseImages,
+  productCategory,
   productDiscountPercent,
   productPrice,
 } from './utils';
@@ -36,9 +44,12 @@ type Combo = StoreProduct & {
 
 type ComboDetailsProps = {
   itemId: string;
-  onAddToCart: (productId: string) => void;
-  onBuyNow?: (productId: string) => void;
-  onNameLoaded?: (name: string) => void;
+  onFavoritePress: (productId: string, productName?: string) => void;
+  onAddToCart: (productId: string, productName?: string) => void;
+  onBuyNow?: (productId: string, productName?: string) => void;
+  relatedProducts?: StoreProduct[];
+  favoriteIds?: string[];
+  onProductPress?: (productId: string) => void;
 };
 
 function getErrorMessage(error: unknown) {
@@ -66,12 +77,21 @@ function getGallery(combo: Combo) {
 
 export default function ComboDetails({
   itemId,
+  onFavoritePress,
   onAddToCart,
   onBuyNow,
-  onNameLoaded,
+  relatedProducts = [],
+  favoriteIds = [],
+  onProductPress,
 }: ComboDetailsProps) {
-  const [combo, setCombo] = useState<Combo | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { width } = useWindowDimensions();
+  const cacheKey = `user.detail.combo.${itemId}`;
+  const [combo, setCombo] = useState<Combo | null>(
+    () => getCachedApiData<Combo>(cacheKey) ?? null,
+  );
+  const [loading, setLoading] = useState(
+    () => !hasCachedApiData(cacheKey),
+  );
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
@@ -81,13 +101,25 @@ export default function ComboDetails({
     let active = true;
 
     const loadCombo = async () => {
-      setLoading(true);
-      setError(null);
+      if (!hasCachedApiData(cacheKey)) setLoading(true);
+      if (hasCachedApiData(cacheKey)) setError(null);
       try {
-        const { data } = await api.get<Combo>(`/combos/${itemId}`);
-        if (!data || typeof data !== 'object') {
-          throw new Error('The combo details response was invalid.');
-        }
+        const data = await fetchCachedApiData(
+          cacheKey,
+          async force => {
+            const { data: responseData } = await api.get<Combo>(
+              `/combos/${itemId}`,
+              {
+                headers: force ? { 'Cache-Control': 'no-store' } : undefined,
+              },
+            );
+            if (!responseData || typeof responseData !== 'object') {
+              throw new Error('The combo details response was invalid.');
+            }
+            return responseData;
+          },
+          retryCount > 0,
+        );
         if (active) {
           setCombo(data);
           const comboName =
@@ -107,7 +139,7 @@ export default function ComboDetails({
     return () => {
       active = false;
     };
-  }, [itemId, onNameLoaded, retryCount]);
+  }, [cacheKey, itemId, onNameLoaded, retryCount]);
 
   const gallery = combo ? getGallery(combo) : [];
   const price = combo ? productPrice(combo) : 0;
@@ -118,6 +150,37 @@ export default function ComboDetails({
     combo?.available_stock ?? combo?.total_stock ?? combo?.stock,
   );
   const components = combo?.combo_items ?? [];
+  const includedProductIds = new Set(
+    components
+      .map(component => component.product_id)
+      .filter((id): id is string | number => id !== undefined && id !== null)
+      .map(String),
+  );
+  const componentCategories = new Set(
+    relatedProducts
+      .filter(
+        product =>
+          includedProductIds.has(String(product.id)) ||
+          includedProductIds.has(String(product.product_id)),
+      )
+      .map(product => productCategory(product).trim().toLowerCase())
+      .filter(Boolean),
+  );
+  const otherProducts = relatedProducts.filter(
+    product =>
+      !includedProductIds.has(String(product.id)) &&
+      !includedProductIds.has(String(product.product_id)),
+  );
+  const categoryMatches = componentCategories.size
+    ? otherProducts.filter(product =>
+        componentCategories.has(productCategory(product).trim().toLowerCase()),
+      )
+    : [];
+  const relatedItems = (categoryMatches.length ? categoryMatches : otherProducts).slice(
+    0,
+    6,
+  );
+  const relatedCardWidth = Math.min(258, Math.floor((width - 65) / 2));
   const description =
     combo?.description?.trim() || combo?.long_description?.trim() || '';
   const specifications =
@@ -138,7 +201,7 @@ export default function ComboDetails({
         <View className="h-[300px] items-center justify-center rounded-[20px] bg-white">
           <ActivityIndicator size="large" color="#F97316" />
         </View>
-      ) : error ? (
+      ) : error && !hasCachedApiData(cacheKey) ? (
         <View className="items-center rounded-[20px] border border-[#F0E7DE] bg-white px-5 py-8">
           <Text accessibilityRole="alert" className="text-center text-[14px] text-[#8B2D20]">
             {error}
@@ -301,7 +364,7 @@ export default function ComboDetails({
             <Pressable
               accessibilityRole="button"
               disabled={unavailable}
-              onPress={() => onAddToCart(actionId)}
+              onPress={() => onAddToCart(actionId, combo.name)}
               className={`mr-3 h-[50px] flex-1 flex-row items-center justify-center rounded-full ${
                 unavailable ? 'bg-[#CDBBA8]' : 'bg-[#F97316]'
               }`}>
@@ -313,7 +376,7 @@ export default function ComboDetails({
             <Pressable
               accessibilityRole="button"
               disabled={unavailable}
-              onPress={() => (onBuyNow ?? onAddToCart)(actionId)}
+              onPress={() => (onBuyNow ?? onAddToCart)(actionId, combo.name)}
               className={`h-[50px] flex-1 items-center justify-center rounded-full ${
                 unavailable ? 'bg-[#CDBBA8]' : 'bg-[#351D0E]'
               }`}>
@@ -322,6 +385,37 @@ export default function ComboDetails({
               </Text>
             </Pressable>
           </View>
+
+          {relatedItems.length > 0 && onProductPress ? (
+            <View className="mt-6">
+              <View className="mb-3 px-1">
+                <Text className="text-[10px] font-bold uppercase tracking-[1.6px] text-[#A06E46]">
+                  More to explore
+                </Text>
+                <Text className="mt-1 text-[20px] font-black text-[#351D0E]">
+                  Related products
+                </Text>
+              </View>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerClassName="px-1">
+                {relatedItems.map(product => (
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    favorite={favoriteIds.includes(
+                      String(product.product_id ?? product.id),
+                    )}
+                    cardWidth={relatedCardWidth}
+                    onFavoritePress={onFavoritePress}
+                    onAddToCart={onAddToCart}
+                    onProductPress={onProductPress}
+                  />
+                ))}
+              </ScrollView>
+            </View>
+          ) : null}
         </>
       ) : null}
     </View>
