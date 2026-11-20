@@ -84,9 +84,10 @@ export function UserAlertProvider({
               zIndex: 1000,
               elevation: 1000,
             }}>
-            <View className="self-center rounded-full bg-[#187A45] px-5 py-3 shadow-lg">
+            <View className="self-center max-w-full rounded-full bg-[#187A45] px-5 py-3 shadow-lg">
               <Text
                 accessibilityLiveRegion="polite"
+                numberOfLines={2}
                 className="text-center text-[14px] font-bold text-white">
                 {toast}
               </Text>

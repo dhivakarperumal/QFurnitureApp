@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -10,6 +9,7 @@ import {
 } from 'react-native';
 import api from '../../api';
 import ProductCard from '../ProductCard';
+import { SkeletonList } from '../Skeletons';
 import type { StoreProduct } from '../types';
 import { useAutoSwiper } from './useAutoSwiper';
 
@@ -120,9 +120,7 @@ export default function FeaturedCombos({
         </Text>
       </View>
       {loading ? (
-        <View className="h-[150px] items-center justify-center">
-          <ActivityIndicator color="#F97316" />
-        </View>
+        <SkeletonList count={5} horizontal cardWidth={cardWidth} />
       ) : error ? (
         <View className="mx-4 rounded-[16px] border border-[#F0E7DE] bg-white p-4">
           <Text accessibilityRole="alert" className="text-[13px] text-[#8B2D20]">

@@ -1,11 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
+  Alert,
   Pressable,
   ScrollView,
   StatusBar,
   Text,
   View,
+  useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArrowLeft } from 'lucide-react-native';
@@ -38,6 +39,7 @@ import SetPasswordScreen from './Account/SetPasswordScreen';
 import { MoreMenu, MorePlaceholder, type MoreDestination } from './More';
 import { setUserNavigationBarAppearance } from '../services/navigationBar';
 import { useUserAlert, useUserToast } from './UserAlert';
+import { SkeletonList } from './Skeletons';
 
 // ─── Inner page header (fixed, no main header / no bottom tabs) ───────────────
 function InnerPageHeader({
@@ -152,6 +154,7 @@ export default function Storefront({
   onLogoutPress: () => void;
 }) {
   const insets = useSafeAreaInsets();
+  const { width: screenWidth } = useWindowDimensions();
   const showUserAlert = useUserAlert();
   const showUserToast = useUserToast();
   useEffect(() => {
@@ -397,7 +400,7 @@ export default function Storefront({
     0,
   );
 
-  const toggleFavorite = async (productId: string) => {
+  const toggleFavorite = async (productId: string, productName?: string) => {
     if (pendingFavoriteIds.includes(productId)) return;
     const savedFavorite = favoriteItems.find(item =>
       item.item_type === 'combo'
@@ -407,6 +410,13 @@ export default function Storefront({
     );
     const isCombo =
       savedFavorite?.item_type === 'combo' || productId.startsWith('combo-');
+    const name =
+      productName?.trim() ||
+      savedFavorite?.name ||
+      storeData.products.find(
+        product => String(product.product_id ?? product.id) === productId,
+      )?.name ||
+      (isCombo ? 'Combo' : 'Product');
     const numericId = Number(
       isCombo ? productId.replace(/^combo-/, '') : productId,
     );
@@ -430,7 +440,7 @@ export default function Storefront({
       }
       await loadFavorites();
       showUserToast(
-        savedFavorite ? 'Removed from wishlist' : 'Added to wishlist',
+        `${name} ${savedFavorite ? 'removed from wishlist' : 'added to wishlist'}`,
       );
     } catch (error) {
       showUserAlert('Favorites could not be updated', errorMessage(error));
@@ -439,15 +449,28 @@ export default function Storefront({
     }
   };
 
-  const addToCart = async (productId: string): Promise<boolean> => {
+  const addToCart = async (
+    productId: string,
+    productName?: string,
+  ): Promise<boolean> => {
     if (pendingCartIds.includes(productId)) return false;
     setPendingCartIds(current => [...current, productId]);
+    let name = productName?.trim();
     try {
       if (productId.startsWith('combo-')) {
         const comboId = Number(productId.replace(/^combo-/, ''));
         if (!Number.isSafeInteger(comboId) || comboId < 1) {
           throw new Error('This item has an invalid ID.');
         }
+        name =
+          name ||
+          favoriteItems.find(
+            item =>
+              item.item_type === 'combo' &&
+              `combo-${item.combo_id ?? String(item.id).replace(/^combo-/, '')}` ===
+                productId,
+          )?.name ||
+          'Combo';
         await api.post('/cart', { combo_id: comboId, quantity: 1 });
       } else {
         const product =
@@ -461,6 +484,7 @@ export default function Storefront({
         ) {
           throw new Error('This product is no longer available.');
         }
+        name = name || product.name;
         const variants = product.variants ?? [];
         const variant = variants[0];
         const variantColor =
@@ -478,7 +502,7 @@ export default function Storefront({
         });
       }
       await loadCart();
-      showUserToast('Added to cart');
+      showUserToast(`${name || 'Product'} added to cart`);
       return true;
     } catch (error) {
       showUserAlert('Could not add to cart', errorMessage(error));
@@ -488,8 +512,8 @@ export default function Storefront({
     }
   };
 
-  const buyNow = async (productId: string) => {
-    if (!(await addToCart(productId))) return;
+  const buyNow = async (productId: string, productName?: string) => {
+    if (!(await addToCart(productId, productName))) return;
     setDetailTarget(null);
     setCheckoutOpen(true);
     setActiveTab('Cart');
@@ -803,9 +827,15 @@ export default function Storefront({
         onLogoutPress={onLogoutPress}
       />
       {loading ? (
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#F97316" />
-        </View>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerClassName="pb-[115px]">
+          <SkeletonList
+            count={5}
+            horizontal
+            cardWidth={(screenWidth - 36) / 2}
+          />
+        </ScrollView>
       ) : loadError ? (
         <View className="flex-1 items-center justify-center px-6">
           <Text className="text-center text-[14px] text-[#8B2D20]">

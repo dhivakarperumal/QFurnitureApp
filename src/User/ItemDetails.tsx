@@ -33,9 +33,9 @@ export type ItemDetailsProps = {
   itemId: string;
   itemType: 'product' | 'combo';
   favorite: boolean;
-  onFavoritePress: (productId: string) => void;
-  onAddToCart: (productId: string) => void;
-  onBuyNow?: (productId: string) => void;
+  onFavoritePress: (productId: string, productName?: string) => void;
+  onAddToCart: (productId: string, productName?: string) => void;
+  onBuyNow?: (productId: string, productName?: string) => void;
   relatedProducts?: StoreProduct[];
   favoriteIds?: string[];
   onProductPress?: (productId: string) => void;
@@ -347,7 +347,7 @@ export default function ItemDetails({
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={favorite ? 'Remove from favorites' : 'Add to favorites'}
-                onPress={() => onFavoritePress(actionId)}
+                onPress={() => onFavoritePress(actionId, item.name)}
                 className="mr-3 h-[50px] w-[54px] items-center justify-center rounded-full border border-[#F0E7DE] bg-white">
                 <Heart
                   size={21}
@@ -358,7 +358,7 @@ export default function ItemDetails({
               <Pressable
                 accessibilityRole="button"
                 disabled={Number.isFinite(stock) && stock <= 0}
-                onPress={() => onAddToCart(actionId)}
+                onPress={() => onAddToCart(actionId, item.name)}
                 className={`h-[50px] flex-1 items-center justify-center rounded-full ${
                   Number.isFinite(stock) && stock <= 0
                     ? 'bg-[#CDBBA8]'

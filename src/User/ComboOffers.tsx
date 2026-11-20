@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import ProductCard from './ProductCard';
+import { SkeletonList } from './Skeletons';
 import api from '../api';
 import type { StoreProduct } from './types';
 
@@ -100,9 +101,7 @@ export default function ComboOffers({
       </Text>
 
       {loading ? (
-        <View className="items-center py-10">
-          <ActivityIndicator size="large" color="#F97316" />
-        </View>
+        <SkeletonList count={4} compact />
       ) : error ? (
         <View className="items-center rounded-[20px] border border-[#F0E7DE] bg-white px-5 py-8">
           <Text accessibilityRole="alert" className="text-center text-[14px] text-[#8B2D20]">

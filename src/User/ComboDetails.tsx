@@ -39,9 +39,9 @@ type Combo = StoreProduct & {
 
 type ComboDetailsProps = {
   itemId: string;
-  onFavoritePress: (productId: string) => void;
-  onAddToCart: (productId: string) => void;
-  onBuyNow?: (productId: string) => void;
+  onFavoritePress: (productId: string, productName?: string) => void;
+  onAddToCart: (productId: string, productName?: string) => void;
+  onBuyNow?: (productId: string, productName?: string) => void;
   relatedProducts?: StoreProduct[];
   favoriteIds?: string[];
   onProductPress?: (productId: string) => void;
@@ -339,7 +339,7 @@ export default function ComboDetails({
             <Pressable
               accessibilityRole="button"
               disabled={unavailable}
-              onPress={() => onAddToCart(actionId)}
+              onPress={() => onAddToCart(actionId, combo.name)}
               className={`mr-3 h-[50px] flex-1 flex-row items-center justify-center rounded-full ${
                 unavailable ? 'bg-[#CDBBA8]' : 'bg-[#F97316]'
               }`}>
@@ -351,7 +351,7 @@ export default function ComboDetails({
             <Pressable
               accessibilityRole="button"
               disabled={unavailable}
-              onPress={() => (onBuyNow ?? onAddToCart)(actionId)}
+              onPress={() => (onBuyNow ?? onAddToCart)(actionId, combo.name)}
               className={`h-[50px] flex-1 items-center justify-center rounded-full ${
                 unavailable ? 'bg-[#CDBBA8]' : 'bg-[#351D0E]'
               }`}>
