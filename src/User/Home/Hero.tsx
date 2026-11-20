@@ -30,7 +30,7 @@ export default function Hero({
         />
       ) : null}
       <View pointerEvents="none" className="absolute inset-0 bg-white/25" />
-      <View className="w-[70%]">
+      <View className="w-[85%] rounded-[20px] border border-white/80 bg-[#FFF9F2]/95 p-4 shadow-lg">
         <View className="self-start rounded-full border border-[#D9C4AA] bg-white/80 px-3 py-2">
           <Text className="text-[10px] font-bold uppercase tracking-[1.3px] text-[#351D0E]">
             Q Living Furniture
