@@ -40,7 +40,7 @@ export default function Hero({
           className="absolute inset-y-0 left-0 w-1/2 overflow-hidden">
           <Image
             source={{ uri: imageUri }}
-            className="h-full w-[200%]"
+            className="h-full w-[200%] opacity-20"
             blurRadius={50}
             resizeMode="cover"
           />
@@ -54,8 +54,8 @@ export default function Hero({
           preserveAspectRatio="none">
           <Defs>
             <LinearGradient id="heroOrangeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-              <Stop offset="0%" stopColor="#FFF7ED" stopOpacity="0.78" />
-              <Stop offset="45%" stopColor="#FFD0A3" stopOpacity="0.22" />
+              <Stop offset="0%" stopColor="#FFF0E1" stopOpacity="0.72" />
+              <Stop offset="45%" stopColor="#FFD0A3" stopOpacity="0.2" />
               <Stop offset="50%" stopColor="#FFD0A3" stopOpacity="0" />
               <Stop offset="100%" stopColor="#FFD0A3" stopOpacity="0" />
             </LinearGradient>
