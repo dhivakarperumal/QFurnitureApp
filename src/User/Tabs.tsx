@@ -98,18 +98,18 @@ export default function Tabs({
               accessibilityLabel={`${label} tab`}
               onPress={() => onTabPress(name)}
               className={`relative h-[58px] flex-1 items-center justify-center rounded-[18px] ${
-                active ? 'border border-white/35 bg-white/20' : ''
+                active ? 'border border-white bg-white' : ''
               }`}>
               <Icon
                 size={23}
-                color="#FFFFFF"
+                color={active ? '#F97316' : '#FFFFFF'}
                 fill="transparent"
                 strokeWidth={2.2}
               />
               <Text
                 className={`mt-[3px] text-[10px] leading-[12px] ${
                   active
-                    ? 'font-bold text-white'
+                    ? 'font-bold text-[#F97316]'
                     : 'font-medium text-white/85'
                 }`}>
                 {label}
