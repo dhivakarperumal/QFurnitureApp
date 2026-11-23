@@ -14,6 +14,7 @@ export type LocationAddress = {
 };
 
 type AddressGeocoderModule = {
+  openLocationPermissionSettings?: () => Promise<void>;
   reverseGeocode: (
     latitude: number,
     longitude: number,
@@ -111,6 +112,16 @@ export function locationErrorMessage(error: unknown): string {
 }
 
 export async function openLocationSettings(error: unknown): Promise<void> {
+  if (Platform.OS === 'android' && getLocationErrorCode(error) === 1) {
+    const geocoder = NativeModules.AddressGeocoder as
+      | AddressGeocoderModule
+      | undefined;
+    if (typeof geocoder?.openLocationPermissionSettings === 'function') {
+      await geocoder.openLocationPermissionSettings();
+      return;
+    }
+  }
+
   if (Platform.OS === 'android' && getLocationErrorCode(error) === 2) {
     try {
       await Linking.sendIntent('android.settings.LOCATION_SOURCE_SETTINGS');

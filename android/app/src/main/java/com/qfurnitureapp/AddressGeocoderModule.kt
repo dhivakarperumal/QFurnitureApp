@@ -2,7 +2,10 @@ package com.qfurnitureapp
 
 import android.location.Address
 import android.location.Geocoder
+import android.content.Intent
+import android.net.Uri
 import android.os.Build
+import android.provider.Settings
 import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
@@ -15,6 +18,41 @@ class AddressGeocoderModule(
   reactContext: ReactApplicationContext,
 ) : ReactContextBaseJavaModule(reactContext) {
   override fun getName(): String = "AddressGeocoder"
+
+  @ReactMethod
+  fun openLocationPermissionSettings(promise: Promise) {
+    val activity = reactApplicationContext.currentActivity
+    if (activity == null) {
+      promise.reject("E_NO_ACTIVITY", "No current Android activity.")
+      return
+    }
+
+    try {
+      val permissionIntent = Intent("android.intent.action.MANAGE_APP_PERMISSION").apply {
+        putExtra("android.intent.extra.PACKAGE_NAME", activity.packageName)
+        putExtra(
+          "android.intent.extra.PERMISSION_NAME",
+          android.Manifest.permission.ACCESS_FINE_LOCATION,
+        )
+      }
+      if (
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+        permissionIntent.resolveActivity(activity.packageManager) != null
+      ) {
+        activity.startActivity(permissionIntent)
+      } else {
+        activity.startActivity(
+          Intent(
+            Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+            Uri.parse("package:${activity.packageName}"),
+          ),
+        )
+      }
+      promise.resolve(null)
+    } catch (error: Exception) {
+      promise.reject("E_OPEN_SETTINGS", "Could not open location permission settings.", error)
+    }
+  }
 
   @ReactMethod
   fun reverseGeocode(latitude: Double, longitude: Double, promise: Promise) {
