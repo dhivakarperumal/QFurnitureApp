@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   ActivityIndicator,
@@ -13,7 +13,9 @@ import {
   TextInput,
   TouchableWithoutFeedback,
   View,
+  findNodeHandle,
 } from 'react-native';
+import type { ScrollViewInstance, ViewInstance } from 'react-native';
 import {
   Eye,
   EyeOff,
@@ -31,6 +33,8 @@ type RegisterProps = {
 
 export default function Register({ onLoginPress }: RegisterProps) {
   const insets = useSafeAreaInsets();
+  const scrollViewRef = useRef<ScrollViewInstance | null>(null);
+  const registerButtonRef = useRef<ViewInstance | null>(null);
   const [form, setForm] = useState({
     username: '',
     email: '',
@@ -41,6 +45,37 @@ export default function Register({ onLoginPress }: RegisterProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  const scrollRegisterButtonIntoView = useCallback(() => {
+    const buttonHandle = registerButtonRef.current
+      ? findNodeHandle(registerButtonRef.current)
+      : null;
+    if (buttonHandle == null) return;
+    scrollViewRef.current?.scrollResponderScrollNativeHandleToKeyboard(
+      buttonHandle,
+      24,
+      true,
+    );
+  }, []);
+
+  useEffect(() => {
+    const keyboardShown = Keyboard.addListener('keyboardDidShow', event => {
+      setKeyboardHeight(event.endCoordinates.height);
+    });
+    const keyboardHidden = Keyboard.addListener('keyboardDidHide', () => {
+      setKeyboardHeight(0);
+    });
+
+    return () => {
+      keyboardShown.remove();
+      keyboardHidden.remove();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (keyboardHeight > 0) scrollRegisterButtonIntoView();
+  }, [keyboardHeight, scrollRegisterButtonIntoView]);
 
   const updateField = (field: keyof typeof form, value: string) => {
     setForm(current => ({ ...current, [field]: value }));
@@ -105,13 +140,16 @@ export default function Register({ onLoginPress }: RegisterProps) {
           <View
             className="flex-1">
             <ScrollView
+              ref={scrollViewRef}
               className="flex-1"
               keyboardShouldPersistTaps="handled"
               automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
               showsVerticalScrollIndicator={false}
               contentContainerStyle={{
                 flexGrow: 1,
-                paddingBottom: Math.max(insets.bottom, 32),
+                paddingBottom:
+                  Math.max(insets.bottom, 32) +
+                  (Platform.OS === 'android' ? keyboardHeight : 0),
               }}
               contentContainerClassName="flex-grow justify-center px-6 py-8">
               <View
@@ -269,6 +307,7 @@ export default function Register({ onLoginPress }: RegisterProps) {
             </View>
 
             <Pressable
+              ref={registerButtonRef}
               accessibilityRole="button"
               onPress={handleSubmit}
               disabled={submitting}

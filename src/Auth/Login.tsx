@@ -52,6 +52,7 @@ export default function Login({
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [googleSubmitting, setGoogleSubmitting] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   const scrollSignInButtonIntoView = useCallback(() => {
     const buttonHandle = signInButtonRef.current
@@ -66,14 +67,22 @@ export default function Login({
   }, []);
 
   useEffect(() => {
-    const keyboardShown = Keyboard.addListener('keyboardDidShow', () => {
-      scrollSignInButtonIntoView();
+    const keyboardShown = Keyboard.addListener('keyboardDidShow', event => {
+      setKeyboardHeight(event.endCoordinates.height);
+    });
+    const keyboardHidden = Keyboard.addListener('keyboardDidHide', () => {
+      setKeyboardHeight(0);
     });
 
     return () => {
       keyboardShown.remove();
+      keyboardHidden.remove();
     };
-  }, [scrollSignInButtonIntoView]);
+  }, []);
+
+  useEffect(() => {
+    if (keyboardHeight > 0) scrollSignInButtonIntoView();
+  }, [keyboardHeight, scrollSignInButtonIntoView]);
 
   const handleGoogleLogin = async () => {
     if (googleSubmitting) return;
@@ -170,7 +179,9 @@ export default function Login({
               showsVerticalScrollIndicator={false}
               contentContainerStyle={{
                 flexGrow: 1,
-                paddingBottom: Math.max(insets.bottom, 32),
+                paddingBottom:
+                  Math.max(insets.bottom, 32) +
+                  (Platform.OS === 'android' ? keyboardHeight : 0),
               }}
               contentContainerClassName="flex-grow justify-center px-6 py-8">
               <View
