@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Heart, LogOut, UserRound } from 'lucide-react-native';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import type { StoreTab } from './types';
+import { useUserAlert } from './UserAlert';
 
 type HeaderProps = {
   activeTab: StoreTab;
@@ -22,6 +23,7 @@ export default function Header({
   onProfilePress,
   onLogoutPress,
 }: HeaderProps) {
+  const showUserAlert = useUserAlert();
   const [profileMenuVisible, setProfileMenuVisible] = useState(false);
   const [userName, setUserName] = useState('');
   const [userEmail, setUserEmail] = useState('');
@@ -186,7 +188,18 @@ export default function Header({
                 accessibilityLabel="Log out"
                 onPress={() => {
                   setProfileMenuVisible(false);
-                  onLogoutPress();
+                  showUserAlert(
+                    'Sign Out',
+                    'Are you sure you want to sign out?',
+                    [
+                      { text: 'Cancel', style: 'cancel' },
+                      {
+                        text: 'Sign Out',
+                        style: 'destructive',
+                        onPress: onLogoutPress,
+                      },
+                    ],
+                  );
                 }}
                 className="h-[42px] flex-row items-center rounded-[8px] px-2">
                 <LogOut size={18} color="#DC2626" />
