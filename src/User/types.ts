@@ -32,6 +32,8 @@ export type StoreProduct = {
     colour?: string;
     size?: string;
     selectedSizes?: string[];
+    offer_price?: number | string | null;
+    selling_price?: number | string | null;
   }>;
   main_image_index?: number | string | null;
   selling_price?: number | string | null;
@@ -55,6 +57,10 @@ export type StoreCartItem = StoreProduct & {
   image?: string | null;
   variant_color?: string | null;
   variant_size?: string | null;
+};
+
+export type StoreBuyNowItem = StoreCartItem & {
+  item_type: 'product' | 'combo';
 };
 
 export type StoreBanner = {

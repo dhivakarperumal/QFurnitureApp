@@ -15,7 +15,7 @@ import {
   getCachedApiData,
   hasCachedApiData,
 } from '../apiCache';
-import type { StoreProduct } from './types';
+import type { StoreBuyNowItem, StoreProduct } from './types';
 import ProductCard from './ProductCard';
 import ReviewForm from './ReviewForm';
 import {
@@ -40,7 +40,7 @@ export type ItemDetailsProps = {
   favorite: boolean;
   onFavoritePress: (productId: string, productName?: string) => void;
   onAddToCart: (productId: string, productName?: string) => void;
-  onBuyNow?: (productId: string, productName?: string) => void;
+  onBuyNow?: (item: StoreBuyNowItem) => void;
   relatedProducts?: StoreProduct[];
   favoriteIds?: string[];
   onProductPress?: (productId: string) => void;
@@ -154,6 +154,7 @@ export default function ItemDetails({
 
   const gallery = item ? getGallery(item) : [];
   const price = item ? productPrice(item) : 0;
+  const defaultVariant = item?.variants?.[0];
   const mrp = Number(item?.mrp) || 0;
   const discount = item ? Math.round(productDiscountPercent(item)) : 0;
   const rating = Number(item?.rating) || 0;
@@ -358,7 +359,43 @@ export default function ItemDetails({
               <Pressable
                 accessibilityRole="button"
                 disabled={Number.isFinite(stock) && stock <= 0}
-                onPress={() => (onBuyNow ?? onAddToCart)(actionId)}
+                onPress={() => {
+                  if (!onBuyNow) {
+                    onAddToCart(actionId);
+                    return;
+                  }
+                  const productId = item.product_id ?? item.id;
+                  const buyNowPrice = Number(
+                    defaultVariant?.offer_price ??
+                      defaultVariant?.selling_price ??
+                      item.offer_price ??
+                      item.selling_price ??
+                      item.mrp,
+                  );
+                  onBuyNow({
+                    ...item,
+                    id: `buy-now-${productId}`,
+                    product_id: productId,
+                    combo_id: null,
+                    item_type: 'product',
+                    quantity: 1,
+                    price: Number.isFinite(buyNowPrice) ? buyNowPrice : 0,
+                    image:
+                      gallery[activeImageIndex] ??
+                      gallery[0] ??
+                      mediaUrl(item.image) ??
+                      null,
+                    variant_color:
+                      defaultVariant?.colorName ||
+                      defaultVariant?.color ||
+                      defaultVariant?.colour ||
+                      'Default',
+                    variant_size:
+                      defaultVariant?.size ||
+                      defaultVariant?.selectedSizes?.[0] ||
+                      'Free Size',
+                  });
+                }}
                 className={`h-[50px] flex-1 items-center justify-center rounded-full ${
                   Number.isFinite(stock) && stock <= 0
                     ? 'bg-[#CDBBA8]'

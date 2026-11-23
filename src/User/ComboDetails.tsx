@@ -15,7 +15,7 @@ import {
   getCachedApiData,
   hasCachedApiData,
 } from '../apiCache';
-import type { StoreProduct } from './types';
+import type { StoreBuyNowItem, StoreProduct } from './types';
 import ProductCard from './ProductCard';
 import ReviewForm from './ReviewForm';
 import {
@@ -46,7 +46,7 @@ type ComboDetailsProps = {
   itemId: string;
   onFavoritePress: (productId: string, productName?: string) => void;
   onAddToCart: (productId: string, productName?: string) => void;
-  onBuyNow?: (productId: string, productName?: string) => void;
+  onBuyNow?: (item: StoreBuyNowItem) => void;
   relatedProducts?: StoreProduct[];
   favoriteIds?: string[];
   onProductPress?: (productId: string) => void;
@@ -376,7 +376,27 @@ export default function ComboDetails({
             <Pressable
               accessibilityRole="button"
               disabled={unavailable}
-              onPress={() => (onBuyNow ?? onAddToCart)(actionId, combo.name)}
+              onPress={() => {
+                if (!onBuyNow) {
+                  onAddToCart(actionId, combo.name);
+                  return;
+                }
+                const comboId = combo.combo_id ?? combo.id;
+                onBuyNow({
+                  ...combo,
+                  id: `buy-now-combo-${comboId}`,
+                  product_id: null,
+                  combo_id: comboId,
+                  item_type: 'combo',
+                  quantity: 1,
+                  price,
+                  image:
+                    gallery[activeImageIndex] ??
+                    gallery[0] ??
+                    mediaUrl(combo.image) ??
+                    null,
+                });
+              }}
               className={`h-[50px] flex-1 items-center justify-center rounded-full ${
                 unavailable ? 'bg-[#CDBBA8]' : 'bg-[#351D0E]'
               }`}>

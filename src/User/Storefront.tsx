@@ -26,6 +26,7 @@ import Checkout from './Cart/Checkout';
 import Favorites from './Favorites/Favorites';
 import type {
   StoreBanner,
+  StoreBuyNowItem,
   StoreCartItem,
   StoreCategory,
   StoreFavorite,
@@ -224,6 +225,7 @@ export default function Storefront({
   const [cartItems, setCartItems] = useState(
     () => getCachedApiData<StoreCartItem[]>(CART_CACHE_KEY) ?? [],
   );
+  const [buyNowItem, setBuyNowItem] = useState<StoreBuyNowItem | null>(null);
   const [cartLoading, setCartLoading] = useState(
     () => !hasCachedApiData(CART_CACHE_KEY),
   );
@@ -784,8 +786,8 @@ export default function Storefront({
     }
   };
 
-  const buyNow = async (productId: string, productName?: string) => {
-    if (!(await addToCart(productId, productName))) return;
+  const buyNow = (item: StoreBuyNowItem) => {
+    setBuyNowItem(item);
     setDetailTarget(null);
     setCheckoutOpen(true);
     setActiveTab('Cart');
@@ -929,6 +931,7 @@ export default function Storefront({
       // Step 1: Close checkout → go back to Cart
       if (checkoutOpen) {
         setCheckoutOpen(false);
+        setBuyNowItem(null);
         return true;
       }
 
@@ -1104,10 +1107,15 @@ export default function Storefront({
       if (checkoutOpen) {
         return (
           <Checkout
-            items={cartItems}
-            onBack={() => setCheckoutOpen(false)}
+            items={buyNowItem ? [buyNowItem] : cartItems}
+            buyNowItem={buyNowItem}
+            onBack={() => {
+              setCheckoutOpen(false);
+              setBuyNowItem(null);
+            }}
             onOrderPlaced={() => {
               setCheckoutOpen(false);
+              setBuyNowItem(null);
               invalidateCachedApiData('user.orders');
               loadCart(true).catch(error => {
                 if (__DEV__)
@@ -1134,7 +1142,10 @@ export default function Storefront({
           onRemove={removeFromCart}
           onClear={clearCart}
           onExplorePress={() => setActiveTab('Shop')}
-          onCheckoutPress={() => setCheckoutOpen(true)}
+          onCheckoutPress={() => {
+            setBuyNowItem(null);
+            setCheckoutOpen(true);
+          }}
         />
       );
     }
@@ -1226,6 +1237,7 @@ export default function Storefront({
         onProfilePress={() => {
           setDetailTarget(null);
           setCheckoutOpen(false);
+          setBuyNowItem(null);
           setAccountSubScreen('menu');
           setMoreDestination('account');
           setActiveTab('Profile');

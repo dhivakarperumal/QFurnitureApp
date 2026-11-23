@@ -30,8 +30,9 @@ import {
   getCachedApiData,
   hasCachedApiData,
 } from '../../apiCache';
-import type { StoreCartItem } from '../types';
+import type { StoreBuyNowItem, StoreCartItem } from '../types';
 import { formatPrice } from '../utils';
+import { buildBuyNowOrderItems } from './buyNow';
 import { useUserAlert } from '../UserAlert';
 import {
   calculateCartSubtotal,
@@ -158,12 +159,14 @@ function CheckoutInput({
 
 type CheckoutProps = {
   items: StoreCartItem[];
+  buyNowItem?: StoreBuyNowItem | null;
   onBack: () => void;
   onOrderPlaced: () => void;
 };
 
 export default function Checkout({
   items,
+  buyNowItem = null,
   onBack,
   onOrderPlaced,
 }: CheckoutProps) {
@@ -395,6 +398,11 @@ export default function Checkout({
       country: deliveryAddress?.country || 'India',
       zip_code: deliveryAddress?.zip_code ?? '',
       payment_method: paymentMethod === 'cod' ? 'Cash' : 'Razorpay',
+      ...(buyNowItem
+        ? {
+            buy_now_items: buildBuyNowOrderItems(buyNowItem),
+          }
+        : {}),
     };
   };
 
