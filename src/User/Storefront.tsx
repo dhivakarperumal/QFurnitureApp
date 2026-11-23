@@ -1018,6 +1018,14 @@ export default function Storefront({
         detailTarget.itemType === 'combo'
           ? `combo-${detailTarget.itemId}`
           : detailTarget.itemId;
+      const initialProduct =
+        detailTarget.itemType === 'product'
+          ? storeData.products.find(
+              product =>
+                String(product.id) === detailTarget.itemId ||
+                String(product.product_id) === detailTarget.itemId,
+            )
+          : undefined;
       const detailProps = {
         itemId: detailTarget.itemId,
         favorite: favoriteIds.includes(actionId),
@@ -1038,6 +1046,8 @@ export default function Storefront({
         <ProductDetails
           key={`product-${detailTarget.itemId}`}
           {...detailProps}
+          isGuest={isGuest}
+          initialItem={initialProduct}
           relatedProducts={storeData.products}
           favoriteIds={favoriteIds}
           onProductPress={openItemDetails}

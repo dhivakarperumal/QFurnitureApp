@@ -46,6 +46,8 @@ type DetailItem = StoreProduct & {
 export type ItemDetailsProps = {
   itemId: string;
   itemType: 'product' | 'combo';
+  isGuest?: boolean;
+  initialItem?: StoreProduct;
   favorite: boolean;
   onFavoritePress: (productId: string, productName?: string) => void;
   onAddToCart: (
@@ -83,6 +85,15 @@ function getErrorMessage(
   return fallback;
 }
 
+function isUnauthorizedError(error: unknown) {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'status' in error &&
+    Number(error.status) === 401
+  );
+}
+
 function getGallery(
   item: DetailItem,
   variant: NonNullable<StoreProduct['variants']>[number] | null,
@@ -103,6 +114,8 @@ function getGallery(
 export default function ItemDetails({
   itemId,
   itemType,
+  isGuest = false,
+  initialItem,
   favorite,
   onFavoritePress,
   onAddToCart,
@@ -115,10 +128,10 @@ export default function ItemDetails({
   const { width } = useWindowDimensions();
   const cacheKey = `user.detail.${itemType}.${itemId}`;
   const [item, setItem] = useState<DetailItem | null>(
-    () => getCachedApiData<DetailItem>(cacheKey) ?? null,
+    () => getCachedApiData<DetailItem>(cacheKey) ?? initialItem ?? null,
   );
   const [loading, setLoading] = useState(
-    () => !hasCachedApiData(cacheKey),
+    () => !hasCachedApiData(cacheKey) && !(isGuest && initialItem),
   );
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
@@ -139,6 +152,20 @@ export default function ItemDetails({
     let active = true;
 
     const loadItem = async () => {
+      if (isGuest) {
+        if (initialItem) {
+          setItem(initialItem);
+          setError(null);
+          if (initialItem.name.trim()) {
+            onNameLoaded?.(initialItem.name.trim());
+          }
+        } else {
+          setError('This product is no longer available.');
+        }
+        setLoading(false);
+        return;
+      }
+
       if (!hasCachedApiData(cacheKey)) setLoading(true);
       if (hasCachedApiData(cacheKey)) setError(null);
       try {
@@ -167,8 +194,17 @@ export default function ItemDetails({
           setActiveImageIndex(0);
         }
       } catch (requestError) {
-        console.error(`Could not load ${itemType} details:`, requestError);
-        if (active) setError(getErrorMessage(requestError));
+        if (active) {
+          if (initialItem && isUnauthorizedError(requestError)) {
+            setItem(initialItem);
+            setError(null);
+            if (initialItem.name.trim()) {
+              onNameLoaded?.(initialItem.name.trim());
+            }
+          } else {
+            setError(getErrorMessage(requestError));
+          }
+        }
       } finally {
         if (active) setLoading(false);
       }
@@ -178,7 +214,15 @@ export default function ItemDetails({
     return () => {
       active = false;
     };
-  }, [cacheKey, itemId, itemType, onNameLoaded, retryCount]);
+  }, [
+    cacheKey,
+    initialItem,
+    isGuest,
+    itemId,
+    itemType,
+    onNameLoaded,
+    retryCount,
+  ]);
 
   const variants = item?.variants ?? [];
   const activeVariant = variants[activeVariantIndex] ?? null;
