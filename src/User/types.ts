@@ -27,11 +27,16 @@ export type StoreProduct = {
   images?: string[] | string | null;
   variants?: Array<{
     image?: string | null;
+    images?: string[] | string | null;
     colorName?: string;
     color?: string;
     colour?: string;
     size?: string;
     selectedSizes?: string[];
+    sizesStock?: Record<string, number | string | null>;
+    stock?: number | string | null;
+    total_stock?: number | string | null;
+    mrp?: number | string | null;
     offer_price?: number | string | null;
     selling_price?: number | string | null;
   }>;
@@ -61,6 +66,15 @@ export type StoreCartItem = StoreProduct & {
 
 export type StoreBuyNowItem = StoreCartItem & {
   item_type: 'product' | 'combo';
+};
+
+export type StoreAddToCartOptions = {
+  name?: string;
+  quantity?: number;
+  variantColor?: string;
+  variantSize?: string;
+  refreshCart?: boolean;
+  showError?: boolean;
 };
 
 export type StoreBanner = {

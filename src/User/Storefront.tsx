@@ -25,6 +25,7 @@ import Cart from './Cart/Cart';
 import Checkout from './Cart/Checkout';
 import Favorites from './Favorites/Favorites';
 import type {
+  StoreAddToCartOptions,
   StoreBanner,
   StoreBuyNowItem,
   StoreCartItem,
@@ -663,14 +664,22 @@ export default function Storefront({
 
   const addToCart = async (
     productId: string,
-    options: string | { refreshCart?: boolean; showError?: boolean } = {},
+    options: string | StoreAddToCartOptions = {},
   ): Promise<boolean> => {
     if (pendingCartIds.includes(productId)) return false;
     setPendingCartIds(current => [...current, productId]);
-    let name = typeof options === 'string' ? options.trim() : '';
+    let name =
+      typeof options === 'string'
+        ? options.trim()
+        : options.name?.trim() ?? '';
     const cartOptions =
       typeof options === 'object' && options !== null ? options : {};
+    const quantity = cartOptions.quantity ?? 1;
     try {
+      if (!Number.isSafeInteger(quantity) || quantity < 1) {
+        throw new Error('Choose a valid quantity.');
+      }
+
       if (productId.startsWith('combo-')) {
         const comboId = Number(productId.replace(/^combo-/, ''));
         if (!Number.isSafeInteger(comboId) || comboId < 1) {
@@ -685,7 +694,7 @@ export default function Storefront({
                 productId,
           )?.name ||
           'Combo';
-        await api.post('/cart', { combo_id: comboId, quantity: 1 });
+        await api.post('/cart', { combo_id: comboId, quantity });
       } else {
         const product =
           storeData.products.find(
@@ -703,17 +712,22 @@ export default function Storefront({
         const variants = Array.isArray(product.variants) ? product.variants : [];
         const variant = variants[0];
         const variantColor =
-          variant?.colorName || variant?.color || variant?.colour || 'Default';
+          cartOptions.variantColor ||
+          variant?.colorName ||
+          variant?.color ||
+          variant?.colour ||
+          'Default';
         const variantSize =
-          variant?.size ||
-          variant?.selectedSizes?.[0] ||
+          cartOptions.variantSize ??
+          variant?.size ??
+          variant?.selectedSizes?.[0] ??
           (variants.length ? 'Free Size' : '');
 
         await api.post('/cart', {
           product_id: numericProductId,
           variant_color: variantColor,
           variant_size: variantSize,
-          quantity: 1,
+          quantity,
         });
       }
       if (cartOptions.refreshCart !== false) await loadCart();

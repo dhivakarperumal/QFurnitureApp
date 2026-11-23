@@ -8,14 +8,25 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
-import { Armchair, Heart, ShoppingCart, Star } from 'lucide-react-native';
+import {
+  Armchair,
+  Heart,
+  Minus,
+  Plus,
+  ShoppingCart,
+  Star,
+} from 'lucide-react-native';
 import api from '../api';
 import {
   fetchCachedApiData,
   getCachedApiData,
   hasCachedApiData,
 } from '../apiCache';
-import type { StoreBuyNowItem, StoreProduct } from './types';
+import type {
+  StoreAddToCartOptions,
+  StoreBuyNowItem,
+  StoreProduct,
+} from './types';
 import ProductCard from './ProductCard';
 import ReviewForm from './ReviewForm';
 import {
@@ -23,8 +34,6 @@ import {
   mediaUrl,
   parseImages,
   productCategory,
-  productDiscountPercent,
-  productPrice,
 } from './utils';
 
 type DetailItem = StoreProduct & {
@@ -39,7 +48,10 @@ export type ItemDetailsProps = {
   itemType: 'product' | 'combo';
   favorite: boolean;
   onFavoritePress: (productId: string, productName?: string) => void;
-  onAddToCart: (productId: string, productName?: string) => void;
+  onAddToCart: (
+    productId: string,
+    options?: string | StoreAddToCartOptions,
+  ) => void;
   onBuyNow?: (item: StoreBuyNowItem) => void;
   relatedProducts?: StoreProduct[];
   favoriteIds?: string[];
@@ -71,13 +83,19 @@ function getErrorMessage(
   return fallback;
 }
 
-function getGallery(item: DetailItem) {
+function getGallery(
+  item: DetailItem,
+  variant: NonNullable<StoreProduct['variants']>[number] | null,
+) {
   const paths = [
-    ...parseImages(item.images),
-    ...parseImages(item.image),
-    ...(item.variants ?? []).flatMap(variant => parseImages(variant.image)),
+    ...parseImages(variant?.images),
+    ...parseImages(variant?.image),
   ];
-  return [...new Set(paths)]
+  const variantPaths = [...new Set(paths)];
+  const imagePaths = variantPaths.length
+    ? variantPaths
+    : [...parseImages(item.images), ...parseImages(item.image)];
+  return [...new Set(imagePaths)]
     .map(path => mediaUrl(path))
     .filter((path): path is string => Boolean(path));
 }
@@ -105,7 +123,17 @@ export default function ItemDetails({
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [activeVariantIndex, setActiveVariantIndex] = useState(0);
+  const [selectedSize, setSelectedSize] = useState('');
+  const [quantity, setQuantity] = useState(1);
   const actionId = itemType === 'combo' ? `combo-${itemId}` : itemId;
+
+  useEffect(() => {
+    setActiveImageIndex(0);
+    setActiveVariantIndex(0);
+    setSelectedSize('');
+    setQuantity(1);
+  }, [itemId, itemType]);
 
   useEffect(() => {
     let active = true;
@@ -152,13 +180,40 @@ export default function ItemDetails({
     };
   }, [cacheKey, itemId, itemType, onNameLoaded, retryCount]);
 
-  const gallery = item ? getGallery(item) : [];
-  const price = item ? productPrice(item) : 0;
-  const defaultVariant = item?.variants?.[0];
-  const mrp = Number(item?.mrp) || 0;
-  const discount = item ? Math.round(productDiscountPercent(item)) : 0;
+  const variants = item?.variants ?? [];
+  const activeVariant = variants[activeVariantIndex] ?? null;
+  const variantSizes = Array.isArray(activeVariant?.selectedSizes)
+    ? activeVariant.selectedSizes
+    : activeVariant?.size
+      ? [activeVariant.size]
+      : [];
+  const effectiveSize = selectedSize || variantSizes[0] || '';
+  const gallery = item ? getGallery(item, activeVariant) : [];
+  const price = item
+    ? Number(
+        activeVariant?.selling_price ??
+          activeVariant?.offer_price ??
+          item.selling_price ??
+          item.offer_price ??
+          item.mrp,
+      ) || 0
+    : 0;
+  const mrp = Number(activeVariant?.mrp ?? item?.mrp) || 0;
+  const discount =
+    mrp > price ? Math.round(((mrp - price) / mrp) * 100) : 0;
   const rating = Number(item?.rating) || 0;
-  const stock = Number(item?.available_stock ?? item?.total_stock ?? item?.stock);
+  const totalStock =
+    Number(item?.total_stock ?? item?.available_stock ?? item?.stock) || 0;
+  const sizeStockAvailable =
+    Boolean(effectiveSize) &&
+    activeVariant?.sizesStock != null &&
+    Object.prototype.hasOwnProperty.call(activeVariant.sizesStock, effectiveSize);
+  const variantStock = sizeStockAvailable
+    ? Number(activeVariant?.sizesStock?.[effectiveSize]) || 0
+    : activeVariant?.stock != null
+      ? Number(activeVariant.stock) || 0
+      : totalStock;
+  const stock = totalStock > 0 ? Math.min(totalStock, variantStock) : 0;
   const specifications = item?.specifications;
   const specificationEntries =
     specifications && typeof specifications === 'object' && !Array.isArray(specifications)
@@ -203,26 +258,14 @@ export default function ItemDetails({
     const itemIdForCheckout = isCombo
       ? item.combo_id ?? item.id
       : item.product_id ?? item.id;
-    const buyNowPrice = Number(
-      defaultVariant?.offer_price ??
-        defaultVariant?.selling_price ??
-        item.offer_price ??
-        item.selling_price ??
-        item.mrp,
-    );
-
     onBuyNow({
       ...item,
       id: `buy-now-${isCombo ? 'combo-' : ''}${itemIdForCheckout}`,
       product_id: isCombo ? null : itemIdForCheckout,
       combo_id: isCombo ? itemIdForCheckout : null,
       item_type: itemType,
-      quantity: 1,
-      price: isCombo
-        ? price
-        : Number.isFinite(buyNowPrice)
-          ? buyNowPrice
-          : 0,
+      quantity,
+      price,
       image:
         gallery[activeImageIndex] ??
         gallery[0] ??
@@ -232,15 +275,30 @@ export default function ItemDetails({
         ? {}
         : {
             variant_color:
-              defaultVariant?.colorName ||
-              defaultVariant?.color ||
-              defaultVariant?.colour ||
+              activeVariant?.colorName ||
+              activeVariant?.color ||
+              activeVariant?.colour ||
               'Default',
-            variant_size:
-              defaultVariant?.size ||
-              defaultVariant?.selectedSizes?.[0] ||
-              'Free Size',
+            variant_size: effectiveSize || 'Free Size',
           }),
+    });
+  };
+  const handleAddToCart = () => {
+    if (!item) return;
+    if (itemType === 'combo') {
+      onAddToCart(actionId, item.name);
+      return;
+    }
+
+    onAddToCart(actionId, {
+      name: item.name,
+      quantity,
+      variantColor:
+        activeVariant?.colorName ||
+        activeVariant?.color ||
+        activeVariant?.colour ||
+        'Default',
+      variantSize: effectiveSize || 'Free Size',
     });
   };
 
@@ -334,12 +392,135 @@ export default function ItemDetails({
               </>
             ) : null}
           </View>
-          {Number.isFinite(stock) ? (
+          {itemType === 'combo' ? (
             <Text className={`mt-2 text-[12px] font-semibold ${
               stock > 0 ? 'text-[#187A45]' : 'text-[#8B2D20]'
             }`}>
               {stock > 0 ? `${stock} available` : 'Currently unavailable'}
             </Text>
+          ) : null}
+
+          {itemType === 'product' && variants.length > 0 ? (
+            <View className="mt-5">
+              <Text className="mb-3 text-[13px] font-bold text-[#493522]">
+                Finish:{' '}
+                <Text className="font-normal text-[#8B735E]">
+                  {activeVariant?.colorName ||
+                    activeVariant?.color ||
+                    activeVariant?.colour ||
+                    'Default'}
+                </Text>
+              </Text>
+              <View className="flex-row flex-wrap">
+                {variants.map((variant, index) => {
+                  const label =
+                    variant.colorName ||
+                    variant.color ||
+                    variant.colour ||
+                    `Option ${index + 1}`;
+                  const selected = activeVariantIndex === index;
+                  return (
+                    <Pressable
+                      key={`${label}-${index}`}
+                      accessibilityRole="radio"
+                      accessibilityState={{ selected }}
+                      onPress={() => {
+                        setActiveVariantIndex(index);
+                        setActiveImageIndex(0);
+                        setSelectedSize('');
+                        setQuantity(1);
+                      }}
+                      className={`mb-2 mr-2 rounded-full border px-4 py-2 ${
+                        selected
+                          ? 'border-[#351D0E] bg-[#351D0E]'
+                          : 'border-[#E5D8CA] bg-white'
+                      }`}>
+                      <Text
+                        className={`text-[12px] font-semibold ${
+                          selected ? 'text-white' : 'text-[#634D3B]'
+                        }`}>
+                        {label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
+          ) : null}
+
+          {itemType === 'product' && variantSizes.length > 1 ? (
+            <View className="mt-3">
+              <Text className="mb-3 text-[13px] font-bold text-[#493522]">
+                Size
+              </Text>
+              <View className="flex-row flex-wrap">
+                {variantSizes.map(size => {
+                  const selected = effectiveSize === size;
+                  return (
+                    <Pressable
+                      key={size}
+                      accessibilityRole="radio"
+                      accessibilityState={{ selected }}
+                      onPress={() => {
+                        setSelectedSize(size);
+                        setQuantity(1);
+                      }}
+                      className={`mb-2 mr-2 rounded-lg border px-4 py-2 ${
+                        selected
+                          ? 'border-[#351D0E] bg-[#351D0E]'
+                          : 'border-[#E5D8CA] bg-white'
+                      }`}>
+                      <Text
+                        className={`text-[12px] font-semibold ${
+                          selected ? 'text-white' : 'text-[#634D3B]'
+                        }`}>
+                        {size}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
+          ) : null}
+
+          {itemType === 'product' ? (
+            <View className="mt-4 flex-row items-center justify-between gap-3">
+              <View className="h-11 flex-row items-center overflow-hidden rounded-xl border border-[#E5D8CA]">
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Decrease quantity"
+                  disabled={quantity <= 1}
+                  onPress={() => setQuantity(value => Math.max(1, value - 1))}
+                  className={`h-full w-10 items-center justify-center ${
+                    quantity <= 1 ? 'opacity-40' : ''
+                  }`}>
+                  <Minus size={16} color="#634D3B" />
+                </Pressable>
+                <Text
+                  accessibilityLiveRegion="polite"
+                  className="min-w-[40px] text-center text-[14px] font-semibold text-[#351D0E]">
+                  {quantity}
+                </Text>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Increase quantity"
+                  disabled={quantity >= stock}
+                  onPress={() =>
+                    setQuantity(value => Math.min(stock, value + 1))
+                  }
+                  className={`h-full w-10 items-center justify-center ${
+                    quantity >= stock ? 'opacity-40' : ''
+                  }`}>
+                  <Plus size={16} color="#634D3B" />
+                </Pressable>
+              </View>
+              <Text
+                className={`text-[12px] font-semibold ${
+                  stock > 0 ? 'text-[#187A45]' : 'text-[#8B2D20]'
+                }`}>
+                {stock > 0 ? `${stock} available` : 'Out of stock'}
+              </Text>
+            </View>
           ) : null}
 
           {description ? (
@@ -395,7 +576,7 @@ export default function ItemDetails({
               <Pressable
                 accessibilityRole="button"
                 disabled={Number.isFinite(stock) && stock <= 0}
-                onPress={() => onAddToCart(actionId)}
+                onPress={handleAddToCart}
                 className={`mr-3 h-[50px] flex-1 flex-row items-center justify-center rounded-full ${
                   Number.isFinite(stock) && stock <= 0
                     ? 'bg-[#CDBBA8]'
@@ -438,7 +619,7 @@ export default function ItemDetails({
               <Pressable
                 accessibilityRole="button"
                 disabled={Number.isFinite(stock) && stock <= 0}
-                onPress={() => onAddToCart(actionId, item.name)}
+                onPress={handleAddToCart}
                 className={`mr-3 h-[50px] flex-1 items-center justify-center rounded-full ${
                   Number.isFinite(stock) && stock <= 0
                     ? 'bg-[#CDBBA8]'
