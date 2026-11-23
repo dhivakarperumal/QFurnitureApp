@@ -8,7 +8,6 @@ import {
   StatusBar,
   Text,
   View,
-  useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArrowLeft } from 'lucide-react-native';
@@ -45,7 +44,7 @@ import AboutUs from './AboutUs';
 import ContactUs from './ContactUs';
 import { setUserNavigationBarAppearance } from '../services/navigationBar';
 import { useUserAlert, useUserToast } from './UserAlert';
-import { SkeletonList } from './Skeletons';
+import { HomePageSkeleton } from './Skeletons';
 import {
   fetchCachedApiData,
   getCachedApiData,
@@ -179,7 +178,6 @@ export default function Storefront({
   onLogoutPress: () => void;
 }) {
   const insets = useSafeAreaInsets();
-  const { width: screenWidth } = useWindowDimensions();
   const showUserAlert = useUserAlert();
   const showUserToast = useUserToast();
   const requestLogin = useCallback(
@@ -1308,11 +1306,7 @@ export default function Storefront({
             />
           }
           contentContainerClassName="pb-[115px]">
-          <SkeletonList
-            count={5}
-            horizontal
-            cardWidth={(screenWidth - 36) / 2}
-          />
+          <HomePageSkeleton />
         </ScrollView>
       ) : !storeAvailable && loadError ? (
         <View className="flex-1 items-center justify-center px-6">

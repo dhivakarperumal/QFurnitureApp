@@ -247,6 +247,143 @@ export function SkeletonList({
   );
 }
 
+function HomeSkeletonHeading({ animation }: SkeletonProps) {
+  return (
+    <View style={styles.homeSectionHeading}>
+      <View>
+        <SkeletonText animation={animation} width={142} height={16} />
+        <SkeletonText
+          animation={animation}
+          width={96}
+          height={9}
+          style={styles.homeSectionSubtitle}
+        />
+      </View>
+      <SkeletonText animation={animation} width={48} height={11} />
+    </View>
+  );
+}
+
+export function HomePageSkeleton() {
+  const { width } = useWindowDimensions();
+  const animation = useRef(new Animated.Value(0)).current;
+  const categorySize = Math.min(64, (width - 72) / 4);
+  const cardWidth = Math.min(258, width - 48);
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.timing(animation, {
+        toValue: 1,
+        duration: 1100,
+        useNativeDriver: true,
+      }),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [animation]);
+
+  return (
+    <View
+      style={styles.homeSkeleton}
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants">
+      <View style={styles.homeHero}>
+        <SkeletonImage animation={animation} height={194} borderRadius={20} />
+      </View>
+
+      <View style={styles.homeSection}>
+        <HomeSkeletonHeading animation={animation} />
+        <View style={styles.homeCategoryRow}>
+          {[0, 1, 2, 3].map(item => (
+            <View key={item} style={styles.homeCategory}>
+              <SkeletonImage
+                animation={animation}
+                width={categorySize}
+                height={categorySize}
+                borderRadius={categorySize / 2}
+              />
+              <SkeletonText
+                animation={animation}
+                width={categorySize}
+                height={9}
+                style={styles.homeCategoryLabel}
+              />
+            </View>
+          ))}
+        </View>
+      </View>
+
+      <View style={styles.homeSection}>
+        <HomeSkeletonHeading animation={animation} />
+        <SkeletonList count={4} horizontal cardWidth={cardWidth} />
+      </View>
+
+      <View style={styles.homeSection}>
+        <HomeSkeletonHeading animation={animation} />
+        <View style={styles.homeRoomRow}>
+          {[0, 1].map(item => (
+            <View key={item} style={styles.homeRoom}>
+              <SkeletonImage animation={animation} height={122} borderRadius={18} />
+            </View>
+          ))}
+        </View>
+      </View>
+
+      <View style={styles.homeSection}>
+        <HomeSkeletonHeading animation={animation} />
+        <SkeletonList count={4} horizontal cardWidth={cardWidth} />
+      </View>
+
+      <View style={styles.homeOffer}>
+        <SkeletonImage animation={animation} height={148} borderRadius={20} />
+      </View>
+
+      <View style={styles.homeSection}>
+        <HomeSkeletonHeading animation={animation} />
+        <SkeletonList count={4} horizontal cardWidth={cardWidth} />
+      </View>
+
+      <View style={styles.homeCustomFurniture}>
+        <SkeletonImage animation={animation} height={138} borderRadius={18} />
+        <SkeletonText
+          animation={animation}
+          width="58%"
+          height={15}
+          style={styles.homeCustomTitle}
+        />
+        <SkeletonText animation={animation} width="86%" height={10} />
+        <SkeletonText
+          animation={animation}
+          width={116}
+          height={34}
+          borderRadius={17}
+          style={styles.homeCustomButton}
+        />
+      </View>
+
+      <View style={styles.homeSection}>
+        <HomeSkeletonHeading animation={animation} />
+        <View style={styles.homeReview}>
+          <SkeletonText animation={animation} width={84} height={10} />
+          <SkeletonText
+            animation={animation}
+            width="100%"
+            height={10}
+            style={styles.homeReviewLine}
+          />
+          <SkeletonText animation={animation} width="78%" height={10} />
+          <SkeletonText
+            animation={animation}
+            width={110}
+            height={10}
+            style={styles.homeReviewAuthor}
+          />
+        </View>
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   image: {
     backgroundColor: '#F0E7DE',
@@ -328,5 +465,74 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
+  },
+  homeSkeleton: {
+    paddingBottom: 160,
+  },
+  homeHero: {
+    marginHorizontal: 16,
+    marginTop: 12,
+  },
+  homeSection: {
+    marginTop: 24,
+  },
+  homeSectionHeading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginHorizontal: 16,
+    marginBottom: 12,
+  },
+  homeSectionSubtitle: {
+    marginTop: 7,
+  },
+  homeCategoryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginHorizontal: 16,
+  },
+  homeCategory: {
+    alignItems: 'center',
+  },
+  homeCategoryLabel: {
+    marginTop: 8,
+  },
+  homeRoomRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginHorizontal: 16,
+  },
+  homeRoom: {
+    width: '48%',
+  },
+  homeOffer: {
+    marginHorizontal: 16,
+    marginTop: 24,
+  },
+  homeCustomFurniture: {
+    marginHorizontal: 16,
+    marginTop: 24,
+    padding: 14,
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+  },
+  homeCustomTitle: {
+    marginTop: 14,
+    marginBottom: 10,
+  },
+  homeCustomButton: {
+    marginTop: 14,
+  },
+  homeReview: {
+    marginHorizontal: 16,
+    padding: 16,
+    borderRadius: 18,
+    backgroundColor: '#FFFFFF',
+  },
+  homeReviewLine: {
+    marginTop: 14,
+  },
+  homeReviewAuthor: {
+    marginTop: 18,
   },
 });
