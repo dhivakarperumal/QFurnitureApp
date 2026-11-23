@@ -406,8 +406,9 @@ export default function Checkout({
         setLocationLoading(false);
         const message = error.message || 'Check location settings and try again.';
         const locationServicesOff =
-          error.code === 2 ||
-          /no location provider|location not available/i.test(message);
+          /no location provider available|fusedlocationprovider\/settings/i.test(
+            message,
+          );
         if (Platform.OS === 'android' && locationServicesOff) {
           showUserAlert(
             'Location services are off',
