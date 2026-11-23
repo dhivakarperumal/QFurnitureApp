@@ -192,6 +192,58 @@ export default function ItemDetails({
           )
           .slice(0, 6)
       : [];
+  const handleBuyNow = () => {
+    if (!item) return;
+    if (!onBuyNow) {
+      onAddToCart(actionId, item.name);
+      return;
+    }
+
+    const isCombo = itemType === 'combo';
+    const itemIdForCheckout = isCombo
+      ? item.combo_id ?? item.id
+      : item.product_id ?? item.id;
+    const buyNowPrice = Number(
+      defaultVariant?.offer_price ??
+        defaultVariant?.selling_price ??
+        item.offer_price ??
+        item.selling_price ??
+        item.mrp,
+    );
+
+    onBuyNow({
+      ...item,
+      id: `buy-now-${isCombo ? 'combo-' : ''}${itemIdForCheckout}`,
+      product_id: isCombo ? null : itemIdForCheckout,
+      combo_id: isCombo ? itemIdForCheckout : null,
+      item_type: itemType,
+      quantity: 1,
+      price: isCombo
+        ? price
+        : Number.isFinite(buyNowPrice)
+          ? buyNowPrice
+          : 0,
+      image:
+        gallery[activeImageIndex] ??
+        gallery[0] ??
+        mediaUrl(item.image) ??
+        null,
+      ...(isCombo
+        ? {}
+        : {
+            variant_color:
+              defaultVariant?.colorName ||
+              defaultVariant?.color ||
+              defaultVariant?.colour ||
+              'Default',
+            variant_size:
+              defaultVariant?.size ||
+              defaultVariant?.selectedSizes?.[0] ||
+              'Free Size',
+          }),
+    });
+  };
+
   return (
     <View className="px-4 pb-8 pt-3">
 
@@ -359,43 +411,7 @@ export default function ItemDetails({
               <Pressable
                 accessibilityRole="button"
                 disabled={Number.isFinite(stock) && stock <= 0}
-                onPress={() => {
-                  if (!onBuyNow) {
-                    onAddToCart(actionId);
-                    return;
-                  }
-                  const productId = item.product_id ?? item.id;
-                  const buyNowPrice = Number(
-                    defaultVariant?.offer_price ??
-                      defaultVariant?.selling_price ??
-                      item.offer_price ??
-                      item.selling_price ??
-                      item.mrp,
-                  );
-                  onBuyNow({
-                    ...item,
-                    id: `buy-now-${productId}`,
-                    product_id: productId,
-                    combo_id: null,
-                    item_type: 'product',
-                    quantity: 1,
-                    price: Number.isFinite(buyNowPrice) ? buyNowPrice : 0,
-                    image:
-                      gallery[activeImageIndex] ??
-                      gallery[0] ??
-                      mediaUrl(item.image) ??
-                      null,
-                    variant_color:
-                      defaultVariant?.colorName ||
-                      defaultVariant?.color ||
-                      defaultVariant?.colour ||
-                      'Default',
-                    variant_size:
-                      defaultVariant?.size ||
-                      defaultVariant?.selectedSizes?.[0] ||
-                      'Free Size',
-                  });
-                }}
+                onPress={handleBuyNow}
                 className={`h-[50px] flex-1 items-center justify-center rounded-full ${
                   Number.isFinite(stock) && stock <= 0
                     ? 'bg-[#CDBBA8]'
@@ -423,13 +439,26 @@ export default function ItemDetails({
                 accessibilityRole="button"
                 disabled={Number.isFinite(stock) && stock <= 0}
                 onPress={() => onAddToCart(actionId, item.name)}
-                className={`h-[50px] flex-1 items-center justify-center rounded-full ${
+                className={`mr-3 h-[50px] flex-1 items-center justify-center rounded-full ${
                   Number.isFinite(stock) && stock <= 0
                     ? 'bg-[#CDBBA8]'
                     : 'bg-[#F97316]'
                 }`}>
                 <Text className="text-[14px] font-black text-white">
                   {Number.isFinite(stock) && stock <= 0 ? 'Out of stock' : 'Add to cart'}
+                </Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                disabled={Number.isFinite(stock) && stock <= 0}
+                onPress={handleBuyNow}
+                className={`h-[50px] flex-1 items-center justify-center rounded-full ${
+                  Number.isFinite(stock) && stock <= 0
+                    ? 'bg-[#CDBBA8]'
+                    : 'bg-[#351D0E]'
+                }`}>
+                <Text className="text-[14px] font-black text-white">
+                  {Number.isFinite(stock) && stock <= 0 ? 'Unavailable' : 'Buy now'}
                 </Text>
               </Pressable>
             </View>
