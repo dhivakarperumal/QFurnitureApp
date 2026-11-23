@@ -31,21 +31,17 @@ function HomeTabIcon({ size = 24, color = '#FFFFFF' }: TabIconProps) {
 function MoreTabIcon({ size = 24, color = '#FFFFFF' }: TabIconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24">
-      {[3.5, 14.5].flatMap(x =>
-        [3.5, 14.5].map(y => (
-          <Rect
-            key={`${x}-${y}`}
-            x={x}
-            y={y}
-            width={6}
-            height={6}
-            rx={0.7}
-            fill="none"
-            stroke={color}
-            strokeWidth={2.2}
-          />
-        )),
-      )}
+      <Rect
+        x={15}
+        y={15}
+        width={6}
+        height={6}
+        rx={1.3}
+        transform="rotate(45 18 18)"
+        fill="none"
+        stroke={color}
+        strokeWidth={2.2}
+      />
     </Svg>
   );
 }

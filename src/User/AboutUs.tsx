@@ -8,10 +8,7 @@ import {
 } from 'react-native';
 import {
   ArrowRight,
-  CheckCircle,
   Headphones,
-  Home,
-  LayoutGrid,
   ShieldCheck,
   Smile,
   Star,
@@ -26,26 +23,26 @@ import ShopByRoom from './Home/ShopByRoom';
 const heroImage = require('../Assert/images/Cozy Mustard Armchair Living Room.png');
 const ctaBgImage = require('../User/assets/shopbyroom-bedroom.png');
 
-// ─── Stat item in the top row ─────────────────────────────────────────────────
-function JourneyStat({
-  icon: Icon,
-  value,
-  label,
-}: {
-  icon: React.ComponentType<{ size: number; color: string; strokeWidth?: number }>;
-  value: string;
-  label: string;
-}) {
-  return (
-    <View className="flex-1 items-center px-1">
-      <View className="mb-1 h-[36px] w-[36px] items-center justify-center rounded-full bg-[#FFF0E1]">
-        <Icon size={18} color="#F97316" strokeWidth={1.8} />
-      </View>
-      <Text className="text-[13px] font-black text-[#F97316]">{value}</Text>
-      <Text className="text-center text-[10px] leading-[13px] text-[#8B735E]">{label}</Text>
-    </View>
-  );
-}
+const journeyMilestones = [
+  {
+    period: '2018',
+    title: 'A vision for better homes',
+    description:
+      'Q Living began with a simple vision: make homes more comfortable and beautiful.',
+  },
+  {
+    period: 'Growing together',
+    title: 'Furniture for everyday living',
+    description:
+      'We bring together thoughtful design, lasting quality, and affordability.',
+  },
+  {
+    period: 'Today',
+    title: 'Creating spaces that inspire',
+    description:
+      'Our journey continues as we help make every house feel like home.',
+  },
+] as const;
 
 // ─── Metric card in 2×2 grid ──────────────────────────────────────────────────
 function MetricCard({
@@ -121,13 +118,29 @@ export default function AboutUs({
         <View className="mt-2 h-[3px] w-[44px] rounded-full bg-[#F97316]" />
       </View>
 
-      {/* ── Stats row ───────────────────────────────────────────────────── */}
-      <View className="mx-4 mb-5 flex-row rounded-[18px] border border-[#F0E7DE] bg-white px-2 py-4">
-        <JourneyStat icon={Home} value="2018" label={`Established\nwith a vision`} />
-        <JourneyStat icon={LayoutGrid} value="269" label={`Designs to\nchoose from`} />
-        <JourneyStat icon={Users} value="3823" label={`Happy\ncustomers`} />
-        <JourneyStat icon={CheckCircle} value="3834" label={`Projects\ncompleted`} />
-        <JourneyStat icon={Star} value="Today" label={`Creating\nbetter homes`} />
+      {/* ── Journey timeline ────────────────────────────────────────────── */}
+      <View className="relative mx-4 mb-5 rounded-[18px] border border-[#F0E7DE] bg-white p-4">
+        <View className="absolute bottom-7 left-[22px] top-7 w-[2px] bg-[#F0E7DE]" />
+        {journeyMilestones.map((milestone, index) => (
+          <View
+            key={milestone.period}
+            className={`flex-row ${index < journeyMilestones.length - 1 ? 'mb-5' : ''}`}>
+            <View className="z-10 mr-3 mt-1 h-[14px] w-[14px] items-center justify-center rounded-full bg-[#FFF0E1]">
+              <View className="h-[7px] w-[7px] rounded-full bg-[#F97316]" />
+            </View>
+            <View className="flex-1">
+              <Text className="mb-1 text-[11px] font-black uppercase tracking-wider text-[#F97316]">
+                {milestone.period}
+              </Text>
+              <Text className="text-[14px] font-black text-[#351D0E]">
+                {milestone.title}
+              </Text>
+              <Text className="mt-1 text-[12px] leading-[17px] text-[#8B735E]">
+                {milestone.description}
+              </Text>
+            </View>
+          </View>
+        ))}
       </View>
 
       {/* ── Hero image card ─────────────────────────────────────────────── */}
