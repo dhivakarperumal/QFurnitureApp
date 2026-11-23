@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
   AppState,
   ActivityIndicator,
@@ -210,7 +216,16 @@ export default function Checkout({
   const [coordinates, setCoordinates] = useState<Coordinates | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
-  const pendingLocationRetry = React.useRef(false);
+  const pendingLocationRetry = useRef(false);
+  const locationRequestId = useRef(0);
+  const locationTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearLocationTimeout = useCallback(() => {
+    if (locationTimeout.current) {
+      clearTimeout(locationTimeout.current);
+      locationTimeout.current = null;
+    }
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -348,6 +363,8 @@ export default function Checkout({
 
   const requestLocation = useCallback(async () => {
     let enableHighAccuracy = true;
+    const requestId = ++locationRequestId.current;
+    clearLocationTimeout();
     pendingLocationRetry.current = false;
     try {
       if (Platform.OS === 'android') {
@@ -394,8 +411,19 @@ export default function Checkout({
     }
 
     setLocationLoading(true);
+    locationTimeout.current = setTimeout(() => {
+      if (locationRequestId.current !== requestId) return;
+      locationTimeout.current = null;
+      setLocationLoading(false);
+      showUserAlert(
+        'Could not fetch location',
+        'Your device has not returned a GPS fix yet. Check that Location is on and try again.',
+      );
+    }, 20000);
     Geolocation.getCurrentPosition(
       position => {
+        if (locationRequestId.current !== requestId) return;
+        clearLocationTimeout();
         setCoordinates({
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,
@@ -403,8 +431,11 @@ export default function Checkout({
         setLocationLoading(false);
       },
       error => {
-        setLocationLoading(false);
+        if (locationRequestId.current !== requestId) return;
         const message = error.message || 'Check location settings and try again.';
+        if (/fusedlocationprovider\/lastlocation/i.test(message)) return;
+        setLocationLoading(false);
+        clearLocationTimeout();
         const locationServicesOff =
           /no location provider available|fusedlocationprovider\/settings/i.test(
             message,
@@ -439,9 +470,9 @@ export default function Checkout({
           message,
         );
       },
-      { enableHighAccuracy, timeout: 15000, maximumAge: 0 },
+      { enableHighAccuracy, timeout: 20000, maximumAge: 0 },
     );
-  }, [showUserAlert]);
+  }, [clearLocationTimeout, showUserAlert]);
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', nextState => {
@@ -453,6 +484,14 @@ export default function Checkout({
 
     return () => subscription.remove();
   }, [requestLocation]);
+
+  useEffect(
+    () => () => {
+      locationRequestId.current += 1;
+      clearLocationTimeout();
+    },
+    [clearLocationTimeout],
+  );
 
   const saveAddress = async () => {
     if (
