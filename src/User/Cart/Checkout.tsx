@@ -161,7 +161,7 @@ type CheckoutProps = {
   items: StoreCartItem[];
   buyNowItem?: StoreBuyNowItem | null;
   onBack: () => void;
-  onOrderPlaced: () => void;
+  onOrderPlaced: () => void | Promise<void>;
 };
 
 export default function Checkout({
@@ -429,7 +429,7 @@ export default function Checkout({
           'Order placed',
           `Your order ${order.order_id ?? `#${orderId}`} is confirmed.`,
         );
-        onOrderPlaced();
+        await onOrderPlaced();
         return;
       }
 
@@ -480,7 +480,7 @@ export default function Checkout({
         'Order placed',
         `Your order ${order.order_id ?? `#${orderId}`} is confirmed.`,
       );
-      onOrderPlaced();
+      await onOrderPlaced();
     } catch (error) {
       setSubmitError(
         completedPaymentId

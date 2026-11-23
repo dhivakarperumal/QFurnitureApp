@@ -381,6 +381,13 @@ export default function Storefront({
     });
   }, [loadFavorites]);
 
+  const clearCartItems = async () => {
+    await api.delete('/cart/clear');
+    setCartItems([]);
+    setCartError(null);
+    invalidateCachedApiData(CART_CACHE_KEY);
+  };
+
   const refreshActiveTab = useCallback(async () => {
     setRefreshing(true);
     try {
@@ -852,9 +859,7 @@ export default function Storefront({
         onPress: async () => {
           setClearingCart(true);
           try {
-            await api.delete('/cart/clear');
-            setCartItems([]);
-            setCartError(null);
+            await clearCartItems();
           } catch (error) {
             showUserAlert('Could not clear cart', errorMessage(error));
           } finally {
@@ -1113,17 +1118,25 @@ export default function Storefront({
               setCheckoutOpen(false);
               setBuyNowItem(null);
             }}
-            onOrderPlaced={() => {
+            onOrderPlaced={async () => {
+              invalidateCachedApiData('user.orders');
+              try {
+                await clearCartItems();
+              } catch (error) {
+                showUserAlert(
+                  'Order placed, but cart could not be cleared',
+                  errorMessage(error),
+                );
+                loadCart(true).catch(refreshError => {
+                  if (__DEV__)
+                    console.warn(
+                      '[Storefront] Could not reload cart after checkout:',
+                      refreshError,
+                    );
+                });
+              }
               setCheckoutOpen(false);
               setBuyNowItem(null);
-              invalidateCachedApiData('user.orders');
-              loadCart(true).catch(error => {
-                if (__DEV__)
-                  console.warn(
-                    '[Storefront] Could not reload cart after checkout:',
-                    error,
-                  );
-              });
             }}
           />
         );
