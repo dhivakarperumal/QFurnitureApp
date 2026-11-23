@@ -1168,6 +1168,11 @@ export default function Storefront({
               }
               setCheckoutOpen(false);
               setBuyNowItem(null);
+              setDetailTarget(null);
+              setDetailItemName('');
+              setMoreDestination('account');
+              setAccountSubScreen('orders');
+              setActiveTab('Profile');
             }}
           />
         );
