@@ -80,7 +80,7 @@ export default function Header({
   return (
     <View
       style={{ height: 58 + topInset, paddingTop: topInset }}
-      className="z-10 flex-row items-center justify-between overflow-hidden px-3 shadow-md elevation-[10]">
+      className="z-10 flex-row items-center justify-between px-3 shadow-md elevation-[10]">
       <View
         pointerEvents="none"
         className="absolute inset-0">
