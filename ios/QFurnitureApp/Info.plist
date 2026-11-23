@@ -34,8 +34,6 @@
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Your location is attached to a delivery order only when you choose Use current location.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Choose a photo to use as your profile picture.</string>
 	<key>RCTNewArchEnabled</key>

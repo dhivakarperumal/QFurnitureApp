@@ -1,17 +1,7 @@
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  AppState,
   ActivityIndicator,
-  Linking,
   Modal,
-  PermissionsAndroid,
-  Platform,
   Pressable,
   ScrollView,
   Text,
@@ -19,14 +9,12 @@ import {
   View,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Geolocation from '@react-native-community/geolocation';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   ArrowLeft,
   Check,
   CreditCard,
   MapPin,
-  Navigation,
   PackageCheck,
   Store,
   Wallet,
@@ -67,11 +55,6 @@ type Address = {
 };
 const ADDRESSES_CACHE_KEY = 'user.addresses';
 const PROFILE_CACHE_KEY = 'user.profile';
-
-type Coordinates = {
-  latitude: number;
-  longitude: number;
-};
 
 type AddressDraft = Omit<Address, 'id' | 'is_default'>;
 
@@ -212,20 +195,8 @@ export default function Checkout({
   const [addressModalOpen, setAddressModalOpen] = useState(false);
   const [addressDraft, setAddressDraft] = useState<AddressDraft>(emptyAddress);
   const [addressFormError, setAddressFormError] = useState('');
-  const [locationLoading, setLocationLoading] = useState(false);
-  const [coordinates, setCoordinates] = useState<Coordinates | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
-  const pendingLocationRetry = useRef(false);
-  const locationRequestId = useRef(0);
-  const locationTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const clearLocationTimeout = useCallback(() => {
-    if (locationTimeout.current) {
-      clearTimeout(locationTimeout.current);
-      locationTimeout.current = null;
-    }
-  }, []);
 
   useEffect(() => {
     let active = true;
@@ -360,138 +331,6 @@ export default function Checkout({
   const quoteError =
     gstSettingsError ||
     (subtotal === null ? 'Cart prices are invalid. Please refresh your cart.' : '');
-
-  const requestLocation = useCallback(async () => {
-    let enableHighAccuracy = true;
-    const requestId = ++locationRequestId.current;
-    clearLocationTimeout();
-    pendingLocationRetry.current = false;
-    try {
-      if (Platform.OS === 'android') {
-        const permissions = await PermissionsAndroid.requestMultiple([
-          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-          PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION,
-        ]);
-        const fineLocationGranted =
-          permissions[PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION] ===
-          PermissionsAndroid.RESULTS.GRANTED;
-        const coarseLocationGranted =
-          permissions[PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION] ===
-          PermissionsAndroid.RESULTS.GRANTED;
-        if (!fineLocationGranted && !coarseLocationGranted) {
-          showUserAlert(
-            'Location permission needed',
-            'Allow location access to attach your current GPS coordinates to the delivery.',
-          );
-          return;
-        }
-        enableHighAccuracy = fineLocationGranted;
-        Geolocation.setRNConfiguration({
-          skipPermissionRequests: true,
-          locationProvider: 'playServices',
-        });
-      } else {
-        const authorized = await new Promise<boolean>(resolve => {
-          Geolocation.requestAuthorization(
-            () => resolve(true),
-            () => resolve(false),
-          );
-        });
-        if (!authorized) {
-          showUserAlert(
-            'Location permission needed',
-            'Allow location access to attach your current GPS coordinates to the delivery.',
-          );
-          return;
-        }
-      }
-    } catch (error) {
-      showUserAlert('Could not request location', responseMessage(error));
-      return;
-    }
-
-    setLocationLoading(true);
-    locationTimeout.current = setTimeout(() => {
-      if (locationRequestId.current !== requestId) return;
-      locationTimeout.current = null;
-      setLocationLoading(false);
-      showUserAlert(
-        'Could not fetch location',
-        'Your device has not returned a GPS fix yet. Check that Location is on and try again.',
-      );
-    }, 20000);
-    Geolocation.getCurrentPosition(
-      position => {
-        if (locationRequestId.current !== requestId) return;
-        clearLocationTimeout();
-        setCoordinates({
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-        });
-        setLocationLoading(false);
-      },
-      error => {
-        if (locationRequestId.current !== requestId) return;
-        const message = error.message || 'Check location settings and try again.';
-        if (/fusedlocationprovider\/lastlocation/i.test(message)) return;
-        setLocationLoading(false);
-        clearLocationTimeout();
-        const locationServicesOff =
-          /no location provider available|fusedlocationprovider\/settings/i.test(
-            message,
-          );
-        if (Platform.OS === 'android' && locationServicesOff) {
-          showUserAlert(
-            'Location services are off',
-            'Turn on Location in your device settings, then return here. We will retry automatically.',
-            [
-              { text: 'Cancel', style: 'cancel' },
-              {
-                text: 'Open settings',
-                onPress: () => {
-                  pendingLocationRetry.current = true;
-                  Linking.sendIntent(
-                    'android.settings.LOCATION_SOURCE_SETTINGS',
-                  ).catch(() => {
-                    pendingLocationRetry.current = false;
-                    showUserAlert(
-                      'Could not open settings',
-                      'Open your device Location settings manually and try again.',
-                    );
-                  });
-                },
-              },
-            ],
-          );
-          return;
-        }
-        showUserAlert(
-          'Could not fetch location',
-          message,
-        );
-      },
-      { enableHighAccuracy, timeout: 20000, maximumAge: 0 },
-    );
-  }, [clearLocationTimeout, showUserAlert]);
-
-  useEffect(() => {
-    const subscription = AppState.addEventListener('change', nextState => {
-      if (nextState === 'active' && pendingLocationRetry.current) {
-        pendingLocationRetry.current = false;
-        requestLocation();
-      }
-    });
-
-    return () => subscription.remove();
-  }, [requestLocation]);
-
-  useEffect(
-    () => () => {
-      locationRequestId.current += 1;
-      clearLocationTimeout();
-    },
-    [clearLocationTimeout],
-  );
 
   const saveAddress = async () => {
     if (
@@ -868,28 +707,6 @@ export default function Checkout({
                 Try loading addresses again
               </Text>
             </Pressable>
-          ) : null}
-          <Pressable
-            accessibilityRole="button"
-            disabled={locationLoading}
-            onPress={requestLocation}
-            className="mt-2 flex-row items-center self-start rounded-full border border-[#F1D5C2] px-3 py-2 disabled:opacity-60"
-          >
-            {locationLoading ? (
-              <ActivityIndicator size="small" color="#F97316" />
-            ) : (
-              <Navigation size={14} color="#B94719" />
-            )}
-            <Text className="ml-2 text-[11px] font-bold text-[#B94719]">
-              {locationLoading ? 'Fetching GPS…' : 'Use current location'}
-            </Text>
-          </Pressable>
-          {coordinates ? (
-            <Text className="mt-2 text-[10px] leading-4 text-[#8B735E]">
-              GPS saved for this order ({coordinates.latitude.toFixed(5)},{' '}
-              {coordinates.longitude.toFixed(5)}). Add a street address above;
-              GPS does not convert to an address.
-            </Text>
           ) : null}
         </View>
       ) : (
