@@ -267,8 +267,8 @@ function HomeSkeletonHeading({ animation }: SkeletonProps) {
 export function HomePageSkeleton() {
   const { width } = useWindowDimensions();
   const animation = useRef(new Animated.Value(0)).current;
-  const categorySize = Math.min(64, (width - 72) / 4);
-  const cardWidth = Math.min(258, width - 48);
+  const categorySize = Math.min(110, (width - 64) / 3);
+  const cardWidth = (width - 56) / 2;
 
   useEffect(() => {
     const loop = Animated.loop(
@@ -294,13 +294,13 @@ export function HomePageSkeleton() {
       <View style={styles.homeSection}>
         <HomeSkeletonHeading animation={animation} />
         <View style={styles.homeCategoryRow}>
-          {[0, 1, 2, 3].map(item => (
+          {[0, 1, 2].map(item => (
             <View key={item} style={styles.homeCategory}>
               <SkeletonImage
                 animation={animation}
                 width={categorySize}
                 height={categorySize}
-                borderRadius={categorySize / 2}
+                borderRadius={18}
               />
               <SkeletonText
                 animation={animation}
