@@ -29,6 +29,7 @@ import type {
   StoreBuyNowItem,
   StoreCartItem,
   StoreCategory,
+  StoreCombo,
   StoreFavorite,
   StoreProduct,
   StoreTab,
@@ -207,6 +208,7 @@ export default function Storefront({
   const [detailTarget, setDetailTarget] = useState<{
     itemId: string;
     itemType: 'product' | 'combo';
+    initialCombo?: StoreCombo;
   } | null>(null);
   const [detailItemName, setDetailItemName] = useState('');
   const [storeData, setStoreData] = useState(
@@ -891,7 +893,7 @@ export default function Storefront({
     ]);
   };
 
-  const openItemDetails = (productId: string) => {
+  const openItemDetails = (productId: string, initialCombo?: StoreCombo) => {
     const itemType = productId.startsWith('combo-') ? 'combo' : 'product';
     const rawId =
       itemType === 'combo' ? productId.slice('combo-'.length) : productId;
@@ -902,7 +904,11 @@ export default function Storefront({
     }
 
     setDetailItemName('');
-    setDetailTarget({ itemId: String(numericId), itemType });
+    setDetailTarget({
+      itemId: String(numericId),
+      itemType,
+      ...(itemType === 'combo' && initialCombo ? { initialCombo } : {}),
+    });
   };
 
   // ── Determine whether we're on an "inner page" ──────────────────────────────
@@ -1040,6 +1046,7 @@ export default function Storefront({
         <ComboDetails
           key={`combo-${detailTarget.itemId}`}
           {...detailProps}
+          initialCombo={detailTarget.initialCombo}
           relatedProducts={storeData.products}
           favoriteIds={favoriteIds}
           onProductPress={openItemDetails}

@@ -15,7 +15,7 @@ import {
   getCachedApiData,
   hasCachedApiData,
 } from '../apiCache';
-import type { StoreBuyNowItem, StoreProduct } from './types';
+import type { StoreBuyNowItem, StoreCombo, StoreProduct } from './types';
 import ProductCard from './ProductCard';
 import ReviewForm from './ReviewForm';
 import {
@@ -27,25 +27,13 @@ import {
   productPrice,
 } from './utils';
 
-type ComboComponent = {
-  product_id?: number | string;
-  product_name?: string;
-  quantity?: number | string;
-  variant_color?: string;
-  variant_size?: string;
-};
-
-type Combo = StoreProduct & {
-  description?: string | null;
-  long_description?: string | null;
-  specifications?: Record<string, unknown> | null;
-  combo_items?: ComboComponent[] | null;
-};
+type Combo = StoreCombo;
 
 type ComboDetailsProps = {
   itemId: string;
   isGuest: boolean;
   onLoginPress: () => void;
+  initialCombo?: StoreCombo;
   onFavoritePress: (productId: string, productName?: string) => void;
   onAddToCart: (productId: string, productName?: string) => void;
   onBuyNow?: (item: StoreBuyNowItem) => void;
@@ -67,6 +55,15 @@ function getErrorMessage(error: unknown) {
   return 'Could not load combo details. Please try again.';
 }
 
+function isUnauthorizedError(error: unknown) {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'status' in error &&
+    Number(error.status) === 401
+  );
+}
+
 function getGallery(combo: Combo) {
   const paths = [
     ...parseImages(combo.images),
@@ -82,6 +79,7 @@ export default function ComboDetails({
   itemId,
   isGuest,
   onLoginPress,
+  initialCombo,
   onFavoritePress,
   onAddToCart,
   onBuyNow,
@@ -93,10 +91,10 @@ export default function ComboDetails({
   const { width } = useWindowDimensions();
   const cacheKey = `user.detail.combo.${itemId}`;
   const [combo, setCombo] = useState<Combo | null>(
-    () => getCachedApiData<Combo>(cacheKey) ?? null,
+    () => getCachedApiData<Combo>(cacheKey) ?? initialCombo ?? null,
   );
   const [loading, setLoading] = useState(
-    () => !hasCachedApiData(cacheKey),
+    () => !hasCachedApiData(cacheKey) && !(isGuest && initialCombo),
   );
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
@@ -107,6 +105,22 @@ export default function ComboDetails({
     let active = true;
 
     const loadCombo = async () => {
+      if (isGuest) {
+        if (initialCombo) {
+          setCombo(initialCombo);
+          setError(null);
+          const comboName =
+            typeof initialCombo.name === 'string'
+              ? initialCombo.name.trim()
+              : '';
+          if (comboName) onNameLoaded?.(comboName);
+        } else {
+          setError('This combo is no longer available.');
+        }
+        setLoading(false);
+        return;
+      }
+
       if (!hasCachedApiData(cacheKey)) setLoading(true);
       if (hasCachedApiData(cacheKey)) setError(null);
       try {
@@ -134,8 +148,22 @@ export default function ComboDetails({
           setActiveImageIndex(0);
         }
       } catch (requestError) {
-        console.error('Could not load combo details:', requestError);
-        if (active) setError(getErrorMessage(requestError));
+        if (__DEV__) {
+          console.warn('Could not load combo details:', requestError);
+        }
+        if (active) {
+          if (initialCombo && isUnauthorizedError(requestError)) {
+            setCombo(initialCombo);
+            setError(null);
+            const comboName =
+              typeof initialCombo.name === 'string'
+                ? initialCombo.name.trim()
+                : '';
+            if (comboName) onNameLoaded?.(comboName);
+          } else {
+            setError(getErrorMessage(requestError));
+          }
+        }
       } finally {
         if (active) setLoading(false);
       }
@@ -145,7 +173,7 @@ export default function ComboDetails({
     return () => {
       active = false;
     };
-  }, [cacheKey, itemId, onNameLoaded, retryCount]);
+  }, [cacheKey, initialCombo, isGuest, itemId, onNameLoaded, retryCount]);
 
   const gallery = combo ? getGallery(combo) : [];
   const price = combo ? productPrice(combo) : 0;

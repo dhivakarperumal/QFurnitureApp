@@ -3,7 +3,7 @@ import { Pressable, Text, View } from 'react-native';
 import ProductCard from './ProductCard';
 import { SkeletonList } from './Skeletons';
 import api from '../api';
-import type { StoreProduct } from './types';
+import type { StoreCombo, StoreProduct } from './types';
 import {
   fetchCachedApiData,
   getCachedApiData,
@@ -12,11 +12,10 @@ import {
 
 const COMBOS_CACHE_KEY = 'user.combos';
 
-type ComboOffer = StoreProduct & {
+type ComboOffer = StoreCombo & {
   offer_product?: boolean | number;
   offer_start_date?: string | null;
   offer_end_date?: string | null;
-  combo_items?: unknown[] | null;
 };
 
 type CombosResponse = {
@@ -28,7 +27,7 @@ type ComboOffersProps = {
   favorites: string[];
   onFavoritePress: (productId: string) => void;
   onAddToCart: (productId: string) => void;
-  onProductPress: (productId: string) => void;
+  onProductPress: (productId: string, combo: StoreCombo) => void;
 };
 
 function getErrorMessage(error: unknown) {
@@ -160,7 +159,7 @@ export default function ComboOffers({
                 compact
                 onFavoritePress={onFavoritePress}
                 onAddToCart={onAddToCart}
-                onProductPress={onProductPress}
+                onProductPress={() => onProductPress(productId, combo)}
               />
             );
           })}

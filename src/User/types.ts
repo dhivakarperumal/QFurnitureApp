@@ -51,6 +51,19 @@ export type StoreProduct = {
   image?: string | null;
 };
 
+export type StoreCombo = StoreProduct & {
+  description?: string | null;
+  long_description?: string | null;
+  specifications?: Record<string, unknown> | null;
+  combo_items?: Array<{
+    product_id?: number | string;
+    product_name?: string;
+    quantity?: number | string;
+    variant_color?: string;
+    variant_size?: string;
+  }> | null;
+};
+
 export type StoreFavorite = StoreProduct & {
   created_at?: string;
 };
