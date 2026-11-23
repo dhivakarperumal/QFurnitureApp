@@ -15,7 +15,7 @@ import {
   View,
   findNodeHandle,
 } from 'react-native';
-import type { ScrollViewInstance, TextInputInstance } from 'react-native';
+import type { ScrollViewInstance, ViewInstance } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Eye, EyeOff, LockKeyhole, UserRound } from 'lucide-react-native';
 import Svg, { Path } from 'react-native-svg';
@@ -46,24 +46,20 @@ export default function Login({
 }: LoginProps) {
   const insets = useSafeAreaInsets();
   const scrollViewRef = useRef<ScrollViewInstance | null>(null);
-  const focusedInputRef = useRef<TextInputInstance | null>(null);
-  const keyboardVisibleRef = useRef(false);
-  const identifierInputRef = useRef<TextInputInstance | null>(null);
-  const passwordInputRef = useRef<TextInputInstance | null>(null);
+  const signInButtonRef = useRef<ViewInstance | null>(null);
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [googleSubmitting, setGoogleSubmitting] = useState(false);
-  const [keyboardVisible, setKeyboardVisible] = useState(false);
 
-  const scrollFocusedInputIntoView = useCallback(() => {
-    const inputHandle = focusedInputRef.current
-      ? findNodeHandle(focusedInputRef.current)
+  const scrollSignInButtonIntoView = useCallback(() => {
+    const buttonHandle = signInButtonRef.current
+      ? findNodeHandle(signInButtonRef.current)
       : null;
-    if (inputHandle == null) return;
+    if (buttonHandle == null) return;
     scrollViewRef.current?.scrollResponderScrollNativeHandleToKeyboard(
-      inputHandle,
+      buttonHandle,
       24,
       true,
     );
@@ -71,20 +67,13 @@ export default function Login({
 
   useEffect(() => {
     const keyboardShown = Keyboard.addListener('keyboardDidShow', () => {
-      keyboardVisibleRef.current = true;
-      setKeyboardVisible(true);
-      scrollFocusedInputIntoView();
-    });
-    const keyboardHidden = Keyboard.addListener('keyboardDidHide', () => {
-      keyboardVisibleRef.current = false;
-      setKeyboardVisible(false);
+      scrollSignInButtonIntoView();
     });
 
     return () => {
       keyboardShown.remove();
-      keyboardHidden.remove();
     };
-  }, [scrollFocusedInputIntoView]);
+  }, [scrollSignInButtonIntoView]);
 
   const handleGoogleLogin = async () => {
     if (googleSubmitting) return;
@@ -186,11 +175,7 @@ export default function Login({
               contentContainerClassName="flex-grow justify-center px-6 py-8">
               <View
                 style={{ backgroundColor: colors.surface }}
-                className={`mx-auto ${
-                  keyboardVisible ? 'mt-2' : 'mt-10'
-                } w-full max-w-[430px] rounded-[24px] p-6 shadow-lg elevation-[8]`}>
-            {!keyboardVisible ? (
-              <>
+                className="mx-auto mt-10 w-full max-w-[430px] rounded-[24px] p-6 shadow-lg elevation-[8]">
                 <Image
                   source={require('../Assert/images/appicon.png')}
                   accessibilityLabel="Q Furniture logo"
@@ -207,8 +192,6 @@ export default function Login({
                   className="mb-6 mt-2 text-center text-[13px]">
                   Sign in to continue to Q Furniture
                 </Text>
-              </>
-            ) : null}
 
             <Text
               style={{ color: colors.textPrimary }}
@@ -220,11 +203,6 @@ export default function Login({
               className="mb-4 h-[52px] flex-row items-center rounded-[12px] border px-4">
               <UserRound size={19} color={colors.textSecondary} strokeWidth={2} />
               <TextInput
-                ref={identifierInputRef}
-                onFocus={() => {
-                  focusedInputRef.current = identifierInputRef.current;
-                  if (keyboardVisibleRef.current) scrollFocusedInputIntoView();
-                }}
                 value={identifier}
                 onChangeText={setIdentifier}
                 placeholder="Enter username, email or mobile"
@@ -249,11 +227,6 @@ export default function Login({
               className="mb-6 h-[52px] flex-row items-center rounded-[12px] border px-4">
               <LockKeyhole size={19} color={colors.textSecondary} strokeWidth={2} />
               <TextInput
-                ref={passwordInputRef}
-                onFocus={() => {
-                  focusedInputRef.current = passwordInputRef.current;
-                  if (keyboardVisibleRef.current) scrollFocusedInputIntoView();
-                }}
                 value={password}
                 onChangeText={setPassword}
                 placeholder="Enter your password"
@@ -281,6 +254,7 @@ export default function Login({
             </View>
 
             <Pressable
+              ref={signInButtonRef}
               accessibilityRole="button"
               onPress={handleSubmit}
               disabled={submitting}
@@ -295,78 +269,74 @@ export default function Login({
               )}
             </Pressable>
 
-            {!keyboardVisible ? (
-              <>
-                <View className="mt-5 flex-row items-center">
-                  <View className="h-[1px] flex-1 bg-[#E5E7EB]" />
-                  <Text className="mx-3 text-[12px] text-[#94A3B8]">or</Text>
-                  <View className="h-[1px] flex-1 bg-[#E5E7EB]" />
-                </View>
+            <View className="mt-5 flex-row items-center">
+              <View className="h-[1px] flex-1 bg-[#E5E7EB]" />
+              <Text className="mx-3 text-[12px] text-[#94A3B8]">or</Text>
+              <View className="h-[1px] flex-1 bg-[#E5E7EB]" />
+            </View>
 
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Continue with Google"
-                  onPress={handleGoogleLogin}
-                  disabled={submitting || googleSubmitting}
-                  className="mt-5 h-[52px] w-full flex-row items-center justify-center rounded-[12px] border border-[#D1D5DB] bg-white disabled:opacity-60">
-                  {googleSubmitting ? (
-                    <ActivityIndicator color="#4285F4" />
-                  ) : (
-                    <>
-                      <Svg width={22} height={22} viewBox="0 0 24 24">
-                        <Path
-                          fill="#4285F4"
-                          d="M23.49 12.27c0-.79-.07-1.55-.2-2.27H12v4.3h6.44a5.5 5.5 0 0 1-2.39 3.61v2.95h3.88c2.27-2.09 3.56-5.17 3.56-8.59Z"
-                        />
-                        <Path
-                          fill="#34A853"
-                          d="M12 24c3.24 0 5.96-1.08 7.95-2.92l-3.88-2.95c-1.08.72-2.45 1.15-4.07 1.15-3.13 0-5.78-2.11-6.73-4.96H1.26v3.04A12 12 0 0 0 12 24Z"
-                        />
-                        <Path
-                          fill="#FBBC05"
-                          d="M5.27 14.32a7.2 7.2 0 0 1 0-4.64V6.64H1.26a12 12 0 0 0 0 10.72l4.01-3.04Z"
-                        />
-                        <Path
-                          fill="#EA4335"
-                          d="M12 4.72c1.77 0 3.35.61 4.6 1.8l3.45-3.45C17.95 1.13 15.24 0 12 0A12 12 0 0 0 1.26 6.64l4.01 3.04C6.22 6.83 8.87 4.72 12 4.72Z"
-                        />
-                      </Svg>
-                      <Text className="ml-3 text-[15px] font-bold text-[#202124]">
-                        Continue with Google
-                      </Text>
-                    </>
-                  )}
-                </Pressable>
-
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={onContinueAsGuest}
-                  className="mt-3 h-[48px] items-center justify-center rounded-[12px] border border-[#F97316] bg-white">
-                  <Text
-                    style={{ color: colors.primary }}
-                    className="text-[14px] font-bold">
-                    Continue as guest
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Continue with Google"
+              onPress={handleGoogleLogin}
+              disabled={submitting || googleSubmitting}
+              className="mt-5 h-[52px] w-full flex-row items-center justify-center rounded-[12px] border border-[#D1D5DB] bg-white disabled:opacity-60">
+              {googleSubmitting ? (
+                <ActivityIndicator color="#4285F4" />
+              ) : (
+                <>
+                  <Svg width={22} height={22} viewBox="0 0 24 24">
+                    <Path
+                      fill="#4285F4"
+                      d="M23.49 12.27c0-.79-.07-1.55-.2-2.27H12v4.3h6.44a5.5 5.5 0 0 1-2.39 3.61v2.95h3.88c2.27-2.09 3.56-5.17 3.56-8.59Z"
+                    />
+                    <Path
+                      fill="#34A853"
+                      d="M12 24c3.24 0 5.96-1.08 7.95-2.92l-3.88-2.95c-1.08.72-2.45 1.15-4.07 1.15-3.13 0-5.78-2.11-6.73-4.96H1.26v3.04A12 12 0 0 0 12 24Z"
+                    />
+                    <Path
+                      fill="#FBBC05"
+                      d="M5.27 14.32a7.2 7.2 0 0 1 0-4.64V6.64H1.26a12 12 0 0 0 0 10.72l4.01-3.04Z"
+                    />
+                    <Path
+                      fill="#EA4335"
+                      d="M12 4.72c1.77 0 3.35.61 4.6 1.8l3.45-3.45C17.95 1.13 15.24 0 12 0A12 12 0 0 0 1.26 6.64l4.01 3.04C6.22 6.83 8.87 4.72 12 4.72Z"
+                    />
+                  </Svg>
+                  <Text className="ml-3 text-[15px] font-bold text-[#202124]">
+                    Continue with Google
                   </Text>
-                </Pressable>
+                </>
+              )}
+            </Pressable>
 
-                <View className="mt-5 flex-row justify-center">
-                  <Text
-                    style={{ color: colors.textSecondary }}
-                    className="text-[13px]">
-                    Don&apos;t have an account?{' '}
-                  </Text>
-                  <Pressable
-                    accessibilityRole="button"
-                    onPress={onRegisterPress}>
-                    <Text
-                      style={{ color: colors.primary }}
-                      className="text-[13px] font-bold">
-                      Register
-                    </Text>
-                  </Pressable>
-                </View>
-              </>
-            ) : null}
+            <Pressable
+              accessibilityRole="button"
+              onPress={onContinueAsGuest}
+              className="mt-3 h-[48px] items-center justify-center rounded-[12px] border border-[#F97316] bg-white">
+              <Text
+                style={{ color: colors.primary }}
+                className="text-[14px] font-bold">
+                Continue as guest
+              </Text>
+            </Pressable>
+
+            <View className="mt-5 flex-row justify-center">
+              <Text
+                style={{ color: colors.textSecondary }}
+                className="text-[13px]">
+                Don&apos;t have an account?{' '}
+              </Text>
+              <Pressable
+                accessibilityRole="button"
+                onPress={onRegisterPress}>
+                <Text
+                  style={{ color: colors.primary }}
+                  className="text-[13px] font-bold">
+                  Register
+                </Text>
+              </Pressable>
+            </View>
               </View>
             </ScrollView>
           </View>
