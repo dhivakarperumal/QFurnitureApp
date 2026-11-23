@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { ChevronDown, Eye, Printer, X } from 'lucide-react-native';
 import RNPrint from 'react-native-print';
+import { readFileRes } from 'react-native-fs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api, {
   API_BASE_URL,
@@ -244,6 +245,33 @@ const getPrintableError = (error: unknown) =>
   typeof error.message === 'string'
     ? error.message
     : 'Could not load or print this order invoice.';
+
+let cachedInvoiceLogoUri: string | null = null;
+
+export const getOrderInvoiceLogoUri = async () => {
+  if (cachedInvoiceLogoUri) return cachedInvoiceLogoUri;
+
+  if (Platform.OS === 'android') {
+    const logoBase64 = await readFileRes(
+      'src_assert_images_appicon.png',
+      'base64',
+    );
+    if (!logoBase64) {
+      throw new Error('The invoice logo could not be loaded.');
+    }
+    cachedInvoiceLogoUri = `data:image/png;base64,${logoBase64}`;
+    return cachedInvoiceLogoUri;
+  }
+
+  const logoUri = Image.resolveAssetSource(
+    require('../../Assert/images/appicon.png'),
+  )?.uri;
+  if (!logoUri) {
+    throw new Error('The invoice logo could not be loaded.');
+  }
+  cachedInvoiceLogoUri = logoUri;
+  return logoUri;
+};
 
 export const buildOrderInvoiceHtml = (
   order: PrintableOrder,
@@ -607,12 +635,7 @@ export default function Orders({
   const printOrder = async (order: Order) => {
     setPrintingOrderId(order.id);
     try {
-      const logoUri = Image.resolveAssetSource(
-        require('../../Assert/images/appicon.png'),
-      )?.uri;
-      if (!logoUri) {
-        throw new Error('The invoice logo could not be loaded.');
-      }
+      const logoUri = await getOrderInvoiceLogoUri();
       const response = await api.get<PrintableOrder>(`/orders/${order.id}`);
       if (!response.data || typeof response.data !== 'object') {
         throw new Error('The order details response was invalid.');

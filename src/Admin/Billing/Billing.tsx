@@ -8,7 +8,6 @@ import React, {
 import {
   ActivityIndicator,
   Alert,
-  Image,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -36,6 +35,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api, { invalidateApiResponseCache } from '../../api';
 import {
   buildOrderInvoiceHtml,
+  getOrderInvoiceLogoUri,
   type Order,
   type PrintableOrder,
 } from '../Order/Orders';
@@ -243,12 +243,7 @@ export default function Billing({
   const printInvoice = async (invoice: BillingInvoice) => {
     setPrintingOrderId(invoice.orderId);
     try {
-      const logoUri = Image.resolveAssetSource(
-        require('../../Assert/images/appicon.png'),
-      )?.uri;
-      if (!logoUri) {
-        throw new Error('The invoice logo could not be loaded.');
-      }
+      const logoUri = await getOrderInvoiceLogoUri();
       const response = await api.get<PrintableOrder>(
         `/orders/${invoice.orderId}`,
       );
