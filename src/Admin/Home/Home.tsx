@@ -7,7 +7,6 @@ import {
   ScrollView,
   Text,
   View,
-  useWindowDimensions,
 } from 'react-native';
 import {
   Armchair,
@@ -25,7 +24,7 @@ import api, {
   invalidateApiResponseCache,
 } from '../../api';
 
-const DASHBOARD_BANNER_ASPECT_RATIO = 2170 / 725;
+const DASHBOARD_BANNER_ASPECT_RATIO = 2170 / 725; // kept for reference
 
 type HomeProps = {
   onActionPress?: (label: string) => void;
@@ -299,10 +298,6 @@ export default function Home({
   onScrollVisibilityChange,
 }: HomeProps) {
   const insets = useSafeAreaInsets();
-  const { width: screenWidth } = useWindowDimensions();
-  const dashboardBannerWidth = screenWidth - 24;
-  const dashboardBannerHeight =
-    dashboardBannerWidth / DASHBOARD_BANNER_ASPECT_RATIO;
   const lastScrollY = useRef(0);
   const hasLoadedDashboard = useRef(false);
   const [products, setProducts] = useState<DashboardProduct[]>([]);
@@ -601,8 +596,8 @@ export default function Home({
       style={{ paddingTop: insets.top + 84 }}>
       <View
         style={{
-          width: dashboardBannerWidth,
-          height: dashboardBannerHeight,
+          width: '100%',
+          aspectRatio: DASHBOARD_BANNER_ASPECT_RATIO,
         }}
         className="mb-4 justify-center overflow-hidden rounded-[22px] px-5 py-3">
         <Image

@@ -13,7 +13,8 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { ChevronDown, Eye, Printer, X } from 'lucide-react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { Calendar, ChevronDown, Eye, Printer, X } from 'lucide-react-native';
 import RNPrint from 'react-native-print';
 import { readFileRes } from 'react-native-fs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -479,6 +480,11 @@ export default function Orders({
   const [printingOrderId, setPrintingOrderId] = useState<number | string | null>(
     null,
   );
+  const [dateFilterVisible, setDateFilterVisible] = useState(false);
+  const [dateFrom, setDateFrom] = useState<Date | null>(null);
+  const [dateTo, setDateTo] = useState<Date | null>(null);
+  const [pickerTarget, setPickerTarget] = useState<'from' | 'to' | null>(null);
+  const [pickerDate, setPickerDate] = useState(new Date());
 
   const fetchOrders = useCallback(async (refresh = false) => {
     if (refresh) {
@@ -514,24 +520,68 @@ export default function Orders({
     setActiveStatus(statusFilter);
   }, [statusFilter]);
 
+  const startOfDay = (d: Date) => {
+    const copy = new Date(d);
+    copy.setHours(0, 0, 0, 0);
+    return copy;
+  };
+  const endOfDay = (d: Date) => {
+    const copy = new Date(d);
+    copy.setHours(23, 59, 59, 999);
+    return copy;
+  };
+
+  const applyDatePreset = (preset: 'today' | 'week' | 'month') => {
+    const now = new Date();
+    if (preset === 'today') {
+      setDateFrom(startOfDay(now));
+      setDateTo(endOfDay(now));
+    } else if (preset === 'week') {
+      const mon = new Date(now);
+      mon.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+      setDateFrom(startOfDay(mon));
+      setDateTo(endOfDay(now));
+    } else {
+      const first = new Date(now.getFullYear(), now.getMonth(), 1);
+      setDateFrom(startOfDay(first));
+      setDateTo(endOfDay(now));
+    }
+  };
+
+  const clearDateFilter = () => {
+    setDateFrom(null);
+    setDateTo(null);
+  };
+
+  const isDateFilterActive = dateFrom !== null || dateTo !== null;
+
   const filteredOrders = useMemo(() => {
     const search = searchTerm.trim().toLowerCase();
     return orders.filter(order => {
-      if (!search) return true;
-      return [
-        formatOrderId(order),
-        order.customer_name,
-        order.customer_email,
-        order.customer_phone,
-        order.user_id,
-        String(order.id),
-      ].some(value => value?.toLowerCase().includes(search));
+      if (search) {
+        const matchesSearch = [
+          formatOrderId(order),
+          order.customer_name,
+          order.customer_email,
+          order.customer_phone,
+          order.user_id,
+          String(order.id),
+        ].some(value => value?.toLowerCase().includes(search));
+        if (!matchesSearch) return false;
+      }
+      if (dateFrom || dateTo) {
+        const orderDate = order.created_at ? new Date(order.created_at) : null;
+        if (!orderDate || Number.isNaN(orderDate.getTime())) return false;
+        if (dateFrom && orderDate < dateFrom) return false;
+        if (dateTo && orderDate > dateTo) return false;
+      }
+      return true;
     });
-  }, [orders, searchTerm]);
+  }, [orders, searchTerm, dateFrom, dateTo]);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, activeStatus]);
+  }, [searchTerm, activeStatus, dateFrom, dateTo]);
 
   const totalPages = Math.max(1, Math.ceil(filteredOrders.length / 10));
   const pageOrders = filteredOrders.slice((currentPage - 1) * 10, currentPage * 10);
@@ -914,10 +964,59 @@ export default function Orders({
             <ChevronDown size={17} color="#64748B" />
           </Pressable>
 
+          {/* Date range filter button */}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Filter orders by date range"
+            onPress={() => setDateFilterVisible(true)}
+            className={[
+              'mt-2 h-[54px] flex-row items-center justify-between rounded-[13px] border px-3',
+              isDateFilterActive
+                ? 'border-[#F97316] bg-[#FFF7ED]'
+                : 'border-[#E2E8F0] bg-white',
+            ].join(' ')}>
+            <View className="flex-row items-center">
+              <Calendar size={15} color={isDateFilterActive ? '#C2410C' : '#64748B'} strokeWidth={2} />
+              <View className="ml-2">
+                <Text className={[
+                  'text-[8px] font-bold uppercase tracking-[1px]',
+                  isDateFilterActive ? 'text-[#C2410C]' : 'text-[#94A3B8]',
+                ].join(' ')}>
+                  Filter by date
+                </Text>
+                <Text className={[
+                  'mt-1 text-[11px] font-bold',
+                  isDateFilterActive ? 'text-[#C2410C]' : 'text-[#17191C]',
+                ].join(' ')}>
+                  {isDateFilterActive
+                    ? `${dateFrom ? dateFrom.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : 'Any'} → ${dateTo ? dateTo.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Any'}`
+                    : 'All dates'}
+                </Text>
+              </View>
+            </View>
+            <View className="flex-row items-center">
+              {isDateFilterActive && (
+                <Pressable
+                  onPress={e => { e.stopPropagation(); clearDateFilter(); }}
+                  hitSlop={8}
+                  className="mr-2 h-[22px] w-[22px] items-center justify-center rounded-full bg-[#F97316]">
+                  <X size={12} color="#FFFFFF" strokeWidth={3} />
+                </Pressable>
+              )}
+              <ChevronDown size={17} color={isDateFilterActive ? '#C2410C' : '#64748B'} />
+            </View>
+          </Pressable>
+
           <View className="mt-3 flex-row items-center justify-between">
             <Text className="text-[11px] font-semibold text-[#94A3B8]">
               {filteredOrders.length} order{filteredOrders.length === 1 ? '' : 's'}
+              {isDateFilterActive ? ' (date filtered)' : ''}
             </Text>
+            {isDateFilterActive && (
+              <Pressable onPress={clearDateFilter}>
+                <Text className="text-[10px] font-bold text-[#F97316]">Clear dates ×</Text>
+              </Pressable>
+            )}
           </View>
         </View>
 
@@ -1223,6 +1322,145 @@ export default function Orders({
             </View>
           </View>
         </KeyboardAvoidingView>
+      </Modal>
+
+      {/* ── Date filter bottom-sheet ── */}
+      <Modal
+        transparent
+        animationType="slide"
+        visible={dateFilterVisible}
+        onRequestClose={() => { setDateFilterVisible(false); setPickerTarget(null); }}>
+        <View className="flex-1 justify-end">
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Close date filter"
+            onPress={() => { setDateFilterVisible(false); setPickerTarget(null); }}
+            className="absolute inset-0 bg-[#17191C]/55"
+          />
+          <View
+            className="rounded-t-[26px] bg-white px-5 pt-3"
+            style={{ paddingBottom: Math.max(insets.bottom, 20) }}>
+            {/* Handle bar */}
+            <View className="mb-4 h-[4px] w-[40px] self-center rounded-full bg-[#E2E8F0]" />
+
+            {/* Header */}
+            <View className="mb-4 flex-row items-center justify-between">
+              <View>
+                <Text className="text-[17px] font-black text-[#17191C]">Filter by date</Text>
+                <Text className="mt-1 text-[11px] text-[#64748B]">Select a range to narrow orders.</Text>
+              </View>
+              {isDateFilterActive && (
+                <Pressable
+                  onPress={clearDateFilter}
+                  className="rounded-full border border-[#F97316] px-3 py-1.5">
+                  <Text className="text-[11px] font-bold text-[#C2410C]">Clear</Text>
+                </Pressable>
+              )}
+            </View>
+
+            {/* Quick presets */}
+            <Text className="mb-2 text-[9px] font-bold uppercase tracking-[1.2px] text-[#94A3B8]">
+              Quick select
+            </Text>
+            <View className="mb-4 flex-row">
+              {([['today', 'Today'], ['week', 'This Week'], ['month', 'This Month']] as const).map(([preset, label]) => (
+                <Pressable
+                  key={preset}
+                  onPress={() => { applyDatePreset(preset); setDateFilterVisible(false); setPickerTarget(null); }}
+                  className="mr-2 rounded-full border border-[#E2E8F0] bg-[#F8FAFC] px-4 py-2">
+                  <Text className="text-[11px] font-bold text-[#475569]">{label}</Text>
+                </Pressable>
+              ))}
+            </View>
+
+            {/* From / To pickers */}
+            <Text className="mb-2 text-[9px] font-bold uppercase tracking-[1.2px] text-[#94A3B8]">
+              Custom range
+            </Text>
+            <View className="mb-4 flex-row">
+              {/* From */}
+              <Pressable
+                onPress={() => {
+                  setPickerDate(dateFrom ?? new Date());
+                  setPickerTarget(pickerTarget === 'from' ? null : 'from');
+                }}
+                className={[
+                  'mr-2 flex-1 rounded-[13px] border p-3',
+                  pickerTarget === 'from'
+                    ? 'border-[#F97316] bg-[#FFF7ED]'
+                    : 'border-[#E2E8F0] bg-[#F8FAFC]',
+                ].join(' ')}>
+                <Text className="text-[9px] font-bold uppercase tracking-[0.8px] text-[#94A3B8]">From</Text>
+                <Text className={[
+                  'mt-1 text-[13px] font-bold',
+                  dateFrom ? 'text-[#17191C]' : 'text-[#CBD5E1]',
+                ].join(' ')}>
+                  {dateFrom
+                    ? dateFrom.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+                    : 'Start date'}
+                </Text>
+              </Pressable>
+              {/* To */}
+              <Pressable
+                onPress={() => {
+                  setPickerDate(dateTo ?? new Date());
+                  setPickerTarget(pickerTarget === 'to' ? null : 'to');
+                }}
+                className={[
+                  'flex-1 rounded-[13px] border p-3',
+                  pickerTarget === 'to'
+                    ? 'border-[#F97316] bg-[#FFF7ED]'
+                    : 'border-[#E2E8F0] bg-[#F8FAFC]',
+                ].join(' ')}>
+                <Text className="text-[9px] font-bold uppercase tracking-[0.8px] text-[#94A3B8]">To</Text>
+                <Text className={[
+                  'mt-1 text-[13px] font-bold',
+                  dateTo ? 'text-[#17191C]' : 'text-[#CBD5E1]',
+                ].join(' ')}>
+                  {dateTo
+                    ? dateTo.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+                    : 'End date'}
+                </Text>
+              </Pressable>
+            </View>
+
+            {/* Inline calendar picker */}
+            {pickerTarget !== null && (
+              <View className="mb-4 overflow-hidden rounded-[16px] border border-[#E2E8F0] bg-white">
+                <DateTimePicker
+                  value={pickerDate}
+                  mode="date"
+                  display="inline"
+                  accentColor="#F97316"
+                  maximumDate={pickerTarget === 'from' && dateTo ? dateTo : new Date()}
+                  minimumDate={pickerTarget === 'to' && dateFrom ? dateFrom : undefined}
+                  onChange={(_event, selected) => {
+                    if (!selected) return;
+                    const d = new Date(selected);
+                    if (pickerTarget === 'from') {
+                      d.setHours(0, 0, 0, 0);
+                      setDateFrom(d);
+                    } else {
+                      d.setHours(23, 59, 59, 999);
+                      setDateTo(d);
+                    }
+                    setPickerDate(selected);
+                    setPickerTarget(null);
+                  }}
+                />
+              </View>
+            )}
+
+            {/* Apply button */}
+            <Pressable
+              onPress={() => { setDateFilterVisible(false); setPickerTarget(null); }}
+              className="h-[50px] items-center justify-center rounded-[14px] bg-[#17191C]">
+              <Text className="text-[13px] font-bold text-white">
+                {isDateFilterActive ? 'Apply filter' : 'Close'}
+              </Text>
+            </Pressable>
+          </View>
+        </View>
       </Modal>
 
       <Modal
