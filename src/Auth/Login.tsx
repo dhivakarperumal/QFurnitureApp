@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   ActivityIndicator,
@@ -13,7 +13,9 @@ import {
   TextInput,
   TouchableWithoutFeedback,
   View,
+  findNodeHandle,
 } from 'react-native';
+import type { ScrollViewInstance, TextInputInstance } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Eye, EyeOff, LockKeyhole, UserRound } from 'lucide-react-native';
 import Svg, { Path } from 'react-native-svg';
@@ -43,11 +45,43 @@ export default function Login({
   onContinueAsGuest,
 }: LoginProps) {
   const insets = useSafeAreaInsets();
+  const scrollViewRef = useRef<ScrollViewInstance | null>(null);
+  const focusedInputRef = useRef<TextInputInstance | null>(null);
+  const keyboardVisibleRef = useRef(false);
+  const identifierInputRef = useRef<TextInputInstance | null>(null);
+  const passwordInputRef = useRef<TextInputInstance | null>(null);
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [googleSubmitting, setGoogleSubmitting] = useState(false);
+
+  const scrollFocusedInputIntoView = useCallback(() => {
+    const inputHandle = focusedInputRef.current
+      ? findNodeHandle(focusedInputRef.current)
+      : null;
+    if (inputHandle == null) return;
+    scrollViewRef.current?.scrollResponderScrollNativeHandleToKeyboard(
+      inputHandle,
+      24,
+      true,
+    );
+  }, []);
+
+  useEffect(() => {
+    const keyboardShown = Keyboard.addListener('keyboardDidShow', () => {
+      keyboardVisibleRef.current = true;
+      scrollFocusedInputIntoView();
+    });
+    const keyboardHidden = Keyboard.addListener('keyboardDidHide', () => {
+      keyboardVisibleRef.current = false;
+    });
+
+    return () => {
+      keyboardShown.remove();
+      keyboardHidden.remove();
+    };
+  }, [scrollFocusedInputIntoView]);
 
   const handleGoogleLogin = async () => {
     if (googleSubmitting) return;
@@ -130,13 +164,14 @@ export default function Login({
         style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%' }}
       />
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
         className="flex-1 bg-transparent">
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
           <View
             className="flex-1">
             <ScrollView
+              ref={scrollViewRef}
               className="flex-1"
               keyboardShouldPersistTaps="handled"
               automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
@@ -176,6 +211,11 @@ export default function Login({
               className="mb-4 h-[52px] flex-row items-center rounded-[12px] border px-4">
               <UserRound size={19} color={colors.textSecondary} strokeWidth={2} />
               <TextInput
+                ref={identifierInputRef}
+                onFocus={() => {
+                  focusedInputRef.current = identifierInputRef.current;
+                  if (keyboardVisibleRef.current) scrollFocusedInputIntoView();
+                }}
                 value={identifier}
                 onChangeText={setIdentifier}
                 placeholder="Enter username, email or mobile"
@@ -200,6 +240,11 @@ export default function Login({
               className="mb-6 h-[52px] flex-row items-center rounded-[12px] border px-4">
               <LockKeyhole size={19} color={colors.textSecondary} strokeWidth={2} />
               <TextInput
+                ref={passwordInputRef}
+                onFocus={() => {
+                  focusedInputRef.current = passwordInputRef.current;
+                  if (keyboardVisibleRef.current) scrollFocusedInputIntoView();
+                }}
                 value={password}
                 onChangeText={setPassword}
                 placeholder="Enter your password"
