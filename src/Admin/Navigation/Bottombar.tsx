@@ -8,6 +8,7 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
+import { Home, Menu, Package, ShoppingBag } from 'lucide-react-native';
 import Svg, {
   Circle,
   ClipPath,
@@ -51,190 +52,6 @@ const rightNavigationItems: ReadonlyArray<NavigationItem> = [
   { destination: 'More', label: 'More' },
 ];
 
-/* -------------------------------------------------------------------------- */
-/*                         CUSTOM VECTOR ICONS (1:1)                          */
-/* -------------------------------------------------------------------------- */
-
-function HomeIcon({ active }: { active: boolean }) {
-  const color = active ? '#FFFFFF' : '#F7F7F7';
-
-  return (
-    <Svg width={25} height={25} viewBox="0 0 28 28" fill="none">
-      <Path
-        d="M7.2 2.2h13.6a5 5 0 0 1 5 5v5.1H2.2V7.2a5 5 0 0 1 5-5Z"
-        fill={color}
-      />
-      <Path
-        d="M4.6 8.5c-2.2 0-4 1.8-4 4v5.1c0 3 2.4 5.4 5.4 5.4h16c3 0 5.4-2.4 5.4-5.4v-5.1c0-2.2-1.8-4-4-4h-1v4.1c0 1.8-1.4 3.2-3.2 3.2H8.8c-1.8 0-3.2-1.4-3.2-3.2V8.5H4.6Z"
-        fill={color}
-      />
-      <Path
-        d="M5.8 8.5v3.7a2.9 2.9 0 0 0 2.9 2.9h10.6a2.9 2.9 0 0 0 2.9-2.9V8.5"
-        stroke="#FFFFFF"
-        strokeWidth={1.7}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <Path
-        d="M4.3 22.5h2.4l-.6 2.1a1.4 1.4 0 0 1-2.8-.5l1-1.6Zm17 0h2.4l1 1.6a1.4 1.4 0 0 1-2.8.5l-.6-2.1Z"
-        fill={color}
-        stroke={color}
-        strokeWidth={1.4}
-        strokeLinecap="round"
-      />
-    </Svg>
-  );
-}
-
-function ProductsIcon({ active }: { active: boolean }) {
-  const color = active ? '#FFFFFF' : '#F7F7F7';
-
-  return (
-    <Svg width={27} height={27} viewBox="0 0 28 28" fill="none">
-      <Path
-        d="M8.2 6.7 14 3.4l5.8 3.3v6.8L14 17l-5.8-3.5V6.7Z"
-        stroke={color}
-        strokeWidth={2.1}
-        strokeLinejoin="round"
-      />
-      <Path
-        d="m8.2 6.7 5.8 3.5 5.8-3.5M14 10.2V17m-3.5-11.1 5.8 3.5"
-        stroke={color}
-        strokeWidth={1.8}
-        strokeLinejoin="round"
-      />
-      <Path
-        d="m2.8 19.1 2.9-1.7 4.2 7.1L7 26.2l-4.2-7.1Zm2.9-1.7 3.3-1.9a4 4 0 0 1 3-.3l2.2.7a3.6 3.6 0 0 0 2.7-.3l4.5-2.6a1.5 1.5 0 0 1 2 .5 1.5 1.5 0 0 1-.5 2l-5.6 3.3a5.5 5.5 0 0 1-4 .5l-3.6-1a3.1 3.1 0 0 0-2.2.3l-.9.5"
-        stroke={color}
-        strokeWidth={1.8}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <Path
-        d="m4.7 4.4 1 .6m2-3.2.3 1.1m13.3 1.5-1 .6m-2-3.2-.3 1.1M3.3 10.1l1.1-.3m19.2.3-1.1-.3"
-        stroke={color}
-        strokeWidth={1.8}
-        strokeLinecap="round"
-      />
-    </Svg>
-  );
-}
-
-function OrdersIcon({ active }: { active: boolean }) {
-  const color = active ? '#FFFFFF' : '#F7F7F7';
-
-  return (
-    <Svg width={25} height={25} viewBox="0 0 28 28" fill="none">
-      <Path
-        d="M7.5 5.2H2.5V25.5H22.1M20.5 5.2h5v4.4"
-        stroke={color}
-        strokeWidth={2.3}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <Path
-        d="M8.6 5.4a4.8 4.8 0 0 1 9.6 0v1.2H8.6V5.4Z"
-        stroke={color}
-        strokeWidth={2.2}
-        strokeLinejoin="round"
-      />
-      <Circle
-        cx="13.4"
-        cy="4.3"
-        r="1.5"
-        stroke={color}
-        strokeWidth={1.8}
-      />
-      <Rect
-        x="4.5"
-        y="10"
-        width="3.2"
-        height="3.2"
-        rx="0.2"
-        stroke={color}
-        strokeWidth={1.7}
-      />
-      <Rect
-        x="4.5"
-        y="15.3"
-        width="3.2"
-        height="3.2"
-        rx="0.2"
-        stroke={color}
-        strokeWidth={1.7}
-      />
-      <Rect
-        x="4.5"
-        y="20.6"
-        width="3.2"
-        height="3.2"
-        rx="0.2"
-        stroke={color}
-        strokeWidth={1.7}
-      />
-      <Path
-        d="M9.4 11.6h4.8m-4.8 5.2h3.2m-3.2 5.2h3.9"
-        stroke={color}
-        strokeWidth={1.7}
-        strokeLinecap="round"
-      />
-      <Path
-        d="m15.2 13.2 5.3-3.1 5.4 3.1-5.4 3.1-5.3-3.1Zm0 0v6.2l5.3 3.2 5.4-3.2v-6.2m-10.7 0 5.3 3.1 5.4-3.1m-5.4 3.1v6.3m-2.8-11.6 5.4 3.1"
-        stroke={color}
-        strokeWidth={1.8}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </Svg>
-  );
-}
-
-function MoreIcon({ active }: { active: boolean }) {
-  const color = active ? '#FFFFFF' : '#F7F7F7';
-
-  return (
-    <Svg width={25} height={25} viewBox="0 0 28 28" fill="none">
-      <Rect
-        x="2"
-        y="2"
-        width="10"
-        height="10"
-        rx="2"
-        stroke={color}
-        strokeWidth={2.3}
-      />
-      <Rect
-        x="16"
-        y="2"
-        width="10"
-        height="10"
-        rx="2"
-        stroke={color}
-        strokeWidth={2.3}
-      />
-      <Rect
-        x="2"
-        y="16"
-        width="10"
-        height="10"
-        rx="2"
-        stroke={color}
-        strokeWidth={2.3}
-      />
-      <Rect
-        x="17.5"
-        y="17.5"
-        width="7"
-        height="7"
-        rx="1.5"
-        transform="rotate(45 21 21)"
-        stroke={color}
-        strokeWidth={2.3}
-      />
-    </Svg>
-  );
-}
-
 function TabIcon({
   destination,
   active,
@@ -242,17 +59,21 @@ function TabIcon({
   destination: BottomBarItem;
   active: boolean;
 }) {
+  const iconProps = {
+    size: 25,
+    color: active ? '#FFFFFF' : '#F7F7F7',
+    strokeWidth: 2.2,
+  };
+
   switch (destination) {
     case 'Home':
-      return <HomeIcon active={active} />;
+      return <Home {...iconProps} />;
     case 'Products':
-      return <ProductsIcon active={active} />;
+      return <Package {...iconProps} />;
     case 'Orders':
-      return <OrdersIcon active={active} />;
+      return <ShoppingBag {...iconProps} />;
     case 'More':
-      return <MoreIcon active={active} />;
-    default:
-      return null;
+      return <Menu {...iconProps} />;
   }
 }
 
