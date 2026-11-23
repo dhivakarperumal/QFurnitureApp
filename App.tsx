@@ -199,6 +199,17 @@ function AppContent() {
     setGuestMode(false);
   };
 
+  const confirmAdminLogout = () => {
+    showAdminAlert('Log out?', 'Are you sure you want to log out?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Log out',
+        style: 'destructive',
+        onPress: handleLogout,
+      },
+    ]);
+  };
+
   const handleDrawerItemPress = (item: DrawerDestination) => {
     setProfileOpen(false);
     setBillingOpen(false);
@@ -425,7 +436,7 @@ function AppContent() {
           onMenuPress={() => console.log('Menu')}
           onNotificationPress={() => console.log('Notifications')}
           onProfilePress={() => setProfileOpen(true)}
-          onLogoutPress={handleLogout}
+          onLogoutPress={confirmAdminLogout}
           onDrawerItemPress={handleDrawerItemPress}
         />
       ) : null}
