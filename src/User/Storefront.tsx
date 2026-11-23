@@ -126,7 +126,6 @@ const emptyStoreData: StoreData = {
   offerBanners: [],
 };
 const STORE_CACHE_KEY = 'user.storefront';
-const CART_CACHE_KEY = 'user.cart';
 const FAVORITES_CACHE_KEY = 'user.favorites';
 const COMBOS_CACHE_KEY = 'user.combos';
 
@@ -222,13 +221,9 @@ export default function Storefront({
   const [pendingFavoriteIds, setPendingFavoriteIds] = useState<string[]>([]);
   const [clearingFavorites, setClearingFavorites] = useState(false);
   const [addingFavoritesToCart, setAddingFavoritesToCart] = useState(false);
-  const [cartItems, setCartItems] = useState(
-    () => getCachedApiData<StoreCartItem[]>(CART_CACHE_KEY) ?? [],
-  );
+  const [cartItems, setCartItems] = useState<StoreCartItem[]>([]);
   const [buyNowItem, setBuyNowItem] = useState<StoreBuyNowItem | null>(null);
-  const [cartLoading, setCartLoading] = useState(
-    () => !hasCachedApiData(CART_CACHE_KEY),
-  );
+  const [cartLoading, setCartLoading] = useState(true);
   const [cartError, setCartError] = useState<string | null>(null);
   const [pendingCartIds, setPendingCartIds] = useState<string[]>([]);
   const [clearingCart, setClearingCart] = useState(false);
@@ -314,23 +309,16 @@ export default function Storefront({
     loadStore();
   }, [loadStore]);
 
-  const loadCart = useCallback(async (forceRefresh = false) => {
-    if (!hasCachedApiData(CART_CACHE_KEY)) setCartLoading(true);
+  const loadCart = useCallback(async () => {
+    setCartLoading(true);
     setCartError(null);
     try {
-      const items = await fetchCachedApiData(
-        CART_CACHE_KEY,
-        async force => {
-          const { data } = await api.get<StoreCartItem[]>('/cart', {
-            headers: force ? { 'Cache-Control': 'no-store' } : undefined,
-          });
-          if (!Array.isArray(data)) {
-            throw new Error('The cart response did not contain a cart list.');
-          }
-          return data;
-        },
-        forceRefresh,
-      );
+      const { data: items } = await api.get<StoreCartItem[]>('/cart', {
+        headers: { 'Cache-Control': 'no-store' },
+      });
+      if (!Array.isArray(items)) {
+        throw new Error('The cart response did not contain a cart list.');
+      }
       setCartItems(items);
     } catch (error) {
       setCartError(errorMessage(error));
@@ -369,7 +357,7 @@ export default function Storefront({
   }, []);
 
   const retryCart = useCallback(() => {
-    loadCart(true).catch(error => {
+    loadCart().catch(error => {
       if (__DEV__) console.warn('[Storefront] Could not reload cart:', error);
     });
   }, [loadCart]);
@@ -383,16 +371,14 @@ export default function Storefront({
 
   const clearCartItems = async () => {
     await api.delete('/cart/clear');
-    setCartItems([]);
-    setCartError(null);
-    invalidateCachedApiData(CART_CACHE_KEY);
+    await loadCart();
   };
 
   const refreshActiveTab = useCallback(async () => {
     setRefreshing(true);
     try {
       if (activeTab === 'Cart') {
-        await loadCart(true);
+        await loadCart();
       } else if (activeTab === 'Favorites') {
         await loadFavorites(true);
       } else if (activeTab === 'Combos') {
@@ -500,7 +486,7 @@ export default function Storefront({
   };
 
   useEffect(() => {
-    loadCart(true).catch(error => {
+    loadCart().catch(error => {
       if (__DEV__) console.warn('[Storefront] Could not load the cart:', error);
     });
     loadFavorites().catch(error => {
@@ -730,7 +716,7 @@ export default function Storefront({
           quantity: 1,
         });
       }
-      if (cartOptions.refreshCart !== false) await loadCart(true);
+      if (cartOptions.refreshCart !== false) await loadCart();
       showUserToast(`${name || 'Product'} added to cart`);
       return true;
     } catch (error) {
@@ -806,7 +792,7 @@ export default function Storefront({
     setPendingCartIds(current => [...current, itemId]);
     try {
       await api.put(`/cart/${item.id}`, { quantity });
-      await loadCart(true);
+      await loadCart();
     } catch (error) {
       showUserAlert('Cart could not be updated', errorMessage(error));
     } finally {
@@ -830,9 +816,7 @@ export default function Storefront({
             setPendingCartIds(current => [...current, itemId]);
             try {
               await api.delete(`/cart/${item.id}`);
-              setCartItems(current =>
-                current.filter(cartItem => String(cartItem.id) !== itemId),
-              );
+              await loadCart();
             } catch (error) {
               showUserAlert(
                 'Cart item could not be removed',
@@ -1127,7 +1111,7 @@ export default function Storefront({
                   'Order placed, but cart could not be cleared',
                   errorMessage(error),
                 );
-                loadCart(true).catch(refreshError => {
+                loadCart().catch(refreshError => {
                   if (__DEV__)
                     console.warn(
                       '[Storefront] Could not reload cart after checkout:',
