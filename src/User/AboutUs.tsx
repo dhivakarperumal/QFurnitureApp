@@ -20,13 +20,11 @@ import {
   Users,
   Wrench,
 } from 'lucide-react-native';
+import ShopByRoom from './Home/ShopByRoom';
 
 // ─── local asset paths ────────────────────────────────────────────────────────
 const heroImage = require('../Assert/images/Cozy Mustard Armchair Living Room.png');
 const ctaBgImage = require('../User/assets/shopbyroom-bedroom.png');
-const livingRoomImage = require('../User/assets/shopbyroom-living.png');
-const bedroomImage = require('../User/assets/shopbyroom-bedroom.png');
-const diningRoomImage = require('../User/assets/shopbyroom-dining.png');
 
 // ─── Stat item in the top row ─────────────────────────────────────────────────
 function JourneyStat({
@@ -93,43 +91,15 @@ function FeatureCard({
   );
 }
 
-// ─── Room card ────────────────────────────────────────────────────────────────
-function RoomCard({
-  image,
-  label,
-  onPress,
-}: {
-  image: ReturnType<typeof require>;
-  label: string;
-  onPress?: () => void;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      className="mr-3 overflow-hidden rounded-[16px]"
-      style={{ width: 120 }}>
-      <Image
-        source={image}
-        style={{ width: 120, height: 120 }}
-        resizeMode="cover"
-      />
-      <View className="absolute inset-0 justify-end bg-black/30 p-2">
-        <View className="flex-row items-center justify-between">
-          <Text className="text-[11px] font-bold text-white">{label}</Text>
-          <View className="h-[18px] w-[18px] items-center justify-center rounded-full bg-white/90">
-            <ArrowRight size={10} color="#F97316" strokeWidth={2.5} />
-          </View>
-        </View>
-      </View>
-    </Pressable>
-  );
-}
-
 // ─── Main About Us component ─────────────────────────────────────────────────
 export default function AboutUs({
   onExplorePress,
+  onRoomPress,
+  refreshKey = 0,
 }: {
   onExplorePress?: () => void;
+  onRoomPress: (roomSlug: string) => void;
+  refreshKey?: number;
 }) {
   return (
     <ScrollView
@@ -224,24 +194,7 @@ export default function AboutUs({
       </View>
 
       {/* ── Shop by Room ────────────────────────────────────────────────── */}
-      <View className="mt-6 px-5">
-        <View className="mb-3 flex-row items-center justify-between">
-          <Text className="text-[18px] font-black text-[#351D0E]">
-            Shop by <Text className="text-[#F97316]">Room</Text>
-          </Text>
-          <Pressable onPress={onExplorePress} className="flex-row items-center">
-            <Text className="text-[12px] font-semibold text-[#F97316]">
-              Explore All Rooms
-            </Text>
-            <ArrowRight size={12} color="#F97316" strokeWidth={2.5} style={{ marginLeft: 3 }} />
-          </Pressable>
-        </View>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <RoomCard image={livingRoomImage} label="Living Room" onPress={onExplorePress} />
-          <RoomCard image={bedroomImage} label="Bedroom" onPress={onExplorePress} />
-          <RoomCard image={diningRoomImage} label="Dining Room" onPress={onExplorePress} />
-        </ScrollView>
-      </View>
+      <ShopByRoom refreshKey={refreshKey} onRoomPress={onRoomPress} />
 
       {/* ── Why Choose Q Living ─────────────────────────────────────────── */}
       <View className="mt-6 px-5">
