@@ -1218,8 +1218,14 @@ export default function Storefront({
     if (moreDestination === 'about') {
       return (
         <AboutUs
+          refreshKey={homeRefreshKey}
           onExplorePress={() => {
             setMoreDestination('menu');
+            handleTabPress('Shop');
+          }}
+          onRoomPress={roomSlug => {
+            setSelectedCategory('');
+            setSearch(roomSlug.replace(/-/g, ' '));
             handleTabPress('Shop');
           }}
         />
