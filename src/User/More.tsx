@@ -35,24 +35,23 @@ const menuItems = [
 export function MoreMenu({ onSelect }: MoreMenuProps) {
   return (
     <View className="flex-1 bg-[#FCFAF7] px-4 pt-5">
-      <View className="overflow-hidden rounded-[16px] border border-[#F0E7DE] bg-white">
-        {menuItems.map(({ destination, label, icon: Icon }, index) => (
+      <View className="gap-3">
+        {menuItems.map(({ destination, label, icon: Icon }) => (
           <Pressable
             key={destination}
             accessibilityRole="button"
+            accessibilityLabel={label}
             onPress={() => onSelect(destination)}
-            className={`h-[64px] flex-row items-center px-4 ${
-              index < menuItems.length - 1
-                ? 'border-b border-[#F7EDE4]'
-                : ''
-            }`}>
-            <View className="h-[38px] w-[38px] items-center justify-center rounded-full bg-[#FFF0E1]">
-              <Icon size={19} color="#F97316" />
+            className="h-[76px] flex-row items-center rounded-[18px] border border-[#F0E7DE] bg-white px-4 shadow-sm elevation-[2]">
+            <View className="h-[44px] w-[44px] items-center justify-center rounded-full bg-[#FFF0E1]">
+              <Icon size={21} color="#E87524" strokeWidth={2} />
             </View>
-            <Text className="ml-3 flex-1 text-[15px] font-semibold text-[#351D0E]">
+            <Text className="ml-4 flex-1 text-[16px] font-bold text-[#351D0E]">
               {label}
             </Text>
-            <ChevronRight size={18} color="#C09A7E" />
+            <View className="h-[30px] w-[30px] items-center justify-center rounded-full bg-[#FCF7F1]">
+              <ChevronRight size={18} color="#B89478" strokeWidth={2.2} />
+            </View>
           </Pressable>
         ))}
       </View>
