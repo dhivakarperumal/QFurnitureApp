@@ -109,11 +109,14 @@ function AppContent() {
 
   useEffect(() => {
     let mounted = true;
+    let welcomeSeen = false;
+    let sessionRestored = false;
 
     const restoreSession = async () => {
       try {
-        const welcomeSeen = await AsyncStorage.getItem('hasSeenWelcome');
-        if (mounted && welcomeSeen !== 'true') setShowWelcome(true);
+        welcomeSeen =
+          (await AsyncStorage.getItem('hasSeenWelcome')) === 'true';
+        if (mounted && !welcomeSeen) setShowWelcome(true);
       } catch (error) {
         if (__DEV__) console.warn('[App] Could not read welcome status:', error);
         if (mounted) setShowWelcome(true);
@@ -128,12 +131,16 @@ function AppContent() {
           if (mounted) {
             setUserRole(normalizeRole(user?.role));
             setAuthenticated(true);
+            sessionRestored = true;
           }
         }
       } catch (error) {
         if (__DEV__) console.warn('[App] Could not restore the saved session:', error);
       } finally {
-        if (mounted) setCheckingSession(false);
+        if (mounted) {
+          if (welcomeSeen && !sessionRestored) setGuestMode(true);
+          setCheckingSession(false);
+        }
       }
     };
 
