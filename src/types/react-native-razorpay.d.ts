@@ -14,6 +14,23 @@ declare module 'react-native-razorpay' {
     theme?: {
       color: string;
     };
+    config?: {
+      display?: {
+        blocks?: Record<
+          string,
+          {
+            name: string;
+            instruments: Array<{
+              method: 'upi' | 'card' | 'wallet' | 'netbanking' | 'emi';
+            }>;
+          }
+        >;
+        sequence?: string[];
+        preferences?: {
+          show_default_blocks?: boolean;
+        };
+      };
+    };
   };
 
   type RazorpayCheckoutResponse = {

@@ -499,6 +499,24 @@ export default function Checkout({
           contact: payload.customer_phone,
         },
         theme: { color: '#351D0E' },
+        config: {
+          display: {
+            blocks: {
+              all_payment_methods: {
+                name: 'All Payment Options',
+                instruments: [
+                  { method: 'upi' },
+                  { method: 'card' },
+                  { method: 'wallet' },
+                  { method: 'netbanking' },
+                  { method: 'emi' },
+                ],
+              },
+            },
+            sequence: ['block.all_payment_methods'],
+            preferences: { show_default_blocks: false },
+          },
+        },
       });
       completedPaymentId = paymentResponse.razorpay_payment_id;
 
