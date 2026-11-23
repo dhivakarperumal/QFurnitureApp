@@ -8,6 +8,7 @@ import React, {
 import {
   ActivityIndicator,
   Alert,
+  Image,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -33,7 +34,11 @@ import {
 import RNPrint from 'react-native-print';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api, { invalidateApiResponseCache } from '../../api';
-import type { Order } from '../Order/Orders';
+import {
+  buildOrderInvoiceHtml,
+  type Order,
+  type PrintableOrder,
+} from '../Order/Orders';
 
 type BillingApiOrder = Order & {
   order_type?: string;
@@ -132,18 +137,6 @@ const getErrorMessage = (
   }
   return fallback;
 };
-
-const escapeHtml = (value: string) =>
-  value.replace(/[&<>"']/g, character => {
-    const entities: Record<string, string> = {
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#39;',
-    };
-    return entities[character];
-  });
 
 export default function Billing({
   onOrderPress,
@@ -250,24 +243,21 @@ export default function Billing({
   const printInvoice = async (invoice: BillingInvoice) => {
     setPrintingOrderId(invoice.orderId);
     try {
+      const logoUri = Image.resolveAssetSource(
+        require('../../Assert/images/appicon.png'),
+      )?.uri;
+      if (!logoUri) {
+        throw new Error('The invoice logo could not be loaded.');
+      }
+      const response = await api.get<PrintableOrder>(
+        `/orders/${invoice.orderId}`,
+      );
+      if (!response.data || typeof response.data !== 'object') {
+        throw new Error('The order details response was invalid.');
+      }
+      const printableOrder = { ...invoice.order, ...response.data };
       await RNPrint.print({
-        html: `
-          <html>
-            <body style="font-family: Arial, sans-serif; padding: 28px; color: #1f2937;">
-              <h1 style="color: #9a3412;">Q Furniture</h1>
-              <h2>Shop Order Invoice</h2>
-              <hr />
-              <p><strong>Order ID:</strong> ${escapeHtml(invoice.id)}</p>
-              <p><strong>Customer:</strong> ${escapeHtml(invoice.customer)}</p>
-              <p><strong>Order Date:</strong> ${escapeHtml(invoice.date)}</p>
-              <p><strong>Payment:</strong> ${escapeHtml(invoice.method)}</p>
-              <p><strong>Status:</strong> ${escapeHtml(invoice.status)}</p>
-              <h2 style="margin-top: 32px;">Total: ${escapeHtml(
-                formatCurrency(invoice.amount),
-              )}</h2>
-            </body>
-          </html>
-        `,
+        html: buildOrderInvoiceHtml(printableOrder, logoUri),
       });
     } catch (error: unknown) {
       if (__DEV__) console.warn('[Billing] Could not print invoice:', error);

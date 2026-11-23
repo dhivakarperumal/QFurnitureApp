@@ -61,7 +61,7 @@ export type Order = {
   items?: OrderItem[];
 };
 
-type PrintableOrder = Order & {
+export type PrintableOrder = Order & {
   address?: string;
   customer_address?: string;
   street_address?: string;
@@ -245,7 +245,10 @@ const getPrintableError = (error: unknown) =>
     ? error.message
     : 'Could not load or print this order invoice.';
 
-const buildOrderInvoiceHtml = (order: PrintableOrder, logoUri: string) => {
+export const buildOrderInvoiceHtml = (
+  order: PrintableOrder,
+  logoUri: string,
+) => {
   const items = Array.isArray(order.items) ? order.items : [];
   const itemSubtotal = items.reduce(
     (sum, item) =>
