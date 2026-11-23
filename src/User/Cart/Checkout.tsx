@@ -32,6 +32,12 @@ import { formatPrice } from '../utils';
 import { buildBuyNowOrderItems } from './buyNow';
 import { useUserAlert } from '../UserAlert';
 import {
+  fetchCurrentAddress,
+  getLocationErrorCode,
+  locationErrorMessage,
+  openLocationSettings,
+} from '../location';
+import {
   calculateCartSubtotal,
   calculateCheckoutQuote,
   parseGstSettings,
@@ -195,6 +201,7 @@ export default function Checkout({
   const [addressModalOpen, setAddressModalOpen] = useState(false);
   const [addressDraft, setAddressDraft] = useState<AddressDraft>(emptyAddress);
   const [addressFormError, setAddressFormError] = useState('');
+  const [fetchingAddressLocation, setFetchingAddressLocation] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
 
@@ -301,6 +308,12 @@ export default function Checkout({
   }, [loadAddresses]);
 
   useEffect(() => {
+    if (!addressesLoading && !addressesError && addresses.length === 0) {
+      setAddressModalOpen(true);
+    }
+  }, [addresses, addressesError, addressesLoading]);
+
+  useEffect(() => {
     let active = true;
     setGstSettingsLoading(true);
     setGstSettingsError('');
@@ -368,6 +381,43 @@ export default function Checkout({
       setAddressFormError(responseMessage(error));
     } finally {
       setSavingAddress(false);
+    }
+  };
+
+  const fetchAddressLocation = async () => {
+    if (fetchingAddressLocation) return;
+    setFetchingAddressLocation(true);
+    setAddressFormError('');
+    try {
+      const location = await fetchCurrentAddress();
+      setAddressDraft(current => ({ ...current, ...location }));
+    } catch (error) {
+      const message = locationErrorMessage(error);
+      setAddressFormError(message);
+      if ([1, 2].includes(getLocationErrorCode(error) ?? -1)) {
+        showUserAlert(
+          getLocationErrorCode(error) === 1
+            ? 'Location permission needed'
+            : 'Turn on device location',
+          `${message} The address form will stay open. Return here and tap Use my current location after enabling it.`,
+          [
+            { text: 'Not now', style: 'cancel' },
+            {
+              text: 'Open settings',
+              onPress: () => {
+                openLocationSettings(error).catch(settingsError => {
+                  showUserAlert(
+                    'Could not open settings',
+                    locationErrorMessage(settingsError),
+                  );
+                });
+              },
+            },
+          ],
+        );
+      }
+    } finally {
+      setFetchingAddressLocation(false);
     }
   };
 
@@ -900,6 +950,23 @@ export default function Checkout({
               keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={false}
             >
+              <Pressable
+                accessibilityRole="button"
+                disabled={fetchingAddressLocation}
+                onPress={fetchAddressLocation}
+                className="mb-4 h-[44px] flex-row items-center justify-center rounded-[12px] border border-[#F6C79F] bg-[#FFF5ED] disabled:opacity-60"
+              >
+                {fetchingAddressLocation ? (
+                  <ActivityIndicator size="small" color="#F97316" />
+                ) : (
+                  <MapPin size={15} color="#B94719" />
+                )}
+                <Text className="ml-2 text-[12px] font-bold text-[#B94719]">
+                  {fetchingAddressLocation
+                    ? 'Fetching your address…'
+                    : 'Use my current location'}
+                </Text>
+              </Pressable>
               <View className="flex-row gap-3">
                 <View className="flex-1">
                   <CheckoutInput

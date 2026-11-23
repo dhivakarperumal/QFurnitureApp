@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Modal,
@@ -29,6 +29,12 @@ import {
   hasCachedApiData,
 } from '../../apiCache';
 import { useUserAlert } from '../UserAlert';
+import {
+  fetchCurrentAddress,
+  getLocationErrorCode,
+  locationErrorMessage,
+  openLocationSettings,
+} from '../location';
 import { INDIAN_STATES, INDIAN_UNION_TERRITORIES } from './indianStates';
 
 type Address = {
@@ -163,8 +169,10 @@ type AddressFormModalProps = {
   draft: AddressDraft;
   editing: boolean;
   saving: boolean;
+  locating: boolean;
   error: string;
   onDraftChange: (draft: AddressDraft) => void;
+  onUseCurrentLocation: () => void;
   onSave: () => void;
   onClose: () => void;
 };
@@ -174,8 +182,10 @@ function AddressFormModal({
   draft,
   editing,
   saving,
+  locating,
   error,
   onDraftChange,
+  onUseCurrentLocation,
   onSave,
   onClose,
 }: AddressFormModalProps) {
@@ -243,6 +253,21 @@ function AddressFormModal({
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 20, paddingBottom: 12 }}
           >
+          <Pressable
+            accessibilityRole="button"
+            disabled={locating}
+            onPress={onUseCurrentLocation}
+            className="mb-4 h-[44px] flex-row items-center justify-center rounded-[12px] border border-[#F6C79F] bg-[#FFF5ED] disabled:opacity-60"
+          >
+            {locating ? (
+              <ActivityIndicator size="small" color="#F97316" />
+            ) : (
+              <MapPin size={15} color="#B94719" />
+            )}
+            <Text className="ml-2 text-[12px] font-bold text-[#B94719]">
+              {locating ? 'Fetching your address…' : 'Use my current location'}
+            </Text>
+          </Pressable>
             <View className="flex-row gap-3">
               <View className="flex-1">
                 <FormInput label="Label" value={draft.label} onChangeText={set('label')} placeholder="Home, Office..." required />
@@ -355,7 +380,10 @@ export default function AddressesScreen({ onBack: _onBack }: AddressesScreenProp
   const [draft, setDraft] = useState<AddressDraft>(emptyDraft());
   const [formError, setFormError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [locating, setLocating] = useState(false);
+  const [addressesLoaded, setAddressesLoaded] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const autoOpenedEmptyForm = useRef(false);
 
   // User info for pre-filling
   const [userName, setUserName] = useState('');
@@ -395,6 +423,7 @@ export default function AddressesScreen({ onBack: _onBack }: AddressesScreenProp
       if (__DEV__) console.warn('[AddressesScreen] Load error:', err);
     } finally {
       setLoading(false);
+      setAddressesLoaded(true);
     }
   }, []);
 
@@ -419,6 +448,19 @@ export default function AddressesScreen({ onBack: _onBack }: AddressesScreenProp
     setDraft(d => ({ ...d, is_default: addresses.length === 0 }));
     setFormOpen(true);
   };
+
+  useEffect(() => {
+    if (
+      addressesLoaded &&
+      !loading &&
+      !error &&
+      addresses.length === 0 &&
+      !autoOpenedEmptyForm.current
+    ) {
+      autoOpenedEmptyForm.current = true;
+      openNewForm();
+    }
+  }, [addresses, addressesLoaded, error, loading]);
 
   const openEditForm = (address: Address) => {
     setEditingId(address.id);
@@ -462,6 +504,43 @@ export default function AddressesScreen({ onBack: _onBack }: AddressesScreenProp
       setFormError(msg);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const fetchAddressLocation = async () => {
+    if (locating) return;
+    setLocating(true);
+    setFormError('');
+    try {
+      const location = await fetchCurrentAddress();
+      setDraft(current => ({ ...current, ...location }));
+    } catch (err) {
+      const message = locationErrorMessage(err);
+      setFormError(message);
+      if ([1, 2].includes(getLocationErrorCode(err) ?? -1)) {
+        showUserAlert(
+          getLocationErrorCode(err) === 1
+            ? 'Location permission needed'
+            : 'Turn on device location',
+          `${message} The address form will stay open. Return here and tap Use my current location after enabling it.`,
+          [
+            { text: 'Not now', style: 'cancel' },
+            {
+              text: 'Open settings',
+              onPress: () => {
+                openLocationSettings(err).catch(settingsError => {
+                  showUserAlert(
+                    'Could not open settings',
+                    locationErrorMessage(settingsError),
+                  );
+                });
+              },
+            },
+          ],
+        );
+      }
+    } finally {
+      setLocating(false);
     }
   };
 
@@ -677,8 +756,10 @@ export default function AddressesScreen({ onBack: _onBack }: AddressesScreenProp
         draft={draft}
         editing={editingId !== null}
         saving={saving}
+        locating={locating}
         error={formError}
         onDraftChange={setDraft}
+        onUseCurrentLocation={fetchAddressLocation}
         onSave={saveAddress}
         onClose={() => { setFormOpen(false); setFormError(''); }}
       />
