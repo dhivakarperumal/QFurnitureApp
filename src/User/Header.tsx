@@ -8,6 +8,7 @@ import { useUserAlert } from './UserAlert';
 
 type HeaderProps = {
   activeTab: StoreTab;
+  isGuest: boolean;
   favoriteCount: number;
   topInset: number;
   onFavoritesPress: () => void;
@@ -17,6 +18,7 @@ type HeaderProps = {
 
 export default function Header({
   activeTab,
+  isGuest,
   favoriteCount,
   topInset,
   onFavoritesPress,
@@ -77,7 +79,7 @@ export default function Header({
       mounted = false;
     };
   }, []);
-  const userInitial = userName.trim().charAt(0).toUpperCase();
+  const userInitial = isGuest ? '' : userName.trim().charAt(0).toUpperCase();
 
   return (
     <View
@@ -164,15 +166,15 @@ export default function Header({
             <View className="absolute right-0 top-[50px] z-[30] w-[230px] rounded-[12px] border border-[#E5E7EB] bg-white p-2 shadow-lg elevation-[12]">
               <View className="border-b border-[#E5E7EB] px-2 pb-2">
                 <Text numberOfLines={1} className="text-[14px] font-bold text-[#17191C]">
-                  {userName || 'My Account'}
+                  {isGuest ? 'Guest' : userName || 'My Account'}
                 </Text>
                 <Text numberOfLines={1} className="mt-1 text-[12px] text-[#6B7280]">
-                  {userEmail || 'Email unavailable'}
+                  {isGuest ? 'Sign in to access your account' : userEmail || 'Email unavailable'}
                 </Text>
               </View>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="Open account"
+                accessibilityLabel={isGuest ? 'Log in' : 'Open account'}
                 onPress={() => {
                   setProfileMenuVisible(false);
                   onProfilePress();
@@ -180,33 +182,35 @@ export default function Header({
                 className="h-[42px] flex-row items-center rounded-[8px] px-2">
                 <UserRound size={18} color="#17191C" />
                 <Text className="ml-2 text-[14px] font-bold text-[#17191C]">
-                  Account
+                  {isGuest ? 'Log in' : 'Account'}
                 </Text>
               </Pressable>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Log out"
-                onPress={() => {
-                  setProfileMenuVisible(false);
-                  showUserAlert(
-                    'Sign Out',
-                    'Are you sure you want to sign out?',
-                    [
-                      { text: 'Cancel', style: 'cancel' },
-                      {
-                        text: 'Sign Out',
-                        style: 'destructive',
-                        onPress: onLogoutPress,
-                      },
-                    ],
-                  );
-                }}
-                className="h-[42px] flex-row items-center rounded-[8px] px-2">
-                <LogOut size={18} color="#DC2626" />
-                <Text className="ml-2 text-[14px] font-bold text-[#DC2626]">
-                  Logout
-                </Text>
-              </Pressable>
+              {!isGuest ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Log out"
+                  onPress={() => {
+                    setProfileMenuVisible(false);
+                    showUserAlert(
+                      'Sign Out',
+                      'Are you sure you want to sign out?',
+                      [
+                        { text: 'Cancel', style: 'cancel' },
+                        {
+                          text: 'Sign Out',
+                          style: 'destructive',
+                          onPress: onLogoutPress,
+                        },
+                      ],
+                    );
+                  }}
+                  className="h-[42px] flex-row items-center rounded-[8px] px-2">
+                  <LogOut size={18} color="#DC2626" />
+                  <Text className="ml-2 text-[14px] font-bold text-[#DC2626]">
+                    Logout
+                  </Text>
+                </Pressable>
+              ) : null}
             </View>
           ) : null}
         </View>

@@ -64,6 +64,7 @@ function AppContent() {
   const showAdminAlert = useAdminAlert();
 
   const [authenticated, setAuthenticated] = useState(false);
+  const [guestMode, setGuestMode] = useState(false);
   const [userRole, setUserRole] = useState<AppRole>('user');
   const [checkingSession, setCheckingSession] = useState(true);
   const [showWelcome, setShowWelcome] = useState(false);
@@ -145,13 +146,22 @@ function AppContent() {
   const completeWelcome = async () => {
     try {
       await AsyncStorage.setItem('hasSeenWelcome', 'true');
+      setGuestMode(true);
       setShowWelcome(false);
     } catch (error) {
       if (__DEV__) console.warn('[App] Could not save welcome status:', error);
       Alert.alert(
         'Could not save welcome status',
         'You can continue now, but this welcome screen may appear again next time.',
-        [{ text: 'Continue', onPress: () => setShowWelcome(false) }],
+        [
+          {
+            text: 'Continue',
+            onPress: () => {
+              setGuestMode(true);
+              setShowWelcome(false);
+            },
+          },
+        ],
         { cancelable: false },
       );
     }
@@ -177,6 +187,7 @@ function AppContent() {
     setDetailsOrder(null);
     setUserRole('user');
     setAuthenticated(false);
+    setGuestMode(false);
   };
 
   const handleDrawerItemPress = (item: DrawerDestination) => {
@@ -360,14 +371,16 @@ function AppContent() {
     );
   }
 
-  if (!authenticated) {
+  if (!authenticated && !guestMode) {
     return authScreen === 'login' ? (
       <Login
         onLogin={role => {
           setUserRole(role);
+          setGuestMode(false);
           setAuthenticated(true);
         }}
         onRegisterPress={() => setAuthScreen('register')}
+        onContinueAsGuest={() => setGuestMode(true)}
       />
     ) : (
       <Register onLoginPress={() => setAuthScreen('login')} />
@@ -377,7 +390,14 @@ function AppContent() {
   if (userRole === 'user') {
     return (
       <UserAlertProvider>
-        <Storefront onLogoutPress={handleLogout} />
+        <Storefront
+          isGuest={!authenticated}
+          onLoginPress={() => {
+            setGuestMode(false);
+            setAuthScreen('login');
+          }}
+          onLogoutPress={handleLogout}
+        />
       </UserAlertProvider>
     );
   }

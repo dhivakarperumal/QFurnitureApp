@@ -25,6 +25,7 @@ import { normalizeRole, type AppRole } from './roles';
 type LoginProps = {
   onLogin: (role: AppRole) => void;
   onRegisterPress: () => void;
+  onContinueAsGuest: () => void;
 };
 
 type LoginResponse = {
@@ -36,7 +37,11 @@ type LoginResponse = {
   };
 };
 
-export default function Login({ onLogin, onRegisterPress }: LoginProps) {
+export default function Login({
+  onLogin,
+  onRegisterPress,
+  onContinueAsGuest,
+}: LoginProps) {
   const insets = useSafeAreaInsets();
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
@@ -278,6 +283,15 @@ export default function Login({ onLogin, onRegisterPress }: LoginProps) {
                   </Text>
                 </>
               )}
+            </Pressable>
+
+            <Pressable
+              accessibilityRole="button"
+              onPress={onContinueAsGuest}
+              className="mt-3 h-[48px] items-center justify-center rounded-[12px] border border-[#F97316] bg-white">
+              <Text style={{ color: colors.primary }} className="text-[14px] font-bold">
+                Continue as guest
+              </Text>
             </Pressable>
 
             <View className="mt-5 flex-row justify-center">

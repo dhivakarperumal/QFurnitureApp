@@ -170,14 +170,29 @@ function accountDeletionErrorMessage(error: unknown) {
 }
 
 export default function Storefront({
+  isGuest,
+  onLoginPress,
   onLogoutPress,
 }: {
+  isGuest: boolean;
+  onLoginPress: () => void;
   onLogoutPress: () => void;
 }) {
   const insets = useSafeAreaInsets();
   const { width: screenWidth } = useWindowDimensions();
   const showUserAlert = useUserAlert();
   const showUserToast = useUserToast();
+  const requestLogin = useCallback(
+    (feature: string) => {
+      if (!isGuest) return false;
+      showUserAlert('Login required', `Please log in to ${feature}.`, [
+        { text: 'Not now', style: 'cancel' },
+        { text: 'Log in', onPress: onLoginPress },
+      ]);
+      return true;
+    },
+    [isGuest, onLoginPress, showUserAlert],
+  );
   useEffect(() => {
     setUserNavigationBarAppearance(true).catch(error => {
       console.warn('[Storefront] Could not set user navigation bar style:', error);
@@ -216,7 +231,7 @@ export default function Storefront({
     () => getCachedApiData<StoreFavorite[]>(FAVORITES_CACHE_KEY) ?? [],
   );
   const [favoritesLoading, setFavoritesLoading] = useState(
-    () => !hasCachedApiData(FAVORITES_CACHE_KEY),
+    () => !isGuest && !hasCachedApiData(FAVORITES_CACHE_KEY),
   );
   const [favoritesError, setFavoritesError] = useState<string | null>(null);
   const [pendingFavoriteIds, setPendingFavoriteIds] = useState<string[]>([]);
@@ -224,7 +239,7 @@ export default function Storefront({
   const [addingFavoritesToCart, setAddingFavoritesToCart] = useState(false);
   const [cartItems, setCartItems] = useState<StoreCartItem[]>([]);
   const [buyNowItem, setBuyNowItem] = useState<StoreBuyNowItem | null>(null);
-  const [cartLoading, setCartLoading] = useState(true);
+  const [cartLoading, setCartLoading] = useState(!isGuest);
   const [cartError, setCartError] = useState<string | null>(null);
   const [pendingCartIds, setPendingCartIds] = useState<string[]>([]);
   const [clearingCart, setClearingCart] = useState(false);
@@ -439,6 +454,12 @@ export default function Storefront({
 
   const handleTabPress = useCallback(
     (tab: StoreTab) => {
+      if (
+        (tab === 'Cart' && requestLogin('view your cart')) ||
+        (tab === 'Favorites' && requestLogin('view your favorites'))
+      ) {
+        return;
+      }
       setDetailTarget(null);
       setCheckoutOpen(false);
       if (tab !== 'Profile' || activeTab !== 'Profile') {
@@ -450,7 +471,7 @@ export default function Storefront({
       }
       setActiveTab(tab);
     },
-    [activeTab, moreDestination],
+    [activeTab, moreDestination, requestLogin],
   );
 
   const deleteAccount = () => {
@@ -487,6 +508,7 @@ export default function Storefront({
   };
 
   useEffect(() => {
+    if (isGuest) return;
     loadCart().catch(error => {
       if (__DEV__) console.warn('[Storefront] Could not load the cart:', error);
     });
@@ -494,7 +516,7 @@ export default function Storefront({
       if (__DEV__)
         console.warn('[Storefront] Could not load favorites:', error);
     });
-  }, [loadCart, loadFavorites]);
+  }, [isGuest, loadCart, loadFavorites]);
 
   const favoriteIds = useMemo(
     () => favoriteItems.map(favoriteKey),
@@ -527,6 +549,7 @@ export default function Storefront({
   );
 
   const toggleFavorite = async (productId: string, productName?: string) => {
+    if (requestLogin('save favorites')) return;
     if (
       pendingFavoriteIds.includes(productId) ||
       clearingFavorites ||
@@ -666,6 +689,7 @@ export default function Storefront({
     productId: string,
     options: string | StoreAddToCartOptions = {},
   ): Promise<boolean> => {
+    if (requestLogin('add items to your cart')) return false;
     if (pendingCartIds.includes(productId)) return false;
     setPendingCartIds(current => [...current, productId]);
     let name =
@@ -794,6 +818,7 @@ export default function Storefront({
   };
 
   const buyNow = (item: StoreBuyNowItem) => {
+    if (requestLogin('place an order')) return;
     setBuyNowItem(item);
     setDetailTarget(null);
     setCheckoutOpen(true);
@@ -1162,7 +1187,19 @@ export default function Storefront({
     }
 
     if (moreDestination === 'menu') {
-      return <MoreMenu onSelect={setMoreDestination} />;
+      return (
+        <MoreMenu
+          onSelect={destination => {
+            if (
+              destination === 'account' &&
+              requestLogin('open your account')
+            ) {
+              return;
+            }
+            setMoreDestination(destination);
+          }}
+        />
+      );
     }
 
     if (moreDestination === 'about') {
@@ -1242,10 +1279,12 @@ export default function Storefront({
       <StatusBar barStyle="light-content" />
       <Header
         activeTab={activeTab}
+        isGuest={isGuest}
         favoriteCount={favoriteItems.length}
         topInset={insets.top}
         onFavoritesPress={() => handleTabPress('Favorites')}
         onProfilePress={() => {
+          if (requestLogin('open your account')) return;
           setDetailTarget(null);
           setCheckoutOpen(false);
           setBuyNowItem(null);
