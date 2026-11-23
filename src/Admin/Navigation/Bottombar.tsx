@@ -9,8 +9,8 @@ import {
   ViewStyle,
 } from 'react-native';
 import {
-  Home,
-  Package,
+  HouseHeart,
+  PackageSearch,
   ShoppingBag,
   SquareArrowUpRightEnter,
 } from 'lucide-react-native';
@@ -72,9 +72,9 @@ function TabIcon({
 
   switch (destination) {
     case 'Home':
-      return <Home {...iconProps} />;
+      return <HouseHeart {...iconProps} />;
     case 'Products':
-      return <Package {...iconProps} />;
+      return <PackageSearch {...iconProps} />;
     case 'Orders':
       return <ShoppingBag {...iconProps} />;
     case 'More':
