@@ -1284,7 +1284,10 @@ export default function Storefront({
         topInset={insets.top}
         onFavoritesPress={() => handleTabPress('Favorites')}
         onProfilePress={() => {
-          if (requestLogin('open your account')) return;
+          if (isGuest) {
+            onLoginPress();
+            return;
+          }
           setDetailTarget(null);
           setCheckoutOpen(false);
           setBuyNowItem(null);

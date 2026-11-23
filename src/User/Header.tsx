@@ -150,9 +150,17 @@ export default function Header({
         <View className="relative">
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Open profile menu"
-            accessibilityState={{ expanded: profileMenuVisible }}
-            onPress={() => setProfileMenuVisible(visible => !visible)}
+            accessibilityLabel={isGuest ? 'Log in' : 'Open profile menu'}
+            accessibilityState={
+              isGuest ? undefined : { expanded: profileMenuVisible }
+            }
+            onPress={() => {
+              if (isGuest) {
+                onProfilePress();
+                return;
+              }
+              setProfileMenuVisible(visible => !visible);
+            }}
             className="h-[42px] w-[42px] items-center justify-center rounded-full bg-white/15">
             {userInitial ? (
               <Text className="text-[18px] font-black text-white">
@@ -162,7 +170,7 @@ export default function Header({
               <UserRound size={22} color="#FFFFFF" />
             )}
           </Pressable>
-          {profileMenuVisible ? (
+          {!isGuest && profileMenuVisible ? (
             <View className="absolute right-0 top-[50px] z-[30] w-[230px] rounded-[12px] border border-[#E5E7EB] bg-white p-2 shadow-lg elevation-[12]">
               <View className="border-b border-[#E5E7EB] px-2 pb-2">
                 <Text numberOfLines={1} className="text-[14px] font-bold text-[#17191C]">
