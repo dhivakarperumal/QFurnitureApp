@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Linking,
   Modal,
   PermissionsAndroid,
   Platform,
@@ -290,21 +291,30 @@ export default function Checkout({
     (subtotal === null ? 'Cart prices are invalid. Please refresh your cart.' : '');
 
   const requestLocation = async () => {
+    let enableHighAccuracy = true;
     if (Platform.OS === 'android') {
       const permissions = await PermissionsAndroid.requestMultiple([
         PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
         PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION,
       ]);
-      const granted = Object.values(permissions).some(
-        result => result === PermissionsAndroid.RESULTS.GRANTED,
-      );
-      if (!granted) {
+      const fineLocationGranted =
+        permissions[PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION] ===
+        PermissionsAndroid.RESULTS.GRANTED;
+      const coarseLocationGranted =
+        permissions[PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION] ===
+        PermissionsAndroid.RESULTS.GRANTED;
+      if (!fineLocationGranted && !coarseLocationGranted) {
         showUserAlert(
           'Location permission needed',
           'Allow location access to attach your current GPS coordinates to the delivery.',
         );
         return;
       }
+      enableHighAccuracy = fineLocationGranted;
+      Geolocation.setRNConfiguration({
+        skipPermissionRequests: true,
+        locationProvider: 'playServices',
+      });
     } else {
       const authorized = await new Promise<boolean>(resolve => {
         Geolocation.requestAuthorization(
@@ -332,12 +342,39 @@ export default function Checkout({
       },
       error => {
         setLocationLoading(false);
+        const message = error.message || 'Check location settings and try again.';
+        if (
+          Platform.OS === 'android' &&
+          /no location provider|location not available/i.test(message)
+        ) {
+          showUserAlert(
+            'Location services are off',
+            'Turn on Location in your device settings, then try again.',
+            [
+              { text: 'Cancel', style: 'cancel' },
+              {
+                text: 'Open settings',
+                onPress: () => {
+                  Linking.sendIntent(
+                    'android.settings.LOCATION_SOURCE_SETTINGS',
+                  ).catch(() => {
+                    showUserAlert(
+                      'Could not open settings',
+                      'Open your device Location settings manually and try again.',
+                    );
+                  });
+                },
+              },
+            ],
+          );
+          return;
+        }
         showUserAlert(
           'Could not fetch location',
-          error.message || 'Check location settings and try again.',
+          message,
         );
       },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
+      { enableHighAccuracy, timeout: 15000, maximumAge: 0 },
     );
   };
 
