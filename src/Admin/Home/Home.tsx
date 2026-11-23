@@ -592,7 +592,9 @@ export default function Home({
       }
       contentContainerClassName="px-3 pb-[255px]"
       style={{ paddingTop: insets.top + 84 }}>
-      <View className="mb-4 min-h-[148px] justify-center overflow-hidden rounded-[22px] px-5 py-5">
+      <View
+        style={{ aspectRatio: 3 }}
+        className="mb-4 justify-center overflow-hidden rounded-[22px] px-5 py-3">
         <Image
           source={require('../../Assert/images/welcome.png')}
           resizeMode="cover"
