@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  AppState,
   ActivityIndicator,
   Linking,
   Modal,
@@ -209,6 +210,7 @@ export default function Checkout({
   const [coordinates, setCoordinates] = useState<Coordinates | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
+  const pendingLocationRetry = React.useRef(false);
 
   useEffect(() => {
     let active = true;
@@ -344,45 +346,51 @@ export default function Checkout({
     gstSettingsError ||
     (subtotal === null ? 'Cart prices are invalid. Please refresh your cart.' : '');
 
-  const requestLocation = async () => {
+  const requestLocation = useCallback(async () => {
     let enableHighAccuracy = true;
-    if (Platform.OS === 'android') {
-      const permissions = await PermissionsAndroid.requestMultiple([
-        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-        PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION,
-      ]);
-      const fineLocationGranted =
-        permissions[PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION] ===
-        PermissionsAndroid.RESULTS.GRANTED;
-      const coarseLocationGranted =
-        permissions[PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION] ===
-        PermissionsAndroid.RESULTS.GRANTED;
-      if (!fineLocationGranted && !coarseLocationGranted) {
-        showUserAlert(
-          'Location permission needed',
-          'Allow location access to attach your current GPS coordinates to the delivery.',
-        );
-        return;
+    pendingLocationRetry.current = false;
+    try {
+      if (Platform.OS === 'android') {
+        const permissions = await PermissionsAndroid.requestMultiple([
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+          PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION,
+        ]);
+        const fineLocationGranted =
+          permissions[PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION] ===
+          PermissionsAndroid.RESULTS.GRANTED;
+        const coarseLocationGranted =
+          permissions[PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION] ===
+          PermissionsAndroid.RESULTS.GRANTED;
+        if (!fineLocationGranted && !coarseLocationGranted) {
+          showUserAlert(
+            'Location permission needed',
+            'Allow location access to attach your current GPS coordinates to the delivery.',
+          );
+          return;
+        }
+        enableHighAccuracy = fineLocationGranted;
+        Geolocation.setRNConfiguration({
+          skipPermissionRequests: true,
+          locationProvider: 'playServices',
+        });
+      } else {
+        const authorized = await new Promise<boolean>(resolve => {
+          Geolocation.requestAuthorization(
+            () => resolve(true),
+            () => resolve(false),
+          );
+        });
+        if (!authorized) {
+          showUserAlert(
+            'Location permission needed',
+            'Allow location access to attach your current GPS coordinates to the delivery.',
+          );
+          return;
+        }
       }
-      enableHighAccuracy = fineLocationGranted;
-      Geolocation.setRNConfiguration({
-        skipPermissionRequests: true,
-        locationProvider: 'playServices',
-      });
-    } else {
-      const authorized = await new Promise<boolean>(resolve => {
-        Geolocation.requestAuthorization(
-          () => resolve(true),
-          () => resolve(false),
-        );
-      });
-      if (!authorized) {
-        showUserAlert(
-          'Location permission needed',
-          'Allow location access to attach your current GPS coordinates to the delivery.',
-        );
-        return;
-      }
+    } catch (error) {
+      showUserAlert('Could not request location', responseMessage(error));
+      return;
     }
 
     setLocationLoading(true);
@@ -397,21 +405,23 @@ export default function Checkout({
       error => {
         setLocationLoading(false);
         const message = error.message || 'Check location settings and try again.';
-        if (
-          Platform.OS === 'android' &&
-          /no location provider|location not available/i.test(message)
-        ) {
+        const locationServicesOff =
+          error.code === 2 ||
+          /no location provider|location not available/i.test(message);
+        if (Platform.OS === 'android' && locationServicesOff) {
           showUserAlert(
             'Location services are off',
-            'Turn on Location in your device settings, then try again.',
+            'Turn on Location in your device settings, then return here. We will retry automatically.',
             [
               { text: 'Cancel', style: 'cancel' },
               {
                 text: 'Open settings',
                 onPress: () => {
+                  pendingLocationRetry.current = true;
                   Linking.sendIntent(
                     'android.settings.LOCATION_SOURCE_SETTINGS',
                   ).catch(() => {
+                    pendingLocationRetry.current = false;
                     showUserAlert(
                       'Could not open settings',
                       'Open your device Location settings manually and try again.',
@@ -430,7 +440,18 @@ export default function Checkout({
       },
       { enableHighAccuracy, timeout: 15000, maximumAge: 0 },
     );
-  };
+  }, [showUserAlert]);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', nextState => {
+      if (nextState === 'active' && pendingLocationRetry.current) {
+        pendingLocationRetry.current = false;
+        requestLocation();
+      }
+    });
+
+    return () => subscription.remove();
+  }, [requestLocation]);
 
   const saveAddress = async () => {
     if (
