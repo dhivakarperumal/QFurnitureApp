@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, Text, useWindowDimensions, View } from 'react-native';
 import ProductCard from './ProductCard';
 import { SkeletonList } from './Skeletons';
 import api from '../api';
@@ -49,6 +49,8 @@ export default function ComboOffers({
   onAddToCart,
   onProductPress,
 }: ComboOffersProps) {
+  const { width } = useWindowDimensions();
+  const cardWidth = (width - 56) / 2;
   const [combos, setCombos] = useState<ComboOffer[]>(
     () => getCachedApiData<ComboOffer[]>(COMBOS_CACHE_KEY) ?? [],
   );
@@ -156,7 +158,7 @@ export default function ComboOffers({
                 key={productId}
                 product={product}
                 favorite={favorites.includes(productId)}
-                compact
+                cardWidth={cardWidth}
                 onFavoritePress={onFavoritePress}
                 onAddToCart={onAddToCart}
                 onProductPress={() => onProductPress(productId, combo)}

@@ -248,6 +248,7 @@ export default function Shop({
 }: ShopProps) {
   const [filtersVisible, setFiltersVisible] = useState(false);
   const { width: screenWidth } = useWindowDimensions();
+  const cardWidth = (screenWidth - 48) / 2;
   const insets = useSafeAreaInsets();
   const filtersTranslateX = useRef(new Animated.Value(screenWidth)).current;
   const [minPrice, setMinPrice] = useState<number | null>(null);
@@ -453,7 +454,7 @@ export default function Shop({
                   key={product.id}
                   product={product}
                   favorite={favorites.includes(String(product.id))}
-                  compact
+                  cardWidth={cardWidth}
                   onFavoritePress={onFavoritePress}
                   onAddToCart={onAddToCart}
                   onProductPress={onProductPress}
