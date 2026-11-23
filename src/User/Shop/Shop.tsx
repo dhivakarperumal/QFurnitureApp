@@ -17,7 +17,6 @@ import {
   ChevronDown,
   ChevronUp,
   Check,
-  LayoutGrid,
   SlidersHorizontal,
   X,
 } from 'lucide-react-native';
@@ -431,99 +430,48 @@ export default function Shop({
         })}
       </ScrollView>
 
-      <View className="flex-1 flex-row px-3">
-        <View className="mr-3 w-[88px] overflow-hidden rounded-[18px] border border-[#F0E7DE] bg-white">
-          <Pressable
-            accessibilityRole="button"
-            accessibilityState={{ selected: !selectedCategory }}
-            onPress={() => onCategoryChange('')}
-            className={`min-h-[82px] items-center justify-center px-1 py-3 ${
-              !selectedCategory ? 'border-l-[3px] border-[#F97316] bg-[#FFF4E7]' : ''
-            }`}>
-            <LayoutGrid
-              size={24}
-              color={!selectedCategory ? '#F97316' : '#263B2A'}
+      <View className="flex-1 px-3">
+        <Text className="mb-3 text-[11px] text-[#634D3B]">
+          {filteredProducts.length} furniture items
+        </Text>
+        <ScrollView
+          className="flex-1"
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor="#F97316"
             />
-            <Text className={`mt-2 text-center text-[11px] font-semibold leading-4 ${
-              !selectedCategory ? 'text-[#E87424]' : 'text-[#351D0E]'
-            }`}>
-              All Categories
-            </Text>
-          </Pressable>
-          <ScrollView
-            className="flex-1"
-            showsVerticalScrollIndicator={false}>
-            {categories.map(category => {
-              const active = selectedCategory === category.name;
-              return (
-                <Pressable
-                  key={category.catId ?? category.id ?? category.name}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: active }}
-                  onPress={() => onCategoryChange(active ? '' : category.name)}
-                  className={`min-h-[82px] items-center justify-center border-t border-[#FAF5EF] px-1 py-3 ${
-                    active ? 'border-l-[3px] border-[#F97316] bg-[#FFF4E7]' : ''
-                  }`}>
-                  <Armchair
-                    size={24}
-                    color={active ? '#F97316' : '#263B2A'}
-                  />
-                  <Text
-                    numberOfLines={3}
-                    className={`mt-2 text-center text-[10px] font-medium leading-[14px] ${
-                      active ? 'text-[#E87424]' : 'text-[#351D0E]'
-                    }`}>
-                    {category.name}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </ScrollView>
-        </View>
-
-        <View className="flex-1">
-          <Text className="mb-3 text-[11px] text-[#634D3B]">
-            {filteredProducts.length} furniture items
-          </Text>
-          <ScrollView
-            className="flex-1"
-            showsVerticalScrollIndicator={false}
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={onRefresh}
-                tintColor="#F97316"
-              />
-            }
-            contentContainerClassName="pb-6"
-          >
-            {filteredProducts.length ? (
-              <View className="flex-row flex-wrap justify-between">
-                {filteredProducts.map(product => (
-                  <ProductCard
-                    key={product.id}
-                    product={product}
-                    favorite={favorites.includes(String(product.id))}
-                    compact
-                    onFavoritePress={onFavoritePress}
-                    onAddToCart={onAddToCart}
-                    onProductPress={onProductPress}
-                  />
-                ))}
-              </View>
-            ) : (
-              <View className="items-center rounded-[18px] border border-dashed border-[#E7DCCF] bg-white px-3 py-8">
-                <Armchair size={30} color="#A78A70" />
-                <Text className="mt-2 text-center text-[12px] font-semibold text-[#351D0E]">
-                  No furniture found
-                </Text>
-                <Text className="mt-1 text-center text-[10px] text-[#8B735E]">
-                  Try another search or clear the filters.
-                </Text>
-              </View>
-            )}
-          </ScrollView>
-        </View>
+          }
+          contentContainerClassName="pb-6"
+        >
+          {filteredProducts.length ? (
+            <View className="flex-row flex-wrap justify-between">
+              {filteredProducts.map(product => (
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  favorite={favorites.includes(String(product.id))}
+                  compact
+                  onFavoritePress={onFavoritePress}
+                  onAddToCart={onAddToCart}
+                  onProductPress={onProductPress}
+                />
+              ))}
+            </View>
+          ) : (
+            <View className="items-center rounded-[18px] border border-dashed border-[#E7DCCF] bg-white px-3 py-8">
+              <Armchair size={30} color="#A78A70" />
+              <Text className="mt-2 text-center text-[12px] font-semibold text-[#351D0E]">
+                No furniture found
+              </Text>
+              <Text className="mt-1 text-center text-[10px] text-[#8B735E]">
+                Try another search or clear the filters.
+              </Text>
+            </View>
+          )}
+        </ScrollView>
       </View>
 
       <Modal
