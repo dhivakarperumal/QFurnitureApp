@@ -246,6 +246,7 @@ export default function Storefront({
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [accountSubScreen, setAccountSubScreen] =
     useState<AccountSubScreen>('menu');
+  const [accountReturnToMore, setAccountReturnToMore] = useState(false);
   const [moreDestination, setMoreDestination] =
     useState<MoreDestination | 'menu'>('menu');
   const [deletingAccount, setDeletingAccount] = useState(false);
@@ -464,9 +465,11 @@ export default function Storefront({
       setCheckoutOpen(false);
       if (tab !== 'Profile' || activeTab !== 'Profile') {
         setAccountSubScreen('menu');
+        setAccountReturnToMore(false);
         setMoreDestination('menu');
       } else if (moreDestination === 'account') {
         setAccountSubScreen('menu');
+        setAccountReturnToMore(false);
         setMoreDestination('menu');
       }
       setActiveTab(tab);
@@ -946,6 +949,14 @@ export default function Storefront({
     return undefined;
   })();
 
+  const handleAccountSubBack = useCallback(() => {
+    setAccountSubScreen('menu');
+    if (accountReturnToMore) {
+      setAccountReturnToMore(false);
+      setMoreDestination('menu');
+    }
+  }, [accountReturnToMore]);
+
   const handleInnerBack = () => {
     if (isDetailPage) {
       setDetailTarget(null);
@@ -953,7 +964,7 @@ export default function Storefront({
     } else if (moreDestination === 'about' || moreDestination === 'contact') {
       setMoreDestination('menu');
     } else {
-      setAccountSubScreen('menu');
+      handleAccountSubBack();
     }
   };
 
@@ -977,7 +988,7 @@ export default function Storefront({
         return true;
       }
       if (isAccountSubPage) {
-        setAccountSubScreen('menu');
+        handleAccountSubBack();
         return true;
       }
 
@@ -1013,6 +1024,7 @@ export default function Storefront({
     isDetailPage,
     isMoreContentPage,
     isAccountSubPage,
+    handleAccountSubBack,
     activeTab,
     handleTabPress,
     showUserAlert,
@@ -1175,6 +1187,7 @@ export default function Storefront({
               }
               setCheckoutOpen(false);
               setBuyNowItem(null);
+              setAccountReturnToMore(false);
               setDetailTarget(null);
               setDetailItemName('');
               setMoreDestination('account');
@@ -1211,6 +1224,26 @@ export default function Storefront({
         <MoreMenu
           onSelect={destination => {
             if (
+              destination === 'profile' ||
+              destination === 'addresses' ||
+              destination === 'orders' ||
+              destination === 'password'
+            ) {
+              const label =
+                destination === 'profile'
+                  ? 'view your profile'
+                  : destination === 'addresses'
+                    ? 'manage your addresses'
+                    : destination === 'orders'
+                      ? 'view your orders'
+                      : 'change your password';
+              if (requestLogin(label)) return;
+              setAccountReturnToMore(true);
+              setAccountSubScreen(destination);
+              setMoreDestination('account');
+              return;
+            }
+            if (
               destination === 'account' &&
               requestLogin('open your account')
             ) {
@@ -1246,16 +1279,16 @@ export default function Storefront({
     // My Account destination in the More tab
     return accountSubScreen === 'profile' ? (
       <ProfileScreen
-        onBack={() => setAccountSubScreen('menu')}
+        onBack={handleAccountSubBack}
         onDeleteAccount={deleteAccount}
         deletingAccount={deletingAccount}
       />
     ) : accountSubScreen === 'addresses' ? (
-      <AddressesScreen onBack={() => setAccountSubScreen('menu')} />
+      <AddressesScreen onBack={handleAccountSubBack} />
     ) : accountSubScreen === 'orders' ? (
-      <OrdersScreen onBack={() => setAccountSubScreen('menu')} />
+      <OrdersScreen onBack={handleAccountSubBack} />
     ) : accountSubScreen === 'password' ? (
-      <SetPasswordScreen onBack={() => setAccountSubScreen('menu')} />
+      <SetPasswordScreen onBack={handleAccountSubBack} />
     ) : (
       <AccountScreen
         onLogoutPress={onLogoutPress}
@@ -1317,6 +1350,7 @@ export default function Storefront({
           setDetailTarget(null);
           setCheckoutOpen(false);
           setBuyNowItem(null);
+          setAccountReturnToMore(false);
           setAccountSubScreen('menu');
           setMoreDestination('account');
           setActiveTab('Profile');

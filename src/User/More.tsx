@@ -3,18 +3,31 @@ import { Pressable, Text, View } from 'react-native';
 import {
   ChevronRight,
   Info,
+  KeyRound,
   Mail,
+  MapPin,
+  PackageCheck,
   UserRound,
 } from 'lucide-react-native';
 
-export type MoreDestination = 'account' | 'about' | 'contact';
+export type MoreDestination =
+  | 'account'
+  | 'profile'
+  | 'addresses'
+  | 'orders'
+  | 'password'
+  | 'about'
+  | 'contact';
 
 type MoreMenuProps = {
   onSelect: (destination: MoreDestination) => void;
 };
 
 const menuItems = [
-  { destination: 'account', label: 'My Account', icon: UserRound },
+  { destination: 'profile', label: 'Profile', icon: UserRound },
+  { destination: 'addresses', label: 'Addresses', icon: MapPin },
+  { destination: 'orders', label: 'Orders', icon: PackageCheck },
+  { destination: 'password', label: 'Set Password', icon: KeyRound },
   { destination: 'about', label: 'About Us', icon: Info },
   { destination: 'contact', label: 'Contact Us', icon: Mail },
 ] as const;
