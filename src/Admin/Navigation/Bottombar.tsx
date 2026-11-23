@@ -8,7 +8,12 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
-import { Home, Menu, Package, ShoppingBag } from 'lucide-react-native';
+import {
+  Home,
+  Package,
+  ShoppingBag,
+  SquareArrowUpRightEnter,
+} from 'lucide-react-native';
 import Svg, {
   Circle,
   ClipPath,
@@ -73,7 +78,7 @@ function TabIcon({
     case 'Orders':
       return <ShoppingBag {...iconProps} />;
     case 'More':
-      return <Menu {...iconProps} />;
+      return <SquareArrowUpRightEnter {...iconProps} />;
   }
 }
 

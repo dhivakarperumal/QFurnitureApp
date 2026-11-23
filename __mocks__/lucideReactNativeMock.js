@@ -21,6 +21,7 @@ module.exports = {
   Package: Icon,
   PackageCheck: Icon,
   ShoppingBag: Icon,
+  SquareArrowUpRightEnter: Icon,
   Store: Icon,
   Tag: Icon,
   Truck: Icon,
