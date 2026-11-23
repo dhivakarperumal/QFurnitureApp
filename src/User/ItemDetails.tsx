@@ -46,7 +46,8 @@ type DetailItem = StoreProduct & {
 export type ItemDetailsProps = {
   itemId: string;
   itemType: 'product' | 'combo';
-  isGuest?: boolean;
+  isGuest: boolean;
+  onLoginPress: () => void;
   initialItem?: StoreProduct;
   favorite: boolean;
   onFavoritePress: (productId: string, productName?: string) => void;
@@ -114,7 +115,8 @@ function getGallery(
 export default function ItemDetails({
   itemId,
   itemType,
-  isGuest = false,
+  isGuest,
+  onLoginPress,
   initialItem,
   favorite,
   onFavoritePress,
@@ -613,6 +615,8 @@ export default function ItemDetails({
                 : item.product_id ?? item.id ?? itemId
             }
             itemType={itemType}
+            isGuest={isGuest}
+            onLoginPress={onLoginPress}
           />
 
           {itemType === 'combo' ? (

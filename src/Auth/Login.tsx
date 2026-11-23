@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   ActivityIndicator,
-  Alert,
   Keyboard,
   Image,
   KeyboardAvoidingView,
@@ -23,6 +22,7 @@ import api, { setTokenCache } from '../api';
 import { colors } from '../theme/colors';
 import { googleAuthError, signInWithGoogle } from '../services/googleAuth';
 import { normalizeRole, type AppRole } from './roles';
+import { useUserAlert } from '../User/UserAlert';
 
 type LoginProps = {
   onLogin: (role: AppRole) => void;
@@ -45,6 +45,7 @@ export default function Login({
   onContinueAsGuest,
 }: LoginProps) {
   const insets = useSafeAreaInsets();
+  const showUserAlert = useUserAlert();
   const scrollViewRef = useRef<ScrollViewInstance | null>(null);
   const signInButtonRef = useRef<ViewInstance | null>(null);
   const [identifier, setIdentifier] = useState('');
@@ -110,7 +111,7 @@ export default function Login({
         error?.data?.message ||
         error?.message ||
         googleAuthError(error);
-      Alert.alert('Google login failed', message);
+      showUserAlert('Google login failed', message);
     } finally {
       setGoogleSubmitting(false);
     }
@@ -120,7 +121,10 @@ export default function Login({
     const normalizedIdentifier = identifier.trim();
 
     if (!normalizedIdentifier || !password) {
-      Alert.alert('Missing details', 'Enter your username, email or mobile number and password.');
+      showUserAlert(
+        'Missing details',
+        'Enter your username, email or mobile number and password.',
+      );
       return;
     }
 
@@ -149,7 +153,7 @@ export default function Login({
         error?.message ||
         error?.data?.message ||
         'Unable to sign in. Please check your details and try again.';
-      Alert.alert('Login failed', message);
+      showUserAlert('Login failed', message);
     } finally {
       setSubmitting(false);
     }

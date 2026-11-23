@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Image,
   Pressable,
   Text,
@@ -22,12 +21,15 @@ import {
 import api from '../api';
 import { invalidateCachedApiData } from '../apiCache';
 import { mediaUrl } from './utils';
+import { useUserAlert } from './UserAlert';
 
 type ReviewItemType = 'product' | 'combo';
 
 type ReviewFormProps = {
   itemId: string | number;
   itemType: ReviewItemType;
+  isGuest: boolean;
+  onLoginPress: () => void;
 };
 
 function getErrorMessage(error: unknown, fallback: string) {
@@ -56,7 +58,22 @@ function imageFileName(asset: Asset) {
   return `review-${Date.now()}.${asset.type?.split('/')[1] || 'jpg'}`;
 }
 
-export default function ReviewForm({ itemId, itemType }: ReviewFormProps) {
+function isUnauthorizedError(error: unknown) {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'status' in error &&
+    Number(error.status) === 401
+  );
+}
+
+export default function ReviewForm({
+  itemId,
+  itemType,
+  isGuest,
+  onLoginPress,
+}: ReviewFormProps) {
+  const showUserAlert = useUserAlert();
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -73,6 +90,7 @@ export default function ReviewForm({ itemId, itemType }: ReviewFormProps) {
   }, [itemId, itemType]);
 
   useEffect(() => {
+    if (isGuest) return;
     let active = true;
     const loadReviewer = async () => {
       let savedName = '';
@@ -125,7 +143,14 @@ export default function ReviewForm({ itemId, itemType }: ReviewFormProps) {
     return () => {
       active = false;
     };
-  }, []);
+  }, [isGuest]);
+
+  const showLoginRequired = () => {
+    showUserAlert('Login required', 'Please log in to write a review.', [
+      { text: 'Not now', style: 'cancel' },
+      { text: 'Log in', onPress: onLoginPress },
+    ]);
+  };
 
   const uploadImage = async () => {
     let pickerResult: ImagePickerResponse;
@@ -137,7 +162,7 @@ export default function ReviewForm({ itemId, itemType }: ReviewFormProps) {
       });
     } catch (error) {
       if (__DEV__) console.warn('[ReviewForm] Photo selection failed:', error);
-      Alert.alert(
+      showUserAlert(
         'Photo unavailable',
         getErrorMessage(error, 'Could not open the photo library.'),
       );
@@ -145,7 +170,7 @@ export default function ReviewForm({ itemId, itemType }: ReviewFormProps) {
     }
     if (pickerResult.didCancel) return;
     if (pickerResult.errorCode) {
-      Alert.alert(
+      showUserAlert(
         'Photo unavailable',
         pickerResult.errorMessage || 'Could not open the photo library.',
       );
@@ -154,18 +179,18 @@ export default function ReviewForm({ itemId, itemType }: ReviewFormProps) {
 
     const asset = pickerResult.assets?.[0];
     if (!asset?.uri) {
-      Alert.alert('Photo unavailable', 'No photo was selected.');
+      showUserAlert('Photo unavailable', 'No photo was selected.');
       return;
     }
     if (asset.fileSize && asset.fileSize > 5 * 1024 * 1024) {
-      Alert.alert('Photo too large', 'Choose an image smaller than 5 MB.');
+      showUserAlert('Photo too large', 'Choose an image smaller than 5 MB.');
       return;
     }
     const mimeType = asset.type || 'image/jpeg';
     if (
       !['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(mimeType)
     ) {
-      Alert.alert(
+      showUserAlert(
         'Unsupported photo',
         'Choose a JPG, PNG, GIF, or WEBP image.',
       );
@@ -194,7 +219,7 @@ export default function ReviewForm({ itemId, itemType }: ReviewFormProps) {
       setReviewImage(response.data.url);
     } catch (error) {
       if (__DEV__) console.warn('[ReviewForm] Image upload failed:', error);
-      Alert.alert(
+      showUserAlert(
         'Upload failed',
         getErrorMessage(error, 'Could not upload this review image.'),
       );
@@ -208,11 +233,11 @@ export default function ReviewForm({ itemId, itemType }: ReviewFormProps) {
     const review = comment.trim();
     const numericId = Number(itemId);
     if (!name || !review) {
-      Alert.alert('Review details required', 'Enter your name and review.');
+      showUserAlert('Review details required', 'Enter your name and review.');
       return;
     }
     if (!Number.isSafeInteger(numericId) || numericId <= 0) {
-      Alert.alert('Item unavailable', 'Could not identify this item.');
+      showUserAlert('Item unavailable', 'Could not identify this item.');
       return;
     }
     if (submitting || uploadingImage) return;
@@ -237,13 +262,17 @@ export default function ReviewForm({ itemId, itemType }: ReviewFormProps) {
       setComment('');
       setReviewImage(null);
       setOpen(false);
-      Alert.alert(
+      showUserAlert(
         'Review submitted',
         'Thank you for sharing your feedback.',
       );
     } catch (error) {
+      if (isUnauthorizedError(error)) {
+        showLoginRequired();
+        return;
+      }
       if (__DEV__) console.warn('[ReviewForm] Could not submit review:', error);
-      Alert.alert(
+      showUserAlert(
         'Review failed',
         getErrorMessage(error, 'Could not submit your review. Please try again.'),
       );
@@ -268,7 +297,13 @@ export default function ReviewForm({ itemId, itemType }: ReviewFormProps) {
           accessibilityRole="button"
           accessibilityState={{ expanded: open, disabled }}
           disabled={disabled}
-          onPress={() => setOpen(current => !current)}
+          onPress={() => {
+            if (isGuest) {
+              showLoginRequired();
+              return;
+            }
+            setOpen(current => !current);
+          }}
           className="rounded-full bg-[#FFF0E1] px-4 py-2 disabled:opacity-60">
           <Text className="text-[12px] font-bold text-[#B94719]">
             {open ? 'Close' : 'Write review'}

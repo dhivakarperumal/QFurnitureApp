@@ -1028,6 +1028,8 @@ export default function Storefront({
           : undefined;
       const detailProps = {
         itemId: detailTarget.itemId,
+        isGuest,
+        onLoginPress,
         favorite: favoriteIds.includes(actionId),
         onFavoritePress: toggleFavorite,
         onAddToCart: addToCart,
@@ -1046,7 +1048,6 @@ export default function Storefront({
         <ProductDetails
           key={`product-${detailTarget.itemId}`}
           {...detailProps}
-          isGuest={isGuest}
           initialItem={initialProduct}
           relatedProducts={storeData.products}
           favoriteIds={favoriteIds}
@@ -1074,12 +1075,11 @@ export default function Storefront({
             setSearch(roomSlug.replace(/-/g, ' '));
             setActiveTab('Shop');
           }}
-          onCustomFurniturePress={() =>
-            showUserAlert(
-              'Custom furniture',
-              'Contact Q Living to discuss your design and request a quote.',
-            )
-          }
+          onCustomFurniturePress={() => {
+            setDetailTarget(null);
+            setMoreDestination('contact');
+            setActiveTab('Profile');
+          }}
           onFavoritePress={toggleFavorite}
           onAddToCart={addToCart}
           onProductPress={openItemDetails}

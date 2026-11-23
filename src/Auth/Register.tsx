@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   ActivityIndicator,
-  Alert,
   Keyboard,
   Image,
   KeyboardAvoidingView,
@@ -26,6 +25,7 @@ import {
 } from 'lucide-react-native';
 import api from '../api';
 import { colors } from '../theme/colors';
+import { useUserAlert } from '../User/UserAlert';
 
 type RegisterProps = {
   onLoginPress: () => void;
@@ -33,6 +33,7 @@ type RegisterProps = {
 
 export default function Register({ onLoginPress }: RegisterProps) {
   const insets = useSafeAreaInsets();
+  const showUserAlert = useUserAlert();
   const scrollViewRef = useRef<ScrollViewInstance | null>(null);
   const registerButtonRef = useRef<ViewInstance | null>(null);
   const [form, setForm] = useState({
@@ -85,17 +86,23 @@ export default function Register({ onLoginPress }: RegisterProps) {
     if (submitting) return;
 
     if (!form.username.trim() || !form.email.trim() || !form.phone.trim() || !form.password) {
-      Alert.alert('Missing details', 'Complete all fields to create your account.');
+      showUserAlert(
+        'Missing details',
+        'Complete all fields to create your account.',
+      );
       return;
     }
 
     if (form.password !== form.confirmPassword) {
-      Alert.alert('Password mismatch', 'Passwords do not match.');
+      showUserAlert('Password mismatch', 'Passwords do not match.');
       return;
     }
 
     if (form.password.length < 8 || form.password.length > 72) {
-      Alert.alert('Invalid password', 'Password must be between 8 and 72 characters.');
+      showUserAlert(
+        'Invalid password',
+        'Password must be between 8 and 72 characters.',
+      );
       return;
     }
 
@@ -108,16 +115,18 @@ export default function Register({ onLoginPress }: RegisterProps) {
         password: form.password,
       });
 
-      Alert.alert('Registration successful', 'Please sign in with your new account.', [
-        { text: 'Sign in', onPress: onLoginPress },
-      ]);
+      showUserAlert(
+        'Registration successful',
+        'Please sign in with your new account.',
+        [{ text: 'Sign in', onPress: onLoginPress }],
+      );
     } catch (error: any) {
       const message =
         error?.response?.data?.message ||
         error?.data?.message ||
         error?.message ||
         'Registration failed. Please try again.';
-      Alert.alert('Registration failed', message);
+      showUserAlert('Registration failed', message);
     } finally {
       setSubmitting(false);
     }

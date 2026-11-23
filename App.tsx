@@ -54,7 +54,9 @@ function App() {
     <SafeAreaProvider>
       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
       <AdminAlertProvider>
-        <AppContent />
+        <UserAlertProvider>
+          <AppContent />
+        </UserAlertProvider>
       </AdminAlertProvider>
     </SafeAreaProvider>
   );
@@ -396,16 +398,14 @@ function AppContent() {
 
   if (userRole === 'user') {
     return (
-      <UserAlertProvider>
-        <Storefront
-          isGuest={!authenticated}
-          onLoginPress={() => {
-            setGuestMode(false);
-            setAuthScreen('login');
-          }}
-          onLogoutPress={handleLogout}
-        />
-      </UserAlertProvider>
+      <Storefront
+        isGuest={!authenticated}
+        onLoginPress={() => {
+          setGuestMode(false);
+          setAuthScreen('login');
+        }}
+        onLogoutPress={handleLogout}
+      />
     );
   }
 

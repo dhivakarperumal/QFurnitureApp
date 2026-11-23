@@ -44,6 +44,8 @@ type Combo = StoreProduct & {
 
 type ComboDetailsProps = {
   itemId: string;
+  isGuest: boolean;
+  onLoginPress: () => void;
   onFavoritePress: (productId: string, productName?: string) => void;
   onAddToCart: (productId: string, productName?: string) => void;
   onBuyNow?: (item: StoreBuyNowItem) => void;
@@ -77,6 +79,8 @@ function getGallery(combo: Combo) {
 
 export default function ComboDetails({
   itemId,
+  isGuest,
+  onLoginPress,
   onFavoritePress,
   onAddToCart,
   onBuyNow,
@@ -358,6 +362,8 @@ export default function ComboDetails({
           <ReviewForm
             itemId={combo.combo_id ?? combo.id ?? itemId}
             itemType="combo"
+            isGuest={isGuest}
+            onLoginPress={onLoginPress}
           />
 
           <View className="mt-5 flex-row">
