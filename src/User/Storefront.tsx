@@ -1351,7 +1351,7 @@ export default function Storefront({
           setCheckoutOpen(false);
           setBuyNowItem(null);
           setAccountReturnToMore(false);
-          setAccountSubScreen('menu');
+          setAccountSubScreen('profile');
           setMoreDestination('account');
           setActiveTab('Profile');
         }}

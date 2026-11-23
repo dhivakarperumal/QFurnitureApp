@@ -182,7 +182,7 @@ export default function Header({
               </View>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={isGuest ? 'Log in' : 'Open account'}
+                accessibilityLabel={isGuest ? 'Log in' : 'Open my profile'}
                 onPress={() => {
                   setProfileMenuVisible(false);
                   onProfilePress();
@@ -190,7 +190,7 @@ export default function Header({
                 className="h-[42px] flex-row items-center rounded-[8px] px-2">
                 <UserRound size={18} color="#17191C" />
                 <Text className="ml-2 text-[14px] font-bold text-[#17191C]">
-                  {isGuest ? 'Log in' : 'Account'}
+                  {isGuest ? 'Log in' : 'My Profile'}
                 </Text>
               </Pressable>
               {!isGuest ? (
