@@ -32,6 +32,36 @@ function MoreTabIcon({ size = 24, color = '#FFFFFF' }: TabIconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24">
       <Rect
+        x={3}
+        y={3}
+        width={6}
+        height={6}
+        rx={0.8}
+        fill="none"
+        stroke={color}
+        strokeWidth={2.2}
+      />
+      <Rect
+        x={15}
+        y={3}
+        width={6}
+        height={6}
+        rx={0.8}
+        fill="none"
+        stroke={color}
+        strokeWidth={2.2}
+      />
+      <Rect
+        x={3}
+        y={15}
+        width={6}
+        height={6}
+        rx={0.8}
+        fill="none"
+        stroke={color}
+        strokeWidth={2.2}
+      />
+      <Rect
         x={15}
         y={15}
         width={6}
