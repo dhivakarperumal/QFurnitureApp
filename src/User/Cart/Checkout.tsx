@@ -11,6 +11,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Geolocation from '@react-native-community/geolocation';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -58,6 +59,7 @@ type Address = {
   is_default?: boolean | number;
 };
 const ADDRESSES_CACHE_KEY = 'user.addresses';
+const PROFILE_CACHE_KEY = 'user.profile';
 
 type Coordinates = {
   latitude: number;
@@ -187,11 +189,14 @@ export default function Checkout({
     () => !hasCachedApiData(ADDRESSES_CACHE_KEY),
   );
   const [addressesError, setAddressesError] = useState('');
-  const [customerDetails, setCustomerDetails] = useState<CustomerDetails>({
-    customer_name: '',
-    customer_email: '',
-    customer_phone: '',
-  });
+  const cachedProfile = getCachedApiData<Record<string, unknown>>(
+    PROFILE_CACHE_KEY,
+  );
+  const [customerDetails, setCustomerDetails] = useState<CustomerDetails>(() => ({
+    customer_name: String(cachedProfile?.name || cachedProfile?.username || ''),
+    customer_email: String(cachedProfile?.email || ''),
+    customer_phone: String(cachedProfile?.phone || ''),
+  }));
   const [gstSettings, setGstSettings] = useState<GstSettings | null>(null);
   const [gstSettingsLoading, setGstSettingsLoading] = useState(true);
   const [gstSettingsError, setGstSettingsError] = useState('');
@@ -204,6 +209,55 @@ export default function Checkout({
   const [coordinates, setCoordinates] = useState<Coordinates | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
+
+  useEffect(() => {
+    let active = true;
+
+    const loadSavedUserDetails = async () => {
+      try {
+        const serializedUser = await AsyncStorage.getItem('user');
+        if (!serializedUser) return;
+        const user: unknown = JSON.parse(serializedUser);
+        if (typeof user !== 'object' || user === null) return;
+
+        const savedUser = user as Record<string, unknown>;
+        const savedName =
+          (typeof savedUser.name === 'string' && savedUser.name.trim()) ||
+          (typeof savedUser.username === 'string' &&
+            savedUser.username.trim()) ||
+          '';
+        const savedEmail =
+          typeof savedUser.email === 'string' ? savedUser.email.trim() : '';
+        const savedPhone =
+          typeof savedUser.phone === 'string' ? savedUser.phone.trim() : '';
+        const profileName = String(
+          cachedProfile?.name || cachedProfile?.username || '',
+        );
+        const profileEmail = String(cachedProfile?.email || '');
+        const profilePhone = String(cachedProfile?.phone || '');
+
+        if (active) {
+          setCustomerDetails(current => ({
+            customer_name: profileName || savedName || current.customer_name,
+            customer_email: profileEmail || savedEmail || current.customer_email,
+            customer_phone: profilePhone || savedPhone || current.customer_phone,
+          }));
+        }
+      } catch (error) {
+        if (__DEV__) {
+          console.warn(
+            '[Checkout] Could not load saved customer details:',
+            error,
+          );
+        }
+      }
+    };
+
+    loadSavedUserDetails();
+    return () => {
+      active = false;
+    };
+  }, [cachedProfile]);
 
   const loadAddresses = useCallback(async (forceRefresh = false) => {
     if (!hasCachedApiData(ADDRESSES_CACHE_KEY)) setAddressesLoading(true);
